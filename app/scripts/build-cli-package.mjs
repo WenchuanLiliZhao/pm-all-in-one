@@ -7,7 +7,7 @@
  * Usage: node ./scripts/build-cli-package.mjs <targetDir>   (build:cli → dist-cli)
  *
  * Only the modules `cli.js` actually reaches are copied, which keeps
- * Electron-importing siblings such as `core/settings.js` out of the package.
+ * Electron-importing siblings such as `core/workspace/settings.js` out of the package.
  *
  * ↔ electron/cli.ts — entry whose import graph defines the package contents
  * ↔ scripts/copy-templates.mjs — same template pair, different output root

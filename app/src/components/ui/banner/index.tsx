@@ -1,7 +1,7 @@
 import type { HTMLAttributes, ReactNode } from "react";
 import styles from "./styles.module.scss";
 
-export type BannerTone = "error" | "warn";
+export type BannerTone = "error" | "warn" | "success";
 
 export type BannerProps = {
   tone?: BannerTone;

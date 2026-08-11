@@ -1,6 +1,6 @@
 /**
  * Zone 2 IPC payload types for the renderer (hand-mirrored; keep shapes in sync).
- * ↔ electron/core/types.ts — core SoT splits EntityId / ladder / doctor elsewhere
+ * ↔ electron/core/identity/types.ts — core SoT splits EntityId / ladder / doctor elsewhere
  * ↔ electron/src/lib/types.ts — orphan Electron-root twin of this file
  */
 
@@ -252,7 +252,7 @@ export interface UpdateViewInput {
   kind?: ViewKind;
 }
 
-/** Wiki sidebar / wiki-nodes — keep in sync with electron/core/types. */
+/** Wiki sidebar / wiki-nodes — keep in sync with electron/core/identity/types. */
 export type WikiSidebarRefNode = {
   type: "ref";
   id: string;
@@ -444,3 +444,26 @@ export interface WikiSidebarPlacement {
 
 /** @deprecated Prefer WikiSidebarPlacement */
 export type WikiSidebarTarget = WikiSidebarPlacement;
+
+/** Desktop git sync — keep in sync with electron/core/desktop/git-sync.ts */
+export type GitSyncStatusKind = "not-repo" | "no-upstream" | "ok";
+
+export interface GitSyncStatus {
+  kind: GitSyncStatusKind;
+  behind: number;
+  ahead: number;
+  dirty: boolean;
+  /** Soft failure (e.g. fetch network error) while still returning counts. */
+  error?: string;
+}
+
+export type GitPullFailReason =
+  | "dirty"
+  | "not-ff"
+  | "no-upstream"
+  | "not-repo"
+  | "git-error";
+
+export type GitPullResult =
+  | { ok: true }
+  | { ok: false; reason: GitPullFailReason; message: string };

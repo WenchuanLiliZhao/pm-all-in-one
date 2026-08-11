@@ -1,6 +1,6 @@
 /**
  * Zone 8 shell hub — workspace React context (state, selection, PmApi glue).
- * Orchestrates detail dirty/save/conflict via DetailSaveController + @pm-core/detail-diff;
+ * Orchestrates detail dirty/save/conflict via DetailSaveController + @pm-core/sync/detail-diff;
  * do not sink more logic here (algorithms live in detail-save / detail-diff).
  * Known hub — do not keep piling logic.
  * ↔ DEVELOPMENT.md — Vibe zones / Electron vs web
@@ -45,7 +45,7 @@ import {
   type IssueEditableSlice,
   type ProjectEditableSlice,
   type WorkspaceEditableSlice,
-} from "@pm-core/detail-diff";
+} from "@pm-core/sync/detail-diff";
 import {
   countTreeDescendants,
   formatDescendantCost,

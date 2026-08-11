@@ -1,7 +1,7 @@
 // ↔ electron/preload.cts — Electron window.pm implements this contract
 // ↔ src/lib/bridge/http-pm.ts — web HTTP client implements this contract
 // ↔ src/lib/bridge.ts — getPm() picks preload vs HTTP
-// ↔ electron/core/detail-diff.ts — OCC editable slices / StaleWriteError in signatures
+// ↔ electron/core/sync/detail-diff.ts — OCC editable slices / StaleWriteError in signatures
 import type {
   IssueEditableSlice,
   MemberEditableSlice,
@@ -9,7 +9,7 @@ import type {
   ProjectEditableSlice,
   WikiEditableSlice,
   WorkspaceEditableSlice,
-} from "@pm-core/detail-diff";
+} from "@pm-core/sync/detail-diff";
 import type {
   AdoptResult,
   CreateHandoffInput,
@@ -25,6 +25,8 @@ import type {
   WikiSidebarNode,
   WikiSidebarPlacement,
   EntityId,
+  GitPullResult,
+  GitSyncStatus,
   Handoff,
   HandoffPatch,
   HandoffSnapshot,
@@ -137,6 +139,17 @@ export interface PmApi {
   doctor: () => Promise<DoctorReport>;
   adoptStray: (strayPath: string) => Promise<AdoptResult>;
   revealPath: (targetPath: string) => Promise<boolean>;
+
+  /**
+   * Desktop-only: fetch + ahead/behind vs upstream.
+   * Web stub returns `not-repo`.
+   */
+  getGitSyncStatus: () => Promise<GitSyncStatus>;
+  /**
+   * Desktop-only: `git pull --ff-only` (refuses dirty tree).
+   * Web stub returns `{ ok: false, reason: "git-error", … }`.
+   */
+  pullWorkspace: () => Promise<GitPullResult>;
 
   /** Filenames under the node's `assets/` (missing dir → []). Desktop-only write path. */
   listNodeAssets: (ref: NodeRef) => Promise<string[]>;

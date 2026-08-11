@@ -21,7 +21,7 @@ import {
   reorderSiblingInOrder,
   reparentInOrder,
   type ViewOrder,
-} from "@pm-core/view-order-apply";
+} from "@pm-core/views/view-order-apply";
 import type { Issue, IssueTree } from "@/lib/types";
 import { issueRefKey } from "@/lib/types";
 import type { IssueStatusId } from "@/lib/issue-status";

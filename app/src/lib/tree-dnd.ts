@@ -1,4 +1,4 @@
-import { canReparentPreservingLevel, type LadderRow } from "@pm-core/ladder";
+import { canReparentPreservingLevel, type LadderRow } from "@pm-core/identity/ladder";
 import type { Issue, IssueTree, MoveIssueInput } from "@/lib/types";
 import { issueRefKey } from "@/lib/types";
 

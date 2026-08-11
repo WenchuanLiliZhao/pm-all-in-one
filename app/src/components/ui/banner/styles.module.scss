@@ -24,6 +24,12 @@
   color: var(--color-use--warn-fg);
 }
 
+.success {
+  background: var(--color-use--success-soft);
+  color: var(--color-use--success-fg);
+  border-color: var(--color-use--success-border);
+}
+
 .dismiss {
   flex: 0 0 auto;
   text-decoration: underline;

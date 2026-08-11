@@ -25,12 +25,12 @@
   },
   "include": [
     "src",
-    "electron/core/ladder.ts",
-    "electron/core/view-order-apply.ts",
-    "electron/core/types.ts",
-    "electron/core/ai-locator.ts",
-    "electron/core/links.ts",
-    "electron/core/dir-id.ts"
+    "electron/core/identity/ladder.ts",
+    "electron/core/views/view-order-apply.ts",
+    "electron/core/identity/types.ts",
+    "electron/core/identity/ai-locator.ts",
+    "electron/core/identity/links.ts",
+    "electron/core/identity/dir-id.ts"
   ],
   "exclude": ["src/**/*.test.ts"]
 }

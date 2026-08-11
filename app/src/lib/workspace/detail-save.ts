@@ -4,7 +4,7 @@
  * Not for ExplicitForm (custom props) / roadmap dates / view-order.
  *
  * Dirty is content-based (draft ≠ baseline), not a sticky onChange flag.
- * Debounced autosave via @pm-core/autosave-policy; explicit flush for blur /
+ * Debounced autosave via @pm-core/sync/autosave-policy; explicit flush for blur /
  * Cmd+S / navigation / beforeunload.
  *
  * ↔ dogfood @wiki-n8_7zg25NlxwdV6nIBVcD — AutosaveDoc vs ExplicitForm
@@ -15,7 +15,7 @@ import {
   AUTOSAVE_IDLE_MS,
   AUTOSAVE_MAX_WAIT_MS,
   decideAutosave,
-} from "@pm-core/autosave-policy";
+} from "@pm-core/sync/autosave-policy";
 
 export type DetailSaveStatus =
   | "clean"

@@ -4,7 +4,7 @@
  * ↔ pages/channels/workspace-page/route.tsx — `HandoffDetailView`
  * ↔ lib/workspace/detail-save.ts — controller + handoff target
  * ↔ dogfood @wiki-n8_7zg25NlxwdV6nIBVcD — AutosaveDoc
- * ↔ electron/core/handoffs.ts — updateHandoff OCC
+ * ↔ electron/core/domain/handoffs.ts — updateHandoff OCC
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useOutletContext } from "react-router-dom";
@@ -37,7 +37,7 @@ import {
   classifyHandoff,
   pickHandoffEditable,
   type HandoffEditableSlice,
-} from "@pm-core/detail-diff";
+} from "@pm-core/sync/detail-diff";
 import styles from "./styles.module.scss";
 
 type HandoffOutletContext = {

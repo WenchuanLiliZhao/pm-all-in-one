@@ -1,7 +1,7 @@
 /**
- * Built-in issue status catalog — keep in sync with electron/core/issue-status.ts.
+ * Built-in issue status catalog — keep in sync with electron/core/identity/issue-status.ts.
  * Props store `status: <id>`. category reserves future variants.
- * ↔ electron/core/issue-status.ts — catalog SoT (core may add labels/helpers)
+ * ↔ electron/core/identity/issue-status.ts — catalog SoT (core may add labels/helpers)
  * ↔ electron/src/lib/issue-status.ts — orphan Electron-root twin of this file
  * ↔ src/components/ui/issue-status/ — Lucide glyph + tone chrome (shared asset)
  */

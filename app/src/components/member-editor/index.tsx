@@ -7,7 +7,7 @@
  * ↔ lib/workspace/active-save-host.ts — Cmd+S
  * ↔ lib/workspace/use-autosave-leave-flush.ts — flush-then-leave
  * ↔ dogfood @wiki-n8_7zg25NlxwdV6nIBVcD — AutosaveDoc
- * ↔ electron/core/members.ts — updateMember OCC
+ * ↔ electron/core/domain/members.ts — updateMember OCC
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useOutletContext } from "react-router-dom";
@@ -46,7 +46,7 @@ import {
   classifyMember,
   pickMemberEditable,
   type MemberEditableSlice,
-} from "@pm-core/detail-diff";
+} from "@pm-core/sync/detail-diff";
 import styles from "./styles.module.scss";
 
 type MemberOutletContext = {

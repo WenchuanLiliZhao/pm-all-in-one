@@ -9,7 +9,7 @@ Desktop shell for **local-pm**: open a workspace folder (`issue-hierarchy/` + `.
 | Path | Role |
 | --- | --- |
 | `electron/` | Main process — IPC, menu, `node-pty` |
-| `electron/core/` | Shared data core (also used by the web API) |
+| `electron/core/` | Shared data core by category (`identity/`, `domain/`, …); also used by the web API |
 | `server/` | Local HTTP + SSE API for browser / future host |
 | `src/` | React renderer |
 | `src/lib/bridge*` | `PmApi` — Electron preload or HTTP client |

@@ -1,7 +1,7 @@
 // ↔ src/components/markdown-editor/types.ts — MarkdownPlugin contract
 // ↔ src/components/markdown-editor/index.ts — linkChipStyles + replaceOutsideCode
 // ↔ src/components/markdown-editor/AGENTS.md — product adapters live here, not in core
-// ↔ electron/core/links.ts — canonical @issue- / @wiki- / @member- / @handoff- shapes
+// ↔ electron/core/identity/links.ts — canonical @issue- / @wiki- / @member- / @handoff- shapes
 
 import type { MarkdownPlugin } from "@/components/markdown-editor";
 import {

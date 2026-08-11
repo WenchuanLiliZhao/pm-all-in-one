@@ -7,6 +7,7 @@ import {
   useWorkspace,
   workspaceNameFromPath,
 } from "@/lib/workspace/workspace-context";
+import { useGitSync } from "@/lib/workspace/git-sync-context";
 import styles from "./styles.module.scss";
 import { useRouterHistoryControls } from "./use-router-history-controls";
 
@@ -46,6 +47,7 @@ function useNativeFullscreen(): boolean {
 function MacTitlebar() {
   const location = useLocation();
   const { root, meta, hasWorkspace, revealPath } = useWorkspace();
+  const { available, status, syncing, sync } = useGitSync();
   const fullscreen = useNativeFullscreen();
   const { canBack, canForward, goBack, goForward } = useRouterHistoryControls();
   const inLab = location.pathname.startsWith("/lab");
@@ -58,6 +60,14 @@ function MacTitlebar() {
   }
 
   const title = meta?.title ?? workspaceNameFromPath(root);
+  const syncDisabled =
+    !available || status?.kind === "no-upstream";
+  const syncTitle =
+    status?.kind === "no-upstream"
+      ? "No upstream branch configured"
+      : status && status.behind > 0
+        ? `Sync (${status.behind} behind)`
+        : "Sync from remote";
 
   return (
     <div className={titlebarClass}>
@@ -89,6 +99,20 @@ function MacTitlebar() {
       </span>
 
       <div className={`${styles.sideCluster} ${styles.sideClusterEnd}`}>
+        {available ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="small"
+            className={styles.titlebarButton}
+            aria-label="Sync from remote"
+            title={syncTitle}
+            disabled={syncDisabled}
+            loading={syncing}
+            onClick={() => void sync()}
+            startIcon={<Lucide.RefreshCw aria-hidden />}
+          />
+        ) : null}
         <Button
           type="button"
           variant="ghost"

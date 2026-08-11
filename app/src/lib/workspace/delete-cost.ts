@@ -1,4 +1,4 @@
-// ↔ electron/core/delete-cost.ts — sibling helper (parentId graph); shared formatDescendantCost shape
+// ↔ electron/core/sync/delete-cost.ts — sibling helper (parentId graph); shared formatDescendantCost shape
 // Not a byte-sync mirror: this file walks IssueTree for UI delete cost.
 import type { IssueLevel, IssueTree } from "@/lib/types";
 

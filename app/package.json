@@ -16,7 +16,7 @@
     "dev:web": "npm run build:server && node ./node_modules/concurrently/dist/bin/concurrently.js -k \"node ./node_modules/vite/bin/vite.js\" \"node ./node_modules/typescript/bin/tsc -p tsconfig.server.json --watch --preserveWatchOutput\" \"node --watch ./dist-server/server/main.js\"",
     "pm-all-in-one": "node ./dist-electron/cli.js",
     "build:cli": "npm run build:electron && node ./scripts/build-cli-package.mjs dist-cli",
-    "test": "npm run build:electron && node --test \"dist-electron/core/*.test.js\"",
+    "test": "npm run build:electron && node --test \"dist-electron/core/**/*.test.js\"",
     "test:md": "node --test --experimental-strip-types \"src/components/markdown-editor/**/*.test.ts\"",
     "test:harness": "npm run build:electron && node ./scripts/dual-writer-harness.mjs",
     "build": "node ./node_modules/typescript/bin/tsc -b && node ./node_modules/vite/bin/vite.js build",

@@ -26,7 +26,7 @@ import {
   materializeSiblingOrder,
   reorderSiblingInOrder,
   reparentInOrder,
-} from "@pm-core/view-order-apply";
+} from "@pm-core/views/view-order-apply";
 import { getPm } from "@/lib/bridge";
 import type {
   CustomPropsSchema,

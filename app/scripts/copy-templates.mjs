@@ -7,8 +7,8 @@
  *   build:electron → dist-electron
  *   build:server   → dist-server/electron
  *
- * ↔ electron/core/workspace-template.ts — runtime resolver expects these siblings
- * ↔ electron/core/agent-md.ts — factory `.pm/agent.md` (incl. `.agents/skills/`) lives here
+ * ↔ electron/core/workspace/workspace-template.ts — runtime resolver expects these siblings
+ * ↔ electron/core/workspace/agent-md.ts — factory `.pm/agent.md` (incl. `.agents/skills/`) lives here
  * ↔ DEVELOPMENT.md — § Workspace templates
  */
 import fs from "node:fs";

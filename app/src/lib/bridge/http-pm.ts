@@ -2,7 +2,7 @@
 // ↔ src/lib/bridge.ts — getPm() falls back here without window.pm
 // ↔ server/main.ts — HTTP + SSE landings for these calls
 // ↔ electron/preload.cts — Electron twin of the same contract
-// ↔ electron/core/detail-diff.ts — reconstruct StaleWriteError from 409 body
+// ↔ electron/core/sync/detail-diff.ts — reconstruct StaleWriteError from 409 body
 import type {
   IssueEditableSlice,
   MemberEditableSlice,
@@ -10,8 +10,8 @@ import type {
   ProjectEditableSlice,
   WikiEditableSlice,
   WorkspaceEditableSlice,
-} from "@pm-core/detail-diff";
-import { StaleWriteError } from "@pm-core/detail-diff";
+} from "@pm-core/sync/detail-diff";
+import { StaleWriteError } from "@pm-core/sync/detail-diff";
 import type {
   AdoptResult,
   CreateHandoffInput,
@@ -20,6 +20,8 @@ import type {
   CreateViewInput,
   CustomPropsSchema,
   DoctorReport,
+  GitPullResult,
+  GitSyncStatus,
   WikiNode,
   WikiNodePatch,
   WikiSnapshot,
@@ -258,6 +260,20 @@ export function createHttpPmApi(): PmApi {
     adoptStray: (strayPath) =>
       request<AdoptResult>("POST", "/doctor/adopt", { strayPath }),
     revealPath: async () => false,
+
+    // ↔ electron/preload.cts — desktop git sync; web does not pretend
+    getGitSyncStatus: async (): Promise<GitSyncStatus> => ({
+      kind: "not-repo",
+      behind: 0,
+      ahead: 0,
+      dirty: false,
+      error: "Git sync is not available on the web bridge.",
+    }),
+    pullWorkspace: async (): Promise<GitPullResult> => ({
+      ok: false,
+      reason: "git-error",
+      message: "Git sync is not available on the web bridge.",
+    }),
 
     listNodeAssets: async () => [],
     addNodeAssets: async () => unsupported("addNodeAssets"),

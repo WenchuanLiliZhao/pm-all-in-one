@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { applyViewOrder } from "@pm-core/view-order-apply";
-import type { ViewOrder } from "@pm-core/view-order-apply";
+import { applyViewOrder } from "@pm-core/views/view-order-apply";
+import type { ViewOrder } from "@pm-core/views/view-order-apply";
 import { getPm } from "@/lib/bridge";
 import type { IssueTree } from "@/lib/types";
 

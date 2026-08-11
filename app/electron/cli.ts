@@ -5,12 +5,12 @@
  */
 import path from "node:path";
 
-import { adoptStray, scanStrays, type DoctorReport } from "./core/doctor.js";
+import { adoptStray, scanStrays, type DoctorReport } from "./core/workspace/doctor.js";
 import {
   handoffLinkSyntax,
   issueLinkSyntax,
   memberLinkSyntax,
-} from "./core/links.js";
+} from "./core/identity/links.js";
 import {
   backfillMemberRefs,
   createMember,
@@ -19,13 +19,13 @@ import {
   isMembership,
   setMemberAvatar,
   updateMember,
-} from "./core/members.js";
+} from "./core/domain/members.js";
 import {
   createHandoff,
   getHandoff,
   getHandoffSnapshot,
   updateHandoff,
-} from "./core/handoffs.js";
+} from "./core/domain/handoffs.js";
 import {
   createIssue,
   createProject,
@@ -35,13 +35,13 @@ import {
   listIssues,
   listProjects,
   moveIssue,
-} from "./core/store.js";
+} from "./core/domain/store.js";
 import {
   countDescendants,
   formatDescendantCost,
-} from "./core/delete-cost.js";
-import type { Issue, Membership } from "./core/types.js";
-import { isValidEntityId } from "./core/dir-id.js";
+} from "./core/sync/delete-cost.js";
+import type { Issue, Membership } from "./core/identity/types.js";
+import { isValidEntityId } from "./core/identity/dir-id.js";
 
 type Args = {
   _: string[];

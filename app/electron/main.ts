@@ -11,13 +11,17 @@ import {
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { adoptStray, scanStrays } from "./core/doctor.js";
+import { adoptStray, scanStrays } from "./core/workspace/doctor.js";
+import {
+  getGitSyncStatus,
+  pullFastForward,
+} from "./core/desktop/git-sync.js";
 import {
   copyFilesIntoNodeAssets,
   getNodeAssetsDir,
   listNodeAssets,
   type NodeRef,
-} from "./core/node-assets.js";
+} from "./core/domain/node-assets.js";
 import {
   createWikiNode,
   deleteWikiNode,
@@ -33,7 +37,7 @@ import {
   type WikiSidebarMove,
   type WikiSidebarNode,
   type WikiSidebarPlacement,
-} from "./core/wiki.js";
+} from "./core/domain/wiki.js";
 import {
   createMember,
   ensureMembers,
@@ -42,28 +46,28 @@ import {
   getMemberSnapshot,
   setMemberAvatar,
   updateMember,
-} from "./core/members.js";
+} from "./core/domain/members.js";
 import {
   createHandoff,
   ensureHandoffs,
   getHandoff,
   getHandoffSnapshot,
   updateHandoff,
-} from "./core/handoffs.js";
-import { readLocalConfig, writeLocalConfig } from "./core/local-config.js";
-import { rebuildIndex } from "./core/index.js";
-import { ensureLocalJsonGitignore } from "./core/workspace-gitignore.js";
-import { installCliLink } from "./core/cli-install.js";
-import { ensureLocalPmShim } from "./core/local-pm-shim.js";
-import { PtyManager } from "./core/pty.js";
+} from "./core/domain/handoffs.js";
+import { readLocalConfig, writeLocalConfig } from "./core/workspace/local-config.js";
+import { rebuildIndex } from "./core/workspace/rebuild-index.js";
+import { ensureLocalJsonGitignore } from "./core/workspace/workspace-gitignore.js";
+import { installCliLink } from "./core/desktop/cli-install.js";
+import { ensureLocalPmShim } from "./core/desktop/local-pm-shim.js";
+import { PtyManager } from "./core/desktop/pty.js";
 import {
   scaffoldWorkspace,
   type ScaffoldWorkspaceOptions,
-} from "./core/scaffold-workspace.js";
+} from "./core/workspace/scaffold-workspace.js";
 import {
   readSettings,
   setLastWorkspaceRoot,
-} from "./core/settings.js";
+} from "./core/workspace/settings.js";
 import {
   createIssue,
   createProject,
@@ -79,7 +83,7 @@ import {
   updateCustomPropsForProject,
   updateIssue,
   updateProject,
-} from "./core/store.js";
+} from "./core/domain/store.js";
 import type {
   CreateHandoffInput,
   CreateMemberInput,
@@ -92,15 +96,15 @@ import type {
   ProjectCreateInput,
   ProjectPatch,
   WorkspacePatch,
-} from "./core/types.js";
+} from "./core/identity/types.js";
 import {
   encodeStaleWriteMessage,
   isStaleWriteError,
-} from "./core/detail-diff.js";
+} from "./core/sync/detail-diff.js";
 import {
   ensureWorkspaceMeta,
   updateWorkspaceMeta,
-} from "./core/workspace-meta.js";
+} from "./core/domain/workspace-meta.js";
 import {
   createView,
   deleteView,
@@ -109,7 +113,7 @@ import {
   updateView,
   type CreateViewInput,
   type UpdateViewInput,
-} from "./core/views.js";
+} from "./core/views/views.js";
 import {
   ensureViewOrders,
   getAllViewOrders,
@@ -117,8 +121,8 @@ import {
   pruneKeyFromOtherViews,
   setViewOrder,
   type ViewOrder,
-} from "./core/view-orders.js";
-import { WorkspaceWatcher } from "./core/watch.js";
+} from "./core/views/view-orders.js";
+import { WorkspaceWatcher } from "./core/workspace/watch.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -400,7 +404,7 @@ async function runMenuWorkspaceAction(
   }
 }
 
-// ↔ electron/core/cli-install.ts — link placement + clobber safety live there
+// ↔ electron/core/desktop/cli-install.ts — link placement + clobber safety live there
 async function runInstallCli(): Promise<void> {
   try {
     if (!localPmShimPath) {
@@ -512,8 +516,8 @@ function buildAppMenu(): void {
 // ↔ server/main.ts — HTTP/SSE twin of these IPC handlers (shared electron/core)
 // ↔ electron/preload.cts — renderer invokes pm:* / term:* channels below
 // ↔ src/lib/bridge/pm-api.ts — contract every handler must satisfy
-// ↔ electron/core/detail-diff.ts — encodeStaleWriteMessage on update* OCC failures
-// ↔ electron/core/index.ts — rebuildIndex after mutations / watch
+// ↔ electron/core/sync/detail-diff.ts — encodeStaleWriteMessage on update* OCC failures
+// ↔ electron/core/workspace/rebuild-index.ts — rebuildIndex after mutations / watch
 function registerIpc(): void {
   // Pulled by preload `onFullscreenChange` so remount/refresh syncs inset.
   ipcMain.handle("window:getFullscreen", (event) => {
@@ -730,6 +734,15 @@ function registerIpc(): void {
     shell.showItemInFolder(path.resolve(targetPath));
     return true;
   });
+  // ↔ electron/preload.cts — getGitSyncStatus / pullWorkspace
+  // ↔ src/lib/bridge/pm-api.ts — PmApi contract
+  // ↔ src/lib/bridge/http-pm.ts — web stubs
+  ipcMain.handle("pm:getGitSyncStatus", () =>
+    getGitSyncStatus(requireWorkspace()),
+  );
+  ipcMain.handle("pm:pullWorkspace", () =>
+    pullFastForward(requireWorkspace()),
+  );
   ipcMain.handle("pm:listNodeAssets", (_event, ref: NodeRef) =>
     listNodeAssets(requireWorkspace(), ref),
   );
@@ -779,7 +792,7 @@ function registerIpc(): void {
           requireWorkspace(),
           id,
           patch,
-          options as { expected?: import("./core/detail-diff.js").WikiEditableSlice },
+          options as { expected?: import("./core/sync/detail-diff.js").WikiEditableSlice },
         );
       } catch (e) {
         if (isStaleWriteError(e)) {
@@ -829,7 +842,7 @@ function registerIpc(): void {
           id,
           patch,
           options as {
-            expected?: import("./core/detail-diff.js").MemberEditableSlice;
+            expected?: import("./core/sync/detail-diff.js").MemberEditableSlice;
           },
         );
       } catch (e) {
@@ -881,7 +894,7 @@ function registerIpc(): void {
           id,
           patch,
           options as {
-            expected?: import("./core/detail-diff.js").HandoffEditableSlice;
+            expected?: import("./core/sync/detail-diff.js").HandoffEditableSlice;
           },
         );
       } catch (e) {

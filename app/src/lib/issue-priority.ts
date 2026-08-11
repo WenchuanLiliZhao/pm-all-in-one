@@ -1,7 +1,7 @@
 /**
- * Built-in issue priority catalog — keep in sync with electron/core/issue-priority.ts.
+ * Built-in issue priority catalog — keep in sync with electron/core/identity/issue-priority.ts.
  * Props store `priority: <id>`.
- * ↔ electron/core/issue-priority.ts — catalog SoT (core may add labels/helpers)
+ * ↔ electron/core/identity/issue-priority.ts — catalog SoT (core may add labels/helpers)
  * ↔ electron/src/lib/issue-priority.ts — orphan Electron-root twin of this file
  * ↔ src/components/ui/issue-priority/ — Lucide glyph + tone chrome (shared asset)
  */

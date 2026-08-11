@@ -4,6 +4,7 @@ import { ElectronShell } from "@/layout/electron-shell";
 import { getPm, isWebPm } from "@/lib/bridge";
 import { ToastProvider } from "@/lib/toast";
 import { WorkspaceProvider } from "@/lib/workspace/workspace-context";
+import { GitSyncProvider } from "@/lib/workspace/git-sync-context";
 import { LabLayout } from "@/lab/layout";
 import { BannerPage } from "@/lab/pages/banner";
 import { ButtonPage } from "@/lab/pages/button";
@@ -58,9 +59,11 @@ function AppChrome() {
   return (
     <ToastProvider>
       <WorkspaceProvider>
-        <ElectronShell>
-          <Outlet />
-        </ElectronShell>
+        <GitSyncProvider>
+          <ElectronShell>
+            <Outlet />
+          </ElectronShell>
+        </GitSyncProvider>
       </WorkspaceProvider>
     </ToastProvider>
   );

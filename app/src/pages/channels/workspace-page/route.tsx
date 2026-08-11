@@ -39,6 +39,7 @@ import { getActiveSaveHost } from "@/lib/workspace/active-save-host";
 import { useActiveSaveHost } from "@/lib/workspace/use-active-save-host";
 import { WikiProvider, useWiki } from "@/lib/workspace/wiki-context";
 import { MemberProvider, useMember } from "@/lib/workspace/member-context";
+import { useGitSync } from "@/lib/workspace/git-sync-context";
 import { OrderedHierarchyOutline } from "./sub-components/ordered-hierarchy-outline";
 import { IssueTable } from "./sub-components/issue-table";
 import { RoadmapBoard } from "./sub-components/roadmap";
@@ -168,6 +169,14 @@ export function WorkspaceLayout() {
   const [views, setViews] = useState<WorkspaceView[]>([]);
   const [viewsReady, setViewsReady] = useState(false);
   const [viewsError, setViewsError] = useState<string | null>(null);
+  const {
+    available: gitAvailable,
+    status: gitStatus,
+    syncing,
+    sync,
+    feedback,
+    clearFeedback,
+  } = useGitSync();
 
   const refreshViews = useCallback(async () => {
     try {
@@ -370,8 +379,12 @@ export function WorkspaceLayout() {
     .filter(Boolean)
     .join(" ");
 
-  /** mac titlebar: history + workspace name + Reveal; keep topbar tabs/actions only. */
+  /** mac titlebar: history + workspace name + Reveal + Sync; keep topbar tabs/actions only. */
   const identityInTitlebar = window.pm?.platform === "darwin";
+  const gitBehind =
+    gitStatus?.kind === "ok" && gitStatus.behind > 0 ? gitStatus.behind : 0;
+  const syncDisabled =
+    !gitAvailable || gitStatus?.kind === "no-upstream";
 
   return (
     <WikiProvider>
@@ -458,6 +471,25 @@ export function WorkspaceLayout() {
           </nav>
 
           <div className={styles.topbarActions}>
+            {!identityInTitlebar && gitAvailable ? (
+              <Button
+                type="button"
+                size="medium"
+                variant="outlined"
+                disabled={syncDisabled}
+                loading={syncing}
+                title={
+                  gitStatus?.kind === "no-upstream"
+                    ? "No upstream branch configured"
+                    : gitBehind > 0
+                      ? `Sync (${gitBehind} behind)`
+                      : "Sync from remote"
+                }
+                onClick={() => void sync()}
+              >
+                {gitBehind > 0 ? `Sync (${gitBehind})` : "Sync"}
+              </Button>
+            ) : null}
             <Button type="button" size="medium" variant="outlined" onClick={() => void createProject()}>
               New project
             </Button>
@@ -475,6 +507,34 @@ export function WorkspaceLayout() {
           }}
         >
           {error ?? viewsError}
+        </Banner>
+      ) : null}
+
+      {feedback ? (
+        <Banner
+          tone={feedback.tone === "success" ? "success" : "error"}
+          role="status"
+          onDismiss={clearFeedback}
+        >
+          {feedback.message}
+        </Banner>
+      ) : gitBehind > 0 ? (
+        <Banner tone="warn" role="status">
+          <span>
+            Remote has {gitBehind} new commit{gitBehind === 1 ? "" : "s"}. Sync
+            to update this workspace.
+          </span>
+          <span style={{ display: "inline-flex", gap: 8, marginLeft: 8 }}>
+            <Button
+              type="button"
+              variant="outlined"
+              disabled={syncDisabled}
+              loading={syncing}
+              onClick={() => void sync()}
+            >
+              Sync
+            </Button>
+          </span>
         </Banner>
       ) : null}
 

@@ -2,7 +2,7 @@ import http from "node:http";
 import path from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { adoptStray, scanStrays } from "../electron/core/doctor.js";
+import { adoptStray, scanStrays } from "../electron/core/workspace/doctor.js";
 import {
   createWikiNode,
   deleteWikiNode,
@@ -18,7 +18,7 @@ import {
   type WikiSidebarMove,
   type WikiSidebarNode,
   type WikiSidebarPlacement,
-} from "../electron/core/wiki.js";
+} from "../electron/core/domain/wiki.js";
 import {
   createMember,
   ensureMembers,
@@ -27,20 +27,20 @@ import {
   getMemberSnapshot,
   setMemberAvatar,
   updateMember,
-} from "../electron/core/members.js";
+} from "../electron/core/domain/members.js";
 import {
   createHandoff,
   ensureHandoffs,
   getHandoff,
   getHandoffSnapshot,
   updateHandoff,
-} from "../electron/core/handoffs.js";
-import { readLocalConfig, writeLocalConfig } from "../electron/core/local-config.js";
-import { ensureLocalJsonGitignore } from "../electron/core/workspace-gitignore.js";
-import { rebuildIndex } from "../electron/core/index.js";
+} from "../electron/core/domain/handoffs.js";
+import { readLocalConfig, writeLocalConfig } from "../electron/core/workspace/local-config.js";
+import { ensureLocalJsonGitignore } from "../electron/core/workspace/workspace-gitignore.js";
+import { rebuildIndex } from "../electron/core/workspace/rebuild-index.js";
 import {
   setLastWorkspaceRoot,
-} from "../electron/core/settings.js";
+} from "../electron/core/workspace/settings.js";
 import {
   assertSupportedLayout,
   createIssue,
@@ -56,7 +56,7 @@ import {
   updateCustomPropsForProject,
   updateIssue,
   updateProject,
-} from "../electron/core/store.js";
+} from "../electron/core/domain/store.js";
 import type {
   CreateHandoffInput,
   CreateMemberInput,
@@ -69,11 +69,11 @@ import type {
   ProjectCreateInput,
   ProjectPatch,
   WorkspacePatch,
-} from "../electron/core/types.js";
+} from "../electron/core/identity/types.js";
 import {
   ensureWorkspaceMeta,
   updateWorkspaceMeta,
-} from "../electron/core/workspace-meta.js";
+} from "../electron/core/domain/workspace-meta.js";
 import {
   createView,
   deleteView,
@@ -82,7 +82,7 @@ import {
   updateView,
   type CreateViewInput,
   type UpdateViewInput,
-} from "../electron/core/views.js";
+} from "../electron/core/views/views.js";
 import {
   ensureViewOrders,
   getAllViewOrders,
@@ -90,12 +90,12 @@ import {
   pruneKeyFromOtherViews,
   setViewOrder,
   type ViewOrder,
-} from "../electron/core/view-orders.js";
+} from "../electron/core/views/view-orders.js";
 import {
   WorkspaceWatcher,
   type WorkspaceChangePayload,
-} from "../electron/core/watch.js";
-import { parseStaleWrite } from "../electron/core/detail-diff.js";
+} from "../electron/core/workspace/watch.js";
+import { parseStaleWrite } from "../electron/core/sync/detail-diff.js";
 
 const PORT = Number(process.env.LOCAL_PM_API_PORT ?? 8787);
 const workspaceRoot = resolveWorkspaceRoot();
@@ -137,7 +137,7 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.end(payload);
 }
 
-// ↔ electron/core/detail-diff.ts — parseStaleWrite / encodeStaleWriteMessage SoT
+// ↔ electron/core/sync/detail-diff.ts — parseStaleWrite / encodeStaleWriteMessage SoT
 // ↔ electron/main.ts — IPC rethrows encodeStaleWriteMessage; we emit 409 JSON
 // ↔ src/lib/bridge/http-pm.ts — request() reconstructs StaleWriteError from body
 function sendError(res: ServerResponse, status: number, error: unknown): void {
@@ -223,7 +223,7 @@ function match(
 // ↔ electron/main.ts registerIpc — desktop twin; both call electron/core
 // ↔ src/lib/bridge/http-pm.ts — client for these /api routes + SSE /api/events
 // ↔ src/lib/bridge/pm-api.ts — method surface this server must cover (or stub)
-// ↔ electron/core/index.ts — rebuildIndex after mutations / watch
+// ↔ electron/core/workspace/rebuild-index.ts — rebuildIndex after mutations / watch
 async function handleApi(
   req: IncomingMessage,
   res: ServerResponse,

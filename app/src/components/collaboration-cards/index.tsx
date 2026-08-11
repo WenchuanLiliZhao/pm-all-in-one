@@ -2,7 +2,7 @@
  * Handoffs card list — topbar channel `/w/handoffs`.
  *
  * ↔ pages/channels/workspace-page/route.tsx — `CollaborationView`
- * ↔ electron/core/handoffs.ts — getHandoffs / createHandoff
+ * ↔ electron/core/domain/handoffs.ts — getHandoffs / createHandoff
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";

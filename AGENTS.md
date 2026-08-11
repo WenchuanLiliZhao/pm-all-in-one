@@ -57,7 +57,7 @@ Session discipline for vibe coding. Zone map: [[app/DEVELOPMENT|DEVELOPMENT]] §
 6. `src/lib/workspace/workspace-context.tsx` is the Zone 8 shell hub — orchestrate only; no new algorithms there.
 7. Do not merge `src/lib` ↔ `electron/core` mirrors unless the session is an explicit Zone 2/3 refactor.
 
-**Out of scope (still):** git sync UX, OpenAI SDK agent, production server deploy / auth / multi-tenant, SQLite index, comments/line anchors, kanban. (Local `dev:web` API ≠ “server deploy.”)
+**Out of scope (still):** OpenAI SDK agent, production server deploy / auth / multi-tenant, SQLite index, comments/line anchors, kanban. (Local `dev:web` API ≠ “server deploy.”)
 
 In-flight product work lives in dogfood issues (e.g. Prop「这是什么」+ Project settings → `@issue-blwwMj6xHRYLCWXfa9wwl::mg6bIUXfu0nW3PQjgWYUE`；UI 打磨 `@issue-blwwMj6xHRYLCWXfa9wwl::usNnrv-FvzXQN1IwgZ54q`).
 Nodes (disk pattern): dogfood `@wiki-WZ_eBxLpaAG_HYKecNZeW`.

@@ -79,6 +79,11 @@ const pm = {
     ipcRenderer.invoke("pm:adoptStray", strayPath),
   revealPath: (targetPath: string) =>
     ipcRenderer.invoke("pm:revealPath", targetPath),
+  // ↔ src/lib/bridge/pm-api.ts — getGitSyncStatus / pullWorkspace
+  // ↔ electron/main.ts — pm:getGitSyncStatus / pm:pullWorkspace
+  // ↔ src/lib/bridge/http-pm.ts — web stubs
+  getGitSyncStatus: () => ipcRenderer.invoke("pm:getGitSyncStatus"),
+  pullWorkspace: () => ipcRenderer.invoke("pm:pullWorkspace"),
   listNodeAssets: (ref: Record<string, unknown>) =>
     ipcRenderer.invoke("pm:listNodeAssets", ref),
   addNodeAssets: (ref: Record<string, unknown>) =>

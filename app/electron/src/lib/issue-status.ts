@@ -1,6 +1,6 @@
 /**
  * Orphan Electron-root twin of renderer issue-status (byte-identical to src/lib).
- * ↔ src/lib/issue-status.ts — prefer that file + electron/core/issue-status.ts
+ * ↔ src/lib/issue-status.ts — prefer that file + electron/core/identity/issue-status.ts
  * ↔ src/components/ui/issue-status/ — Lucide glyph + tone chrome (shared asset)
  * Props store `status: <id>`. category reserves future variants.
  */

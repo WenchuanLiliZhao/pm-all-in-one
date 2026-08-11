@@ -1,6 +1,6 @@
 /**
  * ASCII folder segment from a display title (GitHub-style normalize).
- * ↔ electron/core/slugify-folder.ts — hand-copy twin (keep bodies identical)
+ * ↔ electron/core/identity/slugify-folder.ts — hand-copy twin (keep bodies identical)
  */
 const WINDOWS_RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;
 

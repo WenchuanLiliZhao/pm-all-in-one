@@ -5,7 +5,7 @@
  * ↔ lib/workspace/active-save-host.ts — Cmd+S
  * ↔ lib/workspace/use-autosave-leave-flush.ts — flush-then-leave
  * ↔ dogfood @wiki-n8_7zg25NlxwdV6nIBVcD — AutosaveDoc
- * ↔ electron/core/wiki.ts — updateWikiNode OCC
+ * ↔ electron/core/domain/wiki.ts — updateWikiNode OCC
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -39,7 +39,7 @@ import {
   classifyWiki,
   pickWikiEditable,
   type WikiEditableSlice,
-} from "@pm-core/detail-diff";
+} from "@pm-core/sync/detail-diff";
 import styles from "./styles.module.scss";
 
 type Props = {

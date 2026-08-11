@@ -30,7 +30,7 @@ import {
   materializeSiblingOrder,
   reorderSiblingInOrder,
   reparentInOrder,
-} from "@pm-core/view-order-apply";
+} from "@pm-core/views/view-order-apply";
 import type { Issue, IssueTree, TreeNode } from "@/lib/types";
 import { issueRefKey } from "@/lib/types";
 import { getPm } from "@/lib/bridge";

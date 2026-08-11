@@ -1,7 +1,7 @@
 /**
  * Orphan Electron-root twin of renderer types (no runtime importers found).
  * ↔ src/lib/types.ts — keep identical to renderer mirror if this file stays compiled
- * Prefer src/lib/types.ts ↔ electron/core/types.ts as the real Zone-2 pair.
+ * Prefer src/lib/types.ts ↔ electron/core/identity/types.ts as the real Zone-2 pair.
  */
 
 import type { IssuePriorityId } from "./issue-priority.js";
@@ -250,7 +250,7 @@ export interface UpdateViewInput {
   kind?: ViewKind;
 }
 
-/** Wiki sidebar / wiki-nodes — keep in sync with electron/core/types. */
+/** Wiki sidebar / wiki-nodes — keep in sync with electron/core/identity/types. */
 export type WikiSidebarRefNode = {
   type: "ref";
   id: string;
@@ -376,3 +376,26 @@ export interface WikiSidebarPlacement {
 
 /** @deprecated Prefer WikiSidebarPlacement */
 export type WikiSidebarTarget = WikiSidebarPlacement;
+
+/** Desktop git sync — keep in sync with electron/core/desktop/git-sync.ts */
+export type GitSyncStatusKind = "not-repo" | "no-upstream" | "ok";
+
+export interface GitSyncStatus {
+  kind: GitSyncStatusKind;
+  behind: number;
+  ahead: number;
+  dirty: boolean;
+  /** Soft failure (e.g. fetch network error) while still returning counts. */
+  error?: string;
+}
+
+export type GitPullFailReason =
+  | "dirty"
+  | "not-ff"
+  | "no-upstream"
+  | "not-repo"
+  | "git-error";
+
+export type GitPullResult =
+  | { ok: true }
+  | { ok: false; reason: GitPullFailReason; message: string };
