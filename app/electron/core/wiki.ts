@@ -7,12 +7,12 @@
  * ↔ server/main.ts — HTTP twin PATCH /api/wiki/:id
  * ↔ src/lib/bridge/pm-api.ts — updateWikiNode expected option
  */
-import * as esbuild from "esbuild";
 import fs from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 
 import { isValidEntityId, parseId, type EntityId } from "./dir-id.js";
+import { esbuild } from "./esbuild-runtime.js";
 import { allocateWikiNodeId } from "./ids.js";
 import { resolveActorMemberId } from "./local-config.js";
 import {

@@ -1,7 +1,7 @@
-import * as esbuild from "esbuild";
 import { z } from "zod";
 
 import { ENTITY_ID_RE } from "./dir-id.js";
+import { esbuild } from "./esbuild-runtime.js";
 
 /** Optional on read so legacy files load; writers always emit both. */
 const SystemTimestampsZod = {

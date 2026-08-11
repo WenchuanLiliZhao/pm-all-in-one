@@ -96,16 +96,46 @@ electron/project-template/     # → issue-hierarchy/<allocatedId>/ when seedPro
 
 ## CLI distribution
 
-`.pm/agent.md` tells agents to allocate ids through `local-pm`. That command has to be reachable from wherever the agent runs, which is usually **not** the app's built-in terminal, so there are two channels.
+`.pm/agent.md` tells agents to allocate ids through `pm-all-in-one`. That command has to be reachable from wherever the agent runs, which is usually **not** the app's built-in terminal, so there are two channels.
 
-**With the app.** `ensureLocalPmShim` writes a `/bin/sh` shim into `userData/bin` on every launch (`ELECTRON_RUN_AS_NODE=1` + the app's own Electron binary running `cli.js`). `PtyManager` prepends that dir to the PATH of terminals the app spawns — which is why `local-pm` works there and nowhere else. **File → Install Command Line Tool…** symlinks the shim into `/usr/local/bin` when writable, else `~/.local/bin`, and reports when the chosen dir is not on PATH. The link points at the userData shim rather than into the app bundle, so it survives app moves and upgrades (each launch rewrites the shim in place). It refuses to overwrite a file at that path that it did not generate — see `core/cli-install.ts`.
+**With the app.** `ensureLocalPmShim` writes a `/bin/sh` shim into `userData/bin` on every launch (`ELECTRON_RUN_AS_NODE=1` + the app's own Electron binary running `cli.js`). `PtyManager` prepends that dir to the PATH of terminals the app spawns — which is why `pm-all-in-one` works there and nowhere else. **File → Install Command Line Tool…** symlinks the shim into `/usr/local/bin` when writable, else `~/.local/bin`, and reports when the chosen dir is not on PATH. The link points at the userData shim rather than into the app bundle, so it survives app moves and upgrades (each launch rewrites the shim in place). It refuses to overwrite a file at that path that it did not generate — see `core/cli-install.ts`.
 
-**Without the app.** The CLI is pure Node: its import graph reaches no Electron module and its only third-party deps are `esbuild`, `nanoid`, and `zod`. `npm run build:cli` walks the graph from `dist-electron/cli.js`, copies just those modules plus both templates into `dist-cli/`, and generates a `package.json` with a `bin` entry, so it can be published and reached as `npx local-pm …` by anyone who cloned a workspace but never installed the app.
+**Without the app.** The CLI is pure Node: its import graph reaches no Electron module and its only third-party deps are `esbuild`, `nanoid`, and `zod`. `npm run build:cli` walks the graph from `dist-electron/cli.js`, copies just those modules plus both templates into `dist-cli/`, and generates a `package.json` with a `bin` entry for the public npm package **`pm-all-in-one`**, so anyone with Node can run `npx pm-all-in-one …` without the desktop app. Publish steps and version policy live in [`docs/releasing.md`](../docs/releasing.md).
 
 - The graph walk is what keeps Electron-importing siblings (`core/settings.ts`) out of the package. Dependency versions are read from app `package.json`; the build fails rather than guessing if the CLI grows an import that is not declared there.
 - Workspace addressing without the app: `--workspace <path>`, then `LOCAL_PM_WORKSPACE`, then an upward search from cwd.
-- `dist-cli/` is a build artifact and gitignored. The npm name is not yet claimed — confirm availability before the first publish.
+- `dist-cli/` is a build artifact and gitignored. Package name on the registry is bare `pm-all-in-one` (command name matches). Bare `local-pm` was rejected by npm as too similar to `local-pkg`.
 - Windows has neither channel yet: the shim is `/bin/sh` and the menu item is hidden there.
+
+## Package weight (`dependencies` vs `devDependencies`)
+
+electron-builder copies **every production `dependency`** into `app.asar` regardless of `build.files`. Vite already bundles the renderer into `dist/`, so a renderer package listed under `dependencies` ships **twice** and the second copy is never required at runtime.
+
+`dependencies` is therefore exactly the runtime import surface of `electron/` — verify with `rg -o --no-filename 'from "[^".][^"]*"' electron --glob '*.ts'`:
+
+| Dep | Used by |
+| --- | --- |
+| `zod` | `core/custom-props.ts`, `props-load.ts`, `timestamps.ts`, `views.ts`, `view-orders.ts`, `wiki.ts` |
+| `esbuild` | `core/props-load.ts`, `core/wiki.ts` (evaluates `props.ts`) |
+| `nanoid` | `core/ids.ts`, `core/views.ts` |
+| `chokidar` | `core/watch.ts` |
+| `node-pty` | `core/pty.ts` (native; stays unpacked) |
+
+Everything else — React, CodeMirror, xterm, lucide, highlight.js, fontsource, the remark/mdast tree — belongs in `devDependencies`. Moving them there took the DMG from 127M to 108M and the installed app from 334M to 269M (`app.asar` 75M → 11M). **Do not promote a renderer package to `dependencies` to make an import resolve** — that is a bundler question, not a packaging one.
+
+`build:cli` reads versions from `dependencies`, so the CLI's `esbuild` / `nanoid` / `zod` must stay there.
+
+### esbuild inside `app.asar`
+
+esbuild spawns a platform executable, and `spawn` cannot run a path inside the asar archive — a packaged app fails `ENOTDIR` on the first `props.ts` it evaluates, which is `openWorkspaceAt` → `ensureMembers`. `core/esbuild-binary.ts` points `ESBUILD_BINARY_PATH` at the `app.asar.unpacked` copy, and `core/esbuild-runtime.ts` is the only module that imports `esbuild`, with `./esbuild-binary.js` declared first because esbuild captures that variable when its module body loads. Two files rather than one because the CLI packager reads compiled JS and only follows `from "…"` edges: a bare side-effect import would not be copied, and a type-only import of `esbuild` would be erased and drop the dependency from the published package.
+
+Smoke test after any packaging change — this must print `OK`, not `spawn ENOTDIR`:
+
+```sh
+APP="release/mac-arm64/pm all in one.app"
+ELECTRON_RUN_AS_NODE=1 "$APP/Contents/MacOS/pm all in one" \
+  "$APP/Contents/Resources/app.asar/dist-electron/cli.js" doctor --workspace <path>
+```
 
 ## Architecture notes
 

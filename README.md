@@ -2,11 +2,13 @@
 
 Local-first project manager: workspace data lives as Markdown and directories on disk, next to your code. Collaboration is git — no account, no server, no permission system.
 
-This repository is the product home (macOS app + `local-pm` CLI).
+This repository is the product home (macOS app + `pm-all-in-one` CLI).
 
-## Status: open-source stage
+## Status: v0 (open-source, unsigned)
 
-Builds here are **unsigned and not notarized**. There is no Apple Developer ID on the build machine yet, so macOS treats a downloaded build as an unidentified app. Signed, notarized `v1.0.0` is a later stage.
+Builds here are **unsigned and not notarized**. There is no Apple Developer ID on the build machine yet, so macOS treats a downloaded build as an unidentified app.
+
+**Version rule:** epic `vN` ships only when that epic ends. **v0** ends with an unsigned `0.x` developer preview; **v1** ends with signed, notarized `1.0.0` (Apple trust + product surface polish). Do not spend `1.0.0` on an unsigned build.
 
 Practically that means: this is currently aimed at developers who are comfortable clearing the quarantine attribute or building from source. It is not yet a "download and double-click" product for a general audience.
 
@@ -45,5 +47,5 @@ See [docs/releasing.md](docs/releasing.md).
 | --- | --- |
 | Display / app bundle | pm all in one |
 | Repo / slug | `pm-all-in-one` |
-| CLI | `local-pm` |
+| CLI / npm | `pm-all-in-one` |
 | macOS `appId` | `com.pm-all-in-one.desktop` |
