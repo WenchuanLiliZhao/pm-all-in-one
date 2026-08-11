@@ -414,8 +414,8 @@ async function runInstallCli(): Promise<void> {
         ? "Command line tool updated"
         : "Command line tool installed",
       detail: onPath
-        ? `local-pm is linked at ${linkPath}.\n\nOpen a new shell and run: local-pm doctor`
-        : `local-pm is linked at ${linkPath}, but ${dir} is not on your PATH.\n\nAdd this to your shell profile:\n\n    export PATH="${dir}:$PATH"`,
+        ? `pm-all-in-one is linked at ${linkPath}.\n\nOpen a new shell and run: pm-all-in-one doctor`
+        : `pm-all-in-one is linked at ${linkPath}, but ${dir} is not on your PATH.\n\nAdd this to your shell profile:\n\n    export PATH="${dir}:$PATH"`,
       buttons: ["OK"],
     });
   } catch (error) {

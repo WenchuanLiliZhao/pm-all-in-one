@@ -13,7 +13,7 @@
  * ↔ components/ui/page-width — reading / full column SoT
  * ↔ components/ui/dropdown-menu — Contents row / Add menus
  */
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type SyntheticEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type SyntheticEvent } from "react";
 import { useMatch, useNavigate, useParams } from "react-router-dom";
 import {
   DndContext,
@@ -59,6 +59,13 @@ import {
   applyForcedCollapseDiff,
   type CollapseBaseline,
 } from "@/lib/drag-collapse";
+import {
+  collapsedKeysForExpandDepth,
+  readWikiContentsCollapsed,
+  readWikiContentsDefaultExpandDepth,
+  writeWikiContentsCollapsed,
+  WIKI_CONTENTS_DEPTH_CHANGED_EVENT,
+} from "@/lib/wiki-contents-collapse";
 import { adjustZoneForVerticalReorder, zoneFromOverTarget, type DropZone } from "@/lib/tree-dnd";
 import { wikiContentsRefLabel } from "@/lib/wiki-sidebar-helpers";
 import { useWorkspace } from "@/lib/workspace/workspace-context";
@@ -120,11 +127,13 @@ function ContentsRowMenu({
   pageId,
   sidebar,
   onMove,
+  onAddChild,
   onDelete,
 }: {
   pageId: string;
   sidebar: WikiSidebarNode[];
   onMove: (id: string, move: WikiSidebarMove) => void;
+  onAddChild: (parentId: string) => void;
   onDelete: (id: string) => void;
 }) {
   const stopDrag = (e: SyntheticEvent) => {
@@ -175,6 +184,11 @@ function ContentsRowMenu({
           />
         </DropdownMenu.Trigger>
         <DropdownMenu.Content align="end" side="bottom">
+          <DropdownMenu.ItemButton
+            label="Add child page"
+            onSelect={() => onAddChild(pageId)}
+          />
+          <DropdownMenu.Separator />
           {moves.map((item) => (
             <DropdownMenu.ItemButton
               key={item.key}
@@ -204,6 +218,7 @@ function SortableRefRow({
   onToggle,
   onMoveInSidebar,
   onRequestDelete,
+  onAddChild,
   dropZone,
   overId,
   dropLegal,
@@ -220,6 +235,7 @@ function SortableRefRow({
   onToggle: (key: string) => void;
   onMoveInSidebar: (id: string, move: WikiSidebarMove) => void;
   onRequestDelete: (id: string) => void;
+  onAddChild: (parentId: string) => void;
   dropZone: DropZone | null;
   overId: string | null;
   dropLegal: boolean | null;
@@ -315,6 +331,7 @@ function SortableRefRow({
             pageId={node.id}
             sidebar={sidebar}
             onMove={onMoveInSidebar}
+            onAddChild={onAddChild}
             onDelete={onRequestDelete}
           />
         </span>
@@ -333,6 +350,7 @@ function TocRows({
   onToggle,
   onMoveInSidebar,
   onRequestDelete,
+  onAddChild,
   dropZone,
   overId,
   dropLegal,
@@ -349,6 +367,7 @@ function TocRows({
   onToggle: (key: string) => void;
   onMoveInSidebar: (id: string, move: WikiSidebarMove) => void;
   onRequestDelete: (id: string) => void;
+  onAddChild: (parentId: string) => void;
   dropZone: DropZone | null;
   overId: string | null;
   dropLegal: boolean | null;
@@ -425,6 +444,7 @@ function TocRows({
             onToggle={onToggle}
             onMoveInSidebar={onMoveInSidebar}
             onRequestDelete={onRequestDelete}
+            onAddChild={onAddChild}
             dropZone={dropZone}
             overId={overId}
             dropLegal={dropLegal}
@@ -500,7 +520,13 @@ export function WikiShell({
   const { wiki, error: wikiError, setWiki } = useWiki();
   const { wikiNodeId: routeId } = useParams<{ wikiNodeId?: string }>();
   const [error, setError] = useState<string | null>(null);
-  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+  // Prefer sync localStorage so remounts (Settings ↔ wiki pages) never flash fully-expanded.
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
+    return readWikiContentsCollapsed() ?? new Set();
+  });
+  const [foldReady, setFoldReady] = useState(
+    () => readWikiContentsCollapsed() !== null,
+  );
   const [pendingDelete, setPendingDelete] = useState<{
     id: string;
     detail: string[];
@@ -580,6 +606,49 @@ export function WikiShell({
     };
   }, []);
 
+  // Hydrate from default expand depth before paint when nothing was persisted yet.
+  useLayoutEffect(() => {
+    if (!wiki || foldReady) {
+      return;
+    }
+    setCollapsed(
+      collapsedKeysForExpandDepth(
+        wiki.sidebar,
+        readWikiContentsDefaultExpandDepth(),
+      ),
+    );
+    setFoldReady(true);
+  }, [wiki, foldReady]);
+
+  // Settings changed default depth → re-derive collapsed and persist.
+  useEffect(() => {
+    const onDepth = (ev: Event) => {
+      if (!wiki) {
+        return;
+      }
+      const detail = (ev as CustomEvent<number>).detail;
+      const depth =
+        typeof detail === "number" && Number.isFinite(detail)
+          ? detail
+          : readWikiContentsDefaultExpandDepth();
+      const next = collapsedKeysForExpandDepth(wiki.sidebar, depth);
+      setCollapsed(next);
+      writeWikiContentsCollapsed(next);
+      setFoldReady(true);
+    };
+    window.addEventListener(WIKI_CONTENTS_DEPTH_CHANGED_EVENT, onDepth);
+    return () =>
+      window.removeEventListener(WIKI_CONTENTS_DEPTH_CHANGED_EVENT, onDepth);
+  }, [wiki]);
+
+  // Persist fold preference; skip while drag forces temporary collapses.
+  useEffect(() => {
+    if (!foldReady || activeDragId !== null) {
+      return;
+    }
+    writeWikiContentsCollapsed(collapsed);
+  }, [collapsed, activeDragId, foldReady]);
+
   useEffect(() => {
     if (!routeId || !wiki) {
       return;
@@ -647,6 +716,22 @@ export function WikiShell({
   const addNewToContents = async () => {
     await createWikiNode();
   };
+
+  const onAddChildPage = useCallback(
+    (parentId: string) => {
+      // Ensure the new child is visible under this parent in Contents.
+      setCollapsed((prev) => {
+        if (!prev.has(parentId)) {
+          return prev;
+        }
+        const next = new Set(prev);
+        next.delete(parentId);
+        return next;
+      });
+      void createWikiNode({ parentId });
+    },
+    [createWikiNode],
+  );
 
   const onRequestDelete = (id: string) => {
     setPendingDelete({
@@ -850,7 +935,7 @@ export function WikiShell({
               </DropdownMenu>
             </div>
           </div>
-          {wiki ? (
+          {wiki && foldReady ? (
             <>
               <div
                 onPointerMove={(e) => {
@@ -885,6 +970,7 @@ export function WikiShell({
                       onToggle={onToggle}
                       onMoveInSidebar={(id, move) => void onMoveInSidebar(id, move)}
                       onRequestDelete={onRequestDelete}
+                      onAddChild={onAddChildPage}
                       dropZone={activeDragId ? zone : null}
                       overId={overId}
                       dropLegal={dropLegal}

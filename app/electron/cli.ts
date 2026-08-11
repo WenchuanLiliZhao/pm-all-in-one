@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * local-pm CLI — pure Node (no electron imports).
+ * pm-all-in-one CLI — pure Node (no electron imports).
  * Invoked via ELECTRON_RUN_AS_NODE shim or `node dist-electron/cli.js`.
  */
 import path from "node:path";
@@ -157,25 +157,25 @@ function printJson(data: unknown): void {
 }
 
 function usage(): string {
-  return `local-pm — manage issue-hierarchy via the app allocator
+  return `pm-all-in-one — manage issue-hierarchy via the app allocator
 
 Usage:
-  local-pm issue create --project <id> [--parent <issueId>] --title <t>
-  local-pm issue move   --project <id> --issue <id> --parent <id|root>
-  local-pm issue delete --project <id> --issue <id> [--force]
-  local-pm issue list   [--project <id>]
-  local-pm project create --title <t>
-  local-pm project list
-  local-pm member create --title <t>
-  local-pm member list
-  local-pm member update <id> [--title <t>] [--membership involved|left]
-  local-pm member avatar <id> --file <path>
-  local-pm member backfill --created-by <id> [--assignee <id>]
-  local-pm handoff create --from <memberId> --to <memberId> --related-project <projectId> [--title <t>] [--closed]
-  local-pm handoff list
-  local-pm handoff update <id> [--title <t>] [--from <id>] [--to <id>] [--related-project <id>] [--open|--closed]
-  local-pm doctor
-  local-pm adopt <path>
+  pm-all-in-one issue create --project <id> [--parent <issueId>] --title <t>
+  pm-all-in-one issue move   --project <id> --issue <id> --parent <id|root>
+  pm-all-in-one issue delete --project <id> --issue <id> [--force]
+  pm-all-in-one issue list   [--project <id>]
+  pm-all-in-one project create --title <t>
+  pm-all-in-one project list
+  pm-all-in-one member create --title <t>
+  pm-all-in-one member list
+  pm-all-in-one member update <id> [--title <t>] [--membership involved|left]
+  pm-all-in-one member avatar <id> --file <path>
+  pm-all-in-one member backfill --created-by <id> [--assignee <id>]
+  pm-all-in-one handoff create --from <memberId> --to <memberId> --related-project <projectId> [--title <t>] [--closed]
+  pm-all-in-one handoff list
+  pm-all-in-one handoff update <id> [--title <t>] [--from <id>] [--to <id>] [--related-project <id>] [--open|--closed]
+  pm-all-in-one doctor
+  pm-all-in-one adopt <path>
 
 Options:
   --workspace <path>   Workspace root (default: LOCAL_PM_WORKSPACE or cwd upward)

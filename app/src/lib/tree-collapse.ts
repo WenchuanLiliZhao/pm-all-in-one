@@ -5,6 +5,17 @@ import { hasChildren } from "@/lib/drag-collapse";
 export type CollapseLevel = "project" | "epic" | "task";
 
 /**
+ * Collapse target plus every lower foldable rank.
+ * Collapsing a parent level also marks descendants collapsed so expanding
+ * that parent later still shows child rows folded.
+ */
+const LEVEL_AND_DESCENDANTS: Record<CollapseLevel, CollapseLevel[]> = {
+  project: ["project", "epic", "task"],
+  epic: ["epic", "task"],
+  task: ["task"],
+};
+
+/**
  * Keys of foldable nodes at `level` (have children). Sorted for stability.
  * - project → every project with kids
  * - epic / task → issues at that level with kids
@@ -32,15 +43,20 @@ export function collapseKeysForLevel(
   return keys;
 }
 
-/** Union foldable keys for `level` into a new collapsed set. */
+/**
+ * Union foldable keys for `level` and all descendant levels into a new
+ * collapsed set (project → epic → task).
+ */
 export function applyCollapseLevel(
   collapsed: ReadonlySet<string>,
   tree: IssueTree,
   level: CollapseLevel,
 ): Set<string> {
   const next = new Set(collapsed);
-  for (const key of collapseKeysForLevel(tree, level)) {
-    next.add(key);
+  for (const lv of LEVEL_AND_DESCENDANTS[level]) {
+    for (const key of collapseKeysForLevel(tree, lv)) {
+      next.add(key);
+    }
   }
   return next;
 }

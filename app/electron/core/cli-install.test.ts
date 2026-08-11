@@ -18,7 +18,7 @@ test("installCliLink links the shim into the chosen dir", () => {
     const shim = ensureLocalPmShim(userData);
     const result = installCliLink(shim.shimPath, binDir);
 
-    assert.equal(result.linkPath, path.join(binDir, "local-pm"));
+    assert.equal(result.linkPath, path.join(binDir, "pm-all-in-one"));
     assert.equal(result.replaced, false);
     assert.equal(fs.realpathSync(result.linkPath), fs.realpathSync(shim.shimPath));
     assert.ok(fs.readFileSync(result.linkPath, "utf8").includes(SHIM_MARKER));
@@ -47,12 +47,12 @@ test("installCliLink replaces its own earlier link", () => {
 test("installCliLink refuses to clobber a foreign file", () => {
   const userData = tmpdir("local-pm-userdata-");
   const binDir = tmpdir("local-pm-bin-");
-  const foreign = path.join(binDir, "local-pm");
+  const foreign = path.join(binDir, "pm-all-in-one");
   try {
     const shim = ensureLocalPmShim(userData);
     fs.writeFileSync(foreign, "#!/bin/sh\necho someone else's tool\n", "utf8");
 
-    assert.throws(() => installCliLink(shim.shimPath, binDir), /not created by local-pm/);
+    assert.throws(() => installCliLink(shim.shimPath, binDir), /not created by pm-all-in-one/);
     assert.ok(fs.readFileSync(foreign, "utf8").includes("someone else"));
   } finally {
     fs.rmSync(userData, { recursive: true, force: true });
@@ -64,7 +64,7 @@ test("installCliLink reports a missing shim instead of linking", () => {
   const binDir = tmpdir("local-pm-bin-");
   try {
     assert.throws(
-      () => installCliLink(path.join(binDir, "absent", "local-pm"), binDir),
+      () => installCliLink(path.join(binDir, "absent", "pm-all-in-one"), binDir),
       /Relaunch the app/,
     );
   } finally {

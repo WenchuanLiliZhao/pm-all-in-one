@@ -95,7 +95,7 @@ export function renderAgentTree(tree: IssueTree): string {
   const lines = [
     "# Workspace map (derived)",
     "",
-    "Rebuilt by local-pm; do not edit.",
+    "Rebuilt by pm-all-in-one; do not edit.",
     "",
   ];
 

@@ -79,13 +79,15 @@ electron/workspace-template/   # → new workspace root
   AGENTS.md
   .pm/agent.md                 # product-owned mechanical law (rev stamp)
   .agents/skills/
-    pm-content-placement/      # editorial: project / epic / wiki placement
-    pm-create-skill/           # how to add user skills under .agents/skills/
+    core/                        # create-time product skills
+      pm-content-placement/      # editorial: project / epic / wiki placement
+      pm-create-skill/           # how to add user skills under .agents/skills/custom/
+    # custom/ is not seeded — users create it via pm-create-skill
   …
 electron/project-template/     # → issue-hierarchy/<allocatedId>/ when seedProject is set
 ```
 
-`scaffoldWorkspace` copies the tree, then patches only dynamic bits (`workspace.ts` title/createdDate, `.pm/views.json`, seed `project.ts` + `schema.d.ts`). The app does **not** rewrite harness files on open. Shipped skills under `.agents/skills/` are **user-owned from create** (no product refresh). Only `.pm/agent.md` is product-owned.
+`scaffoldWorkspace` copies the tree, then patches only dynamic bits (`workspace.ts` title/createdDate, `.pm/views.json`, seed `project.ts` + `schema.d.ts`). The app does **not** rewrite harness files on open. Shipped skills under `.agents/skills/core/` are copied once at create (**no product refresh**). User skills live under `.agents/skills/custom/`. Only `.pm/agent.md` is product-owned.
 
 - Build: `scripts/copy-templates.mjs` runs after `tsc` in `build:electron` / `build:server` (tsc never emits non-`.ts` assets). Dot dirs (`.agents/`, `.pm/`) copy fine — both the build script and `copyTemplateTree` use recursive `readdir`.
 - Runtime resolver: `electron/core/workspace-template.ts` (`import.meta.url` sibling; asar-safe hand copy). Drift check: `electron/core/agent-md.ts` ↔ `doctor.ts` (`agent-md-modified` / `agent-md-outdated`).

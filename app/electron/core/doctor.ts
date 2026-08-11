@@ -212,7 +212,7 @@ function appendAgentMdWarnings(
     warnings.push({
       kind: "agent-md-modified",
       message:
-        ".pm/agent.md was edited at the same product rev as the shipped template. Restore from template or move conventions into .agents/skills/.",
+        ".pm/agent.md was edited at the same product rev as the shipped template. Restore from template or move conventions into .agents/skills/custom/.",
       path: file,
       relPath: rel,
     });

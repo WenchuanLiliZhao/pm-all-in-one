@@ -49,6 +49,10 @@ import {
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  readWikiContentsDefaultExpandDepth,
+  writeWikiContentsDefaultExpandDepth,
+} from "@/lib/wiki-contents-collapse";
 import styles from "./styles.module.scss";
 import roadmapStyles from "./sub-components/roadmap/styles.module.scss";
 
@@ -773,6 +777,27 @@ export function SettingsGeneralView() {
   } = useWorkspace();
   const { members, localMe, localMeError, setLocalMe } = useMember();
   const [meSaving, setMeSaving] = useState(false);
+  const [contentsExpandDepthDraft, setContentsExpandDepthDraft] = useState(
+    () => String(readWikiContentsDefaultExpandDepth()),
+  );
+
+  const commitContentsExpandDepth = useCallback((raw: string) => {
+    const trimmed = raw.trim();
+    if (trimmed === "") {
+      const fallback = readWikiContentsDefaultExpandDepth();
+      setContentsExpandDepthDraft(String(fallback));
+      return;
+    }
+    const n = Number(trimmed);
+    if (!Number.isFinite(n) || n < 0 || !Number.isInteger(n)) {
+      setContentsExpandDepthDraft(
+        String(readWikiContentsDefaultExpandDepth()),
+      );
+      return;
+    }
+    const next = writeWikiContentsDefaultExpandDepth(n);
+    setContentsExpandDepthDraft(String(next));
+  }, []);
 
   const saveHostSave = useCallback(() => saveDetail(), [saveDetail]);
   const saveHostHasUnsaved = useCallback(
@@ -863,6 +888,28 @@ export function SettingsGeneralView() {
             {localMeError}
           </p>
         ) : null}
+        <label className={styles.settingsField}>
+          <span>Contents default expand depth</span>
+          <Input
+            type="number"
+            min={0}
+            step={1}
+            inputMode="numeric"
+            value={contentsExpandDepthDraft}
+            onChange={(e) => setContentsExpandDepthDraft(e.target.value)}
+            onBlur={() => commitContentsExpandDepth(contentsExpandDepthDraft)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.currentTarget.blur();
+              }
+            }}
+          />
+        </label>
+        <p className={styles.settingsHint}>
+          Wiki Contents rail: 0 shows only top-level rows; higher numbers expand
+          more nesting. Manual fold/unfold is remembered on this machine. Press
+          Enter or leave the field to apply.
+        </p>
         <div className={styles.settingsActions}>
           <Button
             type="button"

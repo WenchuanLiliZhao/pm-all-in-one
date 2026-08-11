@@ -1,4 +1,4 @@
-<!-- local-pm agent.md rev 3 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/ (see pm-create-skill). -->
+<!-- local-pm agent.md rev 6 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/custom/ (see pm-create-skill). -->
 # Agent rules (local-pm)
 
 ## Finding things
@@ -46,7 +46,9 @@ Backticks are fine only when explaining the *syntax* with placeholders
   AGENTS.md                    # IDE entry → .pm/agent.md
   workspace.ts                 # title, createdDate
   README.md                    # workspace body (Home)
-  .agents/skills/              # Agent Skills (editorial policy + user conventions)
+  .agents/skills/
+    core/                      # create-time product skills (pm-content-placement, …)
+    custom/                    # user conventions (see pm-create-skill)
   wiki/
     sidebar.ts                 # Contents SoT (export const props = [...])
     <nanoid>/                  # wiki-node dirs (ids never renamed)
@@ -85,10 +87,14 @@ plus `.pm/local.json` `repos`. Never commit `.pm/local.md` or `.pm/local.json`.
 
 ## Custom conventions
 
-User-owned conventions are **Agent Skills** under `.agents/skills/<name>/SKILL.md`
-(see skill `pm-create-skill`). Do **not** edit this file or root `AGENTS.md` to
-add them. Shipped editorial policy (project / epic / wiki placement) lives in
-skill `pm-content-placement`.
+Agent Skills live under `.agents/skills/`, split by ownership:
+
+- **`core/`** — create-time product seeds (e.g. `pm-content-placement`,
+  `pm-create-skill`). Do not add library-specific conventions here.
+- **`custom/`** — user / library conventions as
+  `.agents/skills/custom/<name>/SKILL.md` (see skill `pm-create-skill`).
+
+Do **not** edit this file or root `AGENTS.md` to add conventions.
 
 ## Wiki
 
@@ -122,7 +128,7 @@ an issue, **not** Home. One directory = one send (may span many issues via
 `""`), `relatedProject` (project id, required), `open` (boolean, required;
 `true` = open / `false` = closed), `from` / `to` (member ids), `created` /
 `updated`. Sort / browse by `created` (send time). Prefer the
-app Handoffs view or CLI (`local-pm handoff create`). Do **not** invent
+app Handoffs view or CLI (`pm-all-in-one handoff create`). Do **not** invent
 directory ids by hand. Do not use handoffs as a second wiki or as durable
 project / epic truth.
 
@@ -149,7 +155,7 @@ issue-hierarchy/<projectId>/<issueId>/
 
 They are checked against each other: a child's level must be exactly one step
 below its parent's (`epic > task > subtask`). A file that disagrees with its
-parent is **reported, never quietly reinterpreted** — run `local-pm doctor`.
+parent is **reported, never quietly reinterpreted** — run `pm-all-in-one doctor`.
 
 `blockedBy` is orthogonal to `parentId`: parent is ownership; blockedBy is
 ordering. Do not encode hierarchy in `blockedBy`.
@@ -163,24 +169,29 @@ rank; do not write `level` as concerto/movement/phrase (legacy musical aliases).
 the allocator draws a unique token:
 
 ```sh
-local-pm project create --title "New Project"
-local-pm issue create --project <projectId> --parent <issueId|root> --title "…"
-local-pm issue move   --project <projectId> --issue <issueId> --parent <issueId|root>
-local-pm issue list   --project <projectId>
-local-pm doctor
-local-pm adopt path/to/stray-dir
+pm-all-in-one project create --title "New Project"
+pm-all-in-one issue create --project <projectId> --parent <issueId|root> --title "…"
+pm-all-in-one issue move   --project <projectId> --issue <issueId> --parent <issueId|root>
+pm-all-in-one issue list   --project <projectId>
+pm-all-in-one doctor
+pm-all-in-one adopt path/to/stray-dir
 ```
 
-**Reaching the CLI.** Inside the app's built-in terminal `local-pm` is already
-on PATH. Anywhere else — an editor, an agent, a plain shell — install it once
-from the app: **File → Install Command Line Tool…**. A bare `local-pm` that is
-not found means it was never installed there, not that this workspace is broken;
-do not go looking for the app bundle.
+**Reaching the CLI.** Inside the app's built-in terminal `pm-all-in-one` is already
+on PATH. Anywhere else — an editor, an agent, a plain shell — prefer one of:
+
+1. **File → Install Command Line Tool…** (when the desktop app is installed), or
+2. **`npx pm-all-in-one …`** (Node only; no app required — public npm package `pm-all-in-one`).
+
+A bare `pm-all-in-one` that is not found means neither path is set up here, not that
+this workspace is broken; do not go looking for the app bundle. If Node is
+missing, `npx` will fail the same way — install Node, or use the app install
+path above.
 
 **When no CLI is reachable, stop and say so.** Reading, body edits, and the
 non-structural fields listed under *Editing by hand* need no CLI. Allocation and
 moves do, and there is no hand substitute: a directory you create yourself is
-not an issue until `local-pm adopt` takes it, and a hand-made `wiki/` node is
+not an issue until `pm-all-in-one adopt` takes it, and a hand-made `wiki/` node is
 also absent from `wiki/sidebar.ts`.
 
 Collaboration between people is **git** (commit / push / pull). Members exist
@@ -192,7 +203,7 @@ edit: re-leveling a task to an epic re-levels its whole subtree, and `issue move
 rewrites every affected `level` in one go.
 
 Hand-created directories under a project are **not** issues until adopted
-(`local-pm adopt` or the app's Adopt button).
+(`pm-all-in-one adopt` or the app's Adopt button).
 
 ## Editing by hand
 

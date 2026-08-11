@@ -62,6 +62,7 @@ test("scaffold copies template files and skips .gitkeep", () => {
         root,
         ".agents",
         "skills",
+        "core",
         "pm-content-placement",
         "SKILL.md",
       );
@@ -69,6 +70,7 @@ test("scaffold copies template files and skips .gitkeep", () => {
         root,
         ".agents",
         "skills",
+        "core",
         "pm-create-skill",
         "SKILL.md",
       );
@@ -79,8 +81,21 @@ test("scaffold copies template files and skips .gitkeep", () => {
       assert.match(placementBody, /^---\nname: pm-content-placement\n/);
       assert.match(createBody, /^---\nname: pm-create-skill\n/);
       assert.ok(placementBody.includes("What goes where"));
-      assert.ok(createBody.includes(".agents/skills/"));
-
+      assert.ok(createBody.includes(".agents/skills/custom/"));
+      assert.ok(createBody.includes(".agents/skills/core/"));
+      assert.equal(
+        fs.existsSync(
+          path.join(root, ".agents", "skills", "pm-content-placement"),
+        ),
+        false,
+      );
+      const skillsAgents = fs.readFileSync(
+        path.join(root, ".agents", "skills", "AGENTS.md"),
+        "utf8",
+      );
+      assert.ok(skillsAgents.includes("Do not create, edit, rename, or delete"));
+      assert.ok(skillsAgents.includes("core/"));
+      assert.ok(skillsAgents.includes("custom/"));
       assert.equal(
         fs.existsSync(path.join(root, "members", ".gitkeep")),
         false,
@@ -102,9 +117,10 @@ test("scaffold copies template files and skips .gitkeep", () => {
       assert.equal(agent, templateAgent);
       assert.match(
         agent,
-        /^<!-- local-pm agent\.md rev 3 — product-owned;/,
+        /^<!-- local-pm agent\.md rev 6 — product-owned;/,
       );
       assert.ok(agent.includes("Install Command Line Tool"));
+      assert.ok(agent.includes("npx pm-all-in-one"));
       assert.ok(agent.includes("**When no CLI is reachable, stop and say so.**"));
       assert.ok(agent.includes("## Mentions (live cross-references)"));
       assert.ok(agent.includes("**Never** wrap a concrete locator"));
@@ -117,7 +133,8 @@ test("scaffold copies template files and skips .gitkeep", () => {
       const agents = fs.readFileSync(path.join(root, "AGENTS.md"), "utf8");
       assert.ok(agents.includes("bare text, never backticks"));
       assert.ok(agents.includes("pm-content-placement"));
-      assert.ok(agents.includes(".agents/skills/"));
+      assert.ok(agents.includes(".agents/skills/core/"));
+      assert.ok(agents.includes(".agents/skills/custom/"));
       assert.equal(agents.includes("see `.pm/agent.md`."), false);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });

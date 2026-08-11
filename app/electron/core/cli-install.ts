@@ -1,5 +1,5 @@
 /**
- * Link the userData `local-pm` shim into a PATH directory so the CLI is
+ * Link the userData `pm-all-in-one` shim into a PATH directory so the CLI is
  * reachable from outside the app's built-in terminal (editors, plain shells).
  *
  * The link points at the userData shim rather than at the app bundle, so it
@@ -74,7 +74,7 @@ function clearExistingLink(linkPath: string): boolean {
     }
     if (!body.includes(SHIM_MARKER)) {
       throw new Error(
-        `${linkPath} already exists and was not created by local-pm. Remove it first, then install again.`,
+        `${linkPath} already exists and was not created by pm-all-in-one. Remove it first, then install again.`,
       );
     }
   }
@@ -88,7 +88,7 @@ export function installCliLink(
 ): CliInstallResult {
   if (process.platform === "win32") {
     throw new Error(
-      "Installing the local-pm command line tool is not supported on Windows yet.",
+      "Installing the pm-all-in-one command line tool is not supported on Windows yet.",
     );
   }
   if (!fs.existsSync(shimPath)) {
@@ -97,7 +97,7 @@ export function installCliLink(
     );
   }
   fs.mkdirSync(dir, { recursive: true });
-  const linkPath = path.join(dir, "local-pm");
+  const linkPath = path.join(dir, "pm-all-in-one");
   const replaced = clearExistingLink(linkPath);
   fs.symlinkSync(shimPath, linkPath);
   const onPath = PREFERRED_DIRS.includes(dir) || pathEntries().includes(dir);

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Assemble a standalone, publishable `local-pm` CLI package from the compiled
+ * Assemble a standalone, publishable `pm-all-in-one` CLI package from the compiled
  * Electron output. The CLI is pure Node, so people without the desktop app can
- * reach the same allocator via `npx local-pm …`.
+ * reach the same allocator via `npx pm-all-in-one …`.
  *
  * Usage: node ./scripts/build-cli-package.mjs <targetDir>   (build:cli → dist-cli)
  *
@@ -17,7 +17,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const PACKAGE_NAME = "local-pm";
+const PACKAGE_NAME = "pm-all-in-one";
 
 const appRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const targetArg = process.argv[2];
@@ -120,10 +120,10 @@ const pkg = {
   name: PACKAGE_NAME,
   version: appPkg.version,
   description:
-    "Command line interface for local-pm workspaces — allocate ids, create and move issues, run doctor.",
+    "Command line interface for pm all in one workspaces — allocate ids, create and move issues, run doctor.",
   license: appPkg.license ?? "UNLICENSED",
   type: "module",
-  bin: { [PACKAGE_NAME]: "./cli.js" },
+  bin: { [PACKAGE_NAME]: "cli.js" },
   engines: appPkg.engines,
   dependencies,
 };
@@ -137,7 +137,7 @@ fs.writeFileSync(
   path.join(targetDir, "README.md"),
   `# ${PACKAGE_NAME}
 
-Command line interface for [local-pm](https://github.com/) workspaces. Runs on
+Command line interface for [pm all in one](https://github.com/WenchuanLiliZhao/pm-all-in-one) workspaces. Runs on
 plain Node — the desktop app is not required.
 
 \`\`\`sh

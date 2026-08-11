@@ -10,12 +10,15 @@ Custom conventions for this library live as **Agent Skills**, not as edits to
 
 ## Where to put it
 
-- **Workspace-wide:** `.agents/skills/<name>/SKILL.md`
-- **Per project:** `issue-hierarchy/<projectId>/.agents/skills/<name>/SKILL.md`
-  (hosts that support nested skills scope it to that subtree automatically)
+| Kind | Path |
+| --- | --- |
+| **Custom (you / this library)** | `.agents/skills/custom/<name>/SKILL.md` |
+| **Per project** | `issue-hierarchy/<projectId>/.agents/skills/custom/<name>/SKILL.md` (hosts that support nested skills scope it to that subtree) |
+| **Core (product seed)** | `.agents/skills/core/<name>/` — shipped at workspace create; do **not** add your own skills here |
 
-Use **one** directory: `.agents/skills/`. Do **not** copy the same skill into
-`.cursor/skills/`, `.claude/skills/`, or other host-specific trees.
+Do **not** put new skills at the old flat path `.agents/skills/<name>/`. Do **not**
+copy the same skill into `.cursor/skills/`, `.claude/skills/`, or other
+host-specific trees.
 
 ## Naming and frontmatter
 
@@ -31,7 +34,7 @@ description: What it does and when to use it.
 
 Constraints:
 
-- `name` must equal the parent folder name
+- `name` must equal the parent folder name (the skill id, not `core` / `custom`)
 - lowercase letters, digits, and hyphens only; max 64 characters; no leading,
   trailing, or consecutive hyphens
 - `description` max 1024 characters — write **what** and **when**; hosts load
@@ -42,5 +45,6 @@ Constraints:
 
 - Edit `AGENTS.md` or `.pm/agent.md` to add your own conventions
 - Invent a second copy under `.cursor/skills/` “just in case”
+- Drop user skills into `.agents/skills/core/` (that tree is create-time product seed)
 - Put mechanical disk law (ids, locators, `parentId` / `level`, timestamps) in a
   skill — that stays in `.pm/agent.md` (product-owned)
