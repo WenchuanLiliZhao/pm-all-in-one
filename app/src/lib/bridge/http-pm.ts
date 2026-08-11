@@ -22,6 +22,7 @@ import type {
   DoctorReport,
   GitPullResult,
   GitSyncStatus,
+  UnsyncedChanges,
   WikiNode,
   WikiNodePatch,
   WikiSnapshot,
@@ -267,6 +268,14 @@ export function createHttpPmApi(): PmApi {
       behind: 0,
       ahead: 0,
       dirty: false,
+      checkedAt: new Date().toISOString(),
+      fetched: false,
+      error: "Git sync is not available on the web bridge.",
+    }),
+    getUnsyncedChanges: async (): Promise<UnsyncedChanges> => ({
+      kind: "not-repo",
+      nodes: [],
+      otherFiles: [],
       error: "Git sync is not available on the web bridge.",
     }),
     pullWorkspace: async (): Promise<GitPullResult> => ({

@@ -1,3 +1,10 @@
+/**
+ * Desktop git sync status + unsynced node list for the shell.
+ *
+ * ↔ electron/core/desktop/git-sync.ts — status fields
+ * ↔ electron/core/desktop/git-changes.ts — UnsyncedChanges
+ * ↔ components/git-sync-panel — consumer
+ */
 import {
   createContext,
   useCallback,
@@ -10,12 +17,21 @@ import {
 } from "react";
 import { getPm, isWebPm } from "@/lib/bridge";
 import { useToast } from "@/lib/toast";
-import type { GitPullResult, GitSyncStatus } from "@/lib/types";
+import type {
+  GitPullResult,
+  GitSyncStatus,
+  UnsyncedChanges,
+} from "@/lib/types";
 import { useWorkspace } from "@/lib/workspace/workspace-context";
 
 const FOCUS_INTERVAL_MS = 60_000;
-/** Ignore stale behind>0 from in-flight fetches right after a successful pull. */
-const POST_SYNC_GRACE_MS = 10_000;
+const LOCAL_REFRESH_DEBOUNCE_MS = 1_000;
+
+const EMPTY_CHANGES: UnsyncedChanges = {
+  kind: "not-repo",
+  nodes: [],
+  otherFiles: [],
+};
 
 export type GitSyncFeedback = {
   tone: "success" | "error";
@@ -26,12 +42,19 @@ type GitSyncContextValue = {
   /** Desktop + git repo (or checking); false on web / not-repo. */
   available: boolean;
   status: GitSyncStatus | null;
+  changes: UnsyncedChanges;
+  /** ISO from last status check (network or local). */
+  checkedAt: string | null;
   checking: boolean;
   syncing: boolean;
-  /** In-page result after Sync (same band as the behind banner). */
+  /** In-page result after Sync. */
   feedback: GitSyncFeedback | null;
   clearFeedback: () => void;
+  /** Network fetch + status (also refreshes changes). */
   refreshStatus: () => Promise<void>;
+  /** Local-only status + changes (no fetch). */
+  refreshLocal: () => Promise<void>;
+  refreshChanges: () => Promise<void>;
   sync: () => Promise<GitPullResult>;
 };
 
@@ -41,12 +64,13 @@ export function GitSyncProvider({ children }: { children: ReactNode }) {
   const { root, hasWorkspace } = useWorkspace();
   const { showToast } = useToast();
   const [status, setStatus] = useState<GitSyncStatus | null>(null);
+  const [changes, setChanges] = useState<UnsyncedChanges>(EMPTY_CHANGES);
   const [checking, setChecking] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [feedback, setFeedback] = useState<GitSyncFeedback | null>(null);
   const inFlight = useRef(0);
-  const syncedAt = useRef(0);
   const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const localDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const desktop = !isWebPm();
 
   const clearFeedback = useCallback(() => {
@@ -74,48 +98,101 @@ export function GitSyncProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const applyStatus = useCallback((next: GitSyncStatus) => {
-    if (
-      next.kind === "ok" &&
-      next.behind > 0 &&
-      Date.now() - syncedAt.current < POST_SYNC_GRACE_MS
-    ) {
-      setStatus({ ...next, behind: 0 });
+  const refreshChanges = useCallback(async () => {
+    if (!desktop || !hasWorkspace || !root) {
+      setChanges(EMPTY_CHANGES);
       return;
     }
-    setStatus(next);
-  }, []);
+    try {
+      const next = await getPm().getUnsyncedChanges();
+      setChanges(next);
+    } catch (e) {
+      setChanges({
+        kind: "not-repo",
+        nodes: [],
+        otherFiles: [],
+        error: e instanceof Error ? e.message : String(e),
+      });
+    }
+  }, [desktop, hasWorkspace, root]);
 
-  const refreshStatus = useCallback(async () => {
+  const refreshLocal = useCallback(async () => {
     if (!desktop || !hasWorkspace || !root) {
       setStatus(null);
+      setChanges(EMPTY_CHANGES);
       return;
     }
     const gen = ++inFlight.current;
     setChecking(true);
     try {
-      const next = await getPm().getGitSyncStatus();
+      const [nextStatus, nextChanges] = await Promise.all([
+        getPm().getGitSyncStatus({ fetch: false }),
+        getPm().getUnsyncedChanges(),
+      ]);
       if (gen !== inFlight.current) {
         return;
       }
-      applyStatus(next);
+      setStatus(nextStatus);
+      setChanges(nextChanges);
     } catch (e) {
       if (gen !== inFlight.current) {
         return;
       }
-      applyStatus({
+      setStatus({
         kind: "not-repo",
         behind: 0,
         ahead: 0,
         dirty: false,
+        checkedAt: new Date().toISOString(),
+        fetched: false,
         error: e instanceof Error ? e.message : String(e),
       });
+      setChanges(EMPTY_CHANGES);
     } finally {
       if (gen === inFlight.current) {
         setChecking(false);
       }
     }
-  }, [desktop, hasWorkspace, root, applyStatus]);
+  }, [desktop, hasWorkspace, root]);
+
+  const refreshStatus = useCallback(async () => {
+    if (!desktop || !hasWorkspace || !root) {
+      setStatus(null);
+      setChanges(EMPTY_CHANGES);
+      return;
+    }
+    const gen = ++inFlight.current;
+    setChecking(true);
+    try {
+      const [nextStatus, nextChanges] = await Promise.all([
+        getPm().getGitSyncStatus({ fetch: true }),
+        getPm().getUnsyncedChanges(),
+      ]);
+      if (gen !== inFlight.current) {
+        return;
+      }
+      setStatus(nextStatus);
+      setChanges(nextChanges);
+    } catch (e) {
+      if (gen !== inFlight.current) {
+        return;
+      }
+      setStatus({
+        kind: "not-repo",
+        behind: 0,
+        ahead: 0,
+        dirty: false,
+        checkedAt: new Date().toISOString(),
+        fetched: false,
+        error: e instanceof Error ? e.message : String(e),
+      });
+      setChanges(EMPTY_CHANGES);
+    } finally {
+      if (gen === inFlight.current) {
+        setChecking(false);
+      }
+    }
+  }, [desktop, hasWorkspace, root]);
 
   const sync = useCallback(async (): Promise<GitPullResult> => {
     if (!desktop || !hasWorkspace || !root) {
@@ -133,28 +210,21 @@ export function GitSyncProvider({ children }: { children: ReactNode }) {
     try {
       const result = await getPm().pullWorkspace();
       if (result.ok) {
-        syncedAt.current = Date.now();
-        setStatus((prev) =>
-          prev && prev.kind === "ok"
-            ? { ...prev, behind: 0, dirty: false, error: undefined }
-            : { kind: "ok", behind: 0, ahead: 0, dirty: false },
-        );
         const message = "Synced — workspace is up to date.";
         showFeedback({ tone: "success", message }, 5000);
         showToast({ message, durationMs: 5000 });
-        // Reconcile in the background; grace window keeps banner cleared.
-        void refreshStatus();
       } else {
         showFeedback({ tone: "error", message: result.message });
         showToast({ message: result.message });
-        void refreshStatus();
       }
+      // Always re-read authoritative status (no optimistic rewrite).
+      await refreshStatus();
       return result;
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       showFeedback({ tone: "error", message });
       showToast({ message });
-      void refreshStatus();
+      await refreshStatus();
       return { ok: false, reason: "git-error", message };
     } finally {
       setSyncing(false);
@@ -173,6 +243,7 @@ export function GitSyncProvider({ children }: { children: ReactNode }) {
     void refreshStatus();
   }, [refreshStatus]);
 
+  // Network poll + focus: update behind via fetch.
   useEffect(() => {
     if (!desktop || !hasWorkspace) {
       return;
@@ -192,6 +263,32 @@ export function GitSyncProvider({ children }: { children: ReactNode }) {
     };
   }, [desktop, hasWorkspace, refreshStatus]);
 
+  // Workspace disk changes → local refresh (no network).
+  useEffect(() => {
+    if (!desktop || !hasWorkspace) {
+      return;
+    }
+    const scheduleLocal = () => {
+      if (localDebounce.current) {
+        clearTimeout(localDebounce.current);
+      }
+      localDebounce.current = setTimeout(() => {
+        localDebounce.current = null;
+        void refreshLocal();
+      }, LOCAL_REFRESH_DEBOUNCE_MS);
+    };
+    const unsub = getPm().onChanged(() => {
+      scheduleLocal();
+    });
+    return () => {
+      unsub();
+      if (localDebounce.current) {
+        clearTimeout(localDebounce.current);
+        localDebounce.current = null;
+      }
+    };
+  }, [desktop, hasWorkspace, refreshLocal]);
+
   useEffect(() => {
     return () => {
       if (feedbackTimer.current) {
@@ -206,25 +303,35 @@ export function GitSyncProvider({ children }: { children: ReactNode }) {
     status !== null &&
     status.kind !== "not-repo";
 
+  const checkedAt = status?.checkedAt ?? null;
+
   const value = useMemo(
     () => ({
       available,
       status,
+      changes,
+      checkedAt,
       checking,
       syncing,
       feedback,
       clearFeedback,
       refreshStatus,
+      refreshLocal,
+      refreshChanges,
       sync,
     }),
     [
       available,
       status,
+      changes,
+      checkedAt,
       checking,
       syncing,
       feedback,
       clearFeedback,
       refreshStatus,
+      refreshLocal,
+      refreshChanges,
       sync,
     ],
   );

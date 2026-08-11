@@ -164,3 +164,51 @@ test("pullFastForward returns not-repo for plain directory", async () => {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("getGitSyncStatus dirty ignores sibling outside workspace cwd", async () => {
+  const repo = mkTmp("local-pm-sync-subdir-repo-");
+  try {
+    initRepo(repo);
+    writeFile(repo, "outside.txt", "out\n");
+    writeFile(repo, "workspace/README.md", "in\n");
+    git(repo, ["add", "."]);
+    git(repo, ["commit", "-m", "init"]);
+    git(repo, ["branch", "-M", "main"]);
+
+    // Dirty outside the workspace subdirectory
+    writeFile(repo, "outside.txt", "dirty-out\n");
+    const ws = path.join(repo, "workspace");
+    const status = await getGitSyncStatus(ws, { fetch: false });
+    // workspace is still a git work tree (subdirectory)
+    assert.ok(status.kind === "ok" || status.kind === "no-upstream");
+    assert.equal(status.dirty, false);
+    assert.equal(status.fetched, false);
+    assert.ok(typeof status.checkedAt === "string");
+    assert.match(status.checkedAt, /Z$/);
+  } finally {
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+test("getGitSyncStatus fetch:false skips network and still reports ahead/behind", async () => {
+  const pair = setupRemotePair();
+  try {
+    pushAdvance(pair.a, "two\n");
+    // Without fetch, local clone still has stale upstream tip until fetch —
+    // but fetch:false must still return kind ok with local counts.
+    const status = await getGitSyncStatus(pair.b, { fetch: false });
+    assert.equal(status.kind, "ok");
+    assert.equal(status.fetched, false);
+    assert.ok(typeof status.checkedAt === "string");
+    // Local tracking not updated → behind may still be 0 without fetch
+    assert.equal(typeof status.behind, "number");
+    assert.equal(typeof status.ahead, "number");
+
+    const withFetch = await getGitSyncStatus(pair.b, { fetch: true });
+    assert.equal(withFetch.kind, "ok");
+    assert.equal(withFetch.fetched, true);
+    assert.equal(withFetch.behind, 1);
+  } finally {
+    cleanupPair(pair);
+  }
+});

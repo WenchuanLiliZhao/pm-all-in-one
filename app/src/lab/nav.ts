@@ -43,6 +43,11 @@ export const LAB_NAV: LabNavCategory[] = [
         label: "Markdown editor",
         path: "markdown-editor",
       },
+      {
+        id: "git-sync-panel",
+        label: "Git sync panel",
+        path: "git-sync-panel",
+      },
     ],
   },
 ];

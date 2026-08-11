@@ -16,6 +16,7 @@ import {
   getGitSyncStatus,
   pullFastForward,
 } from "./core/desktop/git-sync.js";
+import { getUnsyncedChanges } from "./core/desktop/git-changes.js";
 import {
   copyFilesIntoNodeAssets,
   getNodeAssetsDir,
@@ -734,11 +735,16 @@ function registerIpc(): void {
     shell.showItemInFolder(path.resolve(targetPath));
     return true;
   });
-  // ↔ electron/preload.cts — getGitSyncStatus / pullWorkspace
+  // ↔ electron/preload.cts — getGitSyncStatus / getUnsyncedChanges / pullWorkspace
   // ↔ src/lib/bridge/pm-api.ts — PmApi contract
   // ↔ src/lib/bridge/http-pm.ts — web stubs
-  ipcMain.handle("pm:getGitSyncStatus", () =>
-    getGitSyncStatus(requireWorkspace()),
+  ipcMain.handle(
+    "pm:getGitSyncStatus",
+    (_event, options?: { fetch?: boolean }) =>
+      getGitSyncStatus(requireWorkspace(), options),
+  );
+  ipcMain.handle("pm:getUnsyncedChanges", () =>
+    getUnsyncedChanges(requireWorkspace()),
   );
   ipcMain.handle("pm:pullWorkspace", () =>
     pullFastForward(requireWorkspace()),

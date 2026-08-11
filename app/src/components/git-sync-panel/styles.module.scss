@@ -1,0 +1,236 @@
+/**
+ * Panel layout: pinned action under a scroll body.
+ * DropdownMenu Content defaults to overflow-y: auto on the whole surface —
+ * we take over scroll here so "Push from terminal" stays visible.
+ * ↔ index.tsx — .scroll / .stickyAction structure
+ * ↔ components/ui/dropdown-menu/styles.module.scss — Content overflow we override
+ */
+
+.panel {
+  min-width: 320px;
+  max-width: min(420px, calc(100vw - 32px));
+  max-height: min(520px, calc(100vh - 32px));
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  gap: 0;
+
+  /*
+   * Content root also has data-state from DropdownMenu — bump specificity so we
+   * win over `.dropdown-menu-content { overflow-y: auto }` regardless of sheet order.
+   */
+  &[data-state="open"] {
+    overflow: hidden;
+  }
+
+  /*
+   * Content wraps children in `.dropdown-menu-content__group` (hashed module
+   * class). One direct child div — make it the flex column that hosts scroll
+   * + sticky action.
+   */
+  > div {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    gap: 0;
+  }
+}
+
+.scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--color-use--border-prime-hex);
+    border-radius: 4px;
+  }
+}
+
+.stickyAction {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px 10px;
+  border-top: 1px solid var(--color-use--border-prime-hex);
+  background: var(--color-use--bg-prime-hex);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 6px 8px;
+}
+
+.sectionHead {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-use--text-subtle-hex, var(--color-use--text-prime-hex));
+  opacity: 0.7;
+  padding: 2px 6px;
+}
+
+.sectionBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 6px;
+}
+
+.blurb {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--color-use--text-prime-hex);
+}
+
+.hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  opacity: 0.75;
+}
+
+.empty {
+  margin: 0;
+  padding: 0 6px 4px;
+  font-size: 13px;
+  opacity: 0.65;
+}
+
+.nodeList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nodeRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  padding: 6px 8px;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background: var(--color-use--hover-overlay-hover);
+    }
+  }
+}
+
+.nodeTitle {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.marks {
+  display: inline-flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.mark {
+  font-size: 10px;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: var(--color-use--hover-overlay-hover);
+  opacity: 0.9;
+}
+
+.other {
+  font-size: 12px;
+  opacity: 0.8;
+  padding: 0 2px;
+
+  summary {
+    cursor: pointer;
+  }
+}
+
+.otherList {
+  margin: 4px 0 0;
+  padding-left: 1.1em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  word-break: break-all;
+}
+
+.footer,
+.footerMuted {
+  margin: 0;
+  padding: 4px 12px 8px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.footer {
+  color: var(--color-use--text-prime-hex);
+  opacity: 0.85;
+}
+
+.footerMuted {
+  opacity: 0.6;
+}
+
+.badgeDot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 2px;
+  border-radius: 50%;
+  background: var(--color-use--danger, #e11);
+  vertical-align: middle;
+}
+
+@keyframes badge-dot-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  40% {
+    transform: scale(1.85);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+}
+
+.badgeDotPulse {
+  animation: badge-dot-pulse 600ms ease-out;
+}

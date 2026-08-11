@@ -1,5 +1,14 @@
+/**
+ * Desktop git status / FF pull via shell-out.
+ *
+ * ↔ git-changes.ts — unsynced node aggregation (local only)
+ * ↔ electron/main.ts — IPC getGitSyncStatus / pullWorkspace
+ * ↔ src/lib/bridge/pm-api.ts — PmApi contract
+ */
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+
+import { nowIsoUtcZ } from "../infra/timestamps.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -15,9 +24,21 @@ export interface GitSyncStatus {
   behind: number;
   ahead: number;
   dirty: boolean;
+  /** ISO-8601 UTC …Z — when this status was computed. */
+  checkedAt: string;
+  /**
+   * Whether this call actually ran `git fetch`.
+   * False when `fetch: false` was requested, or when fetch failed / was skipped.
+   */
+  fetched: boolean;
   /** Soft failure (e.g. fetch network error) while still returning counts. */
   error?: string;
 }
+
+export type GitSyncStatusOptions = {
+  /** Default true. When false, skip network fetch (local rev-list / status only). */
+  fetch?: boolean;
+};
 
 export type GitPullFailReason =
   | "dirty"
@@ -109,10 +130,14 @@ async function hasUpstream(root: string): Promise<boolean> {
   return result.ok && result.stdout.trim().length > 0;
 }
 
+/**
+ * Dirty scoped to the workspace root (cwd).
+ * `-uall` so untracked node directories list files, not just the directory name.
+ */
 async function isDirty(root: string): Promise<boolean> {
   const result = await runGit(
     root,
-    ["status", "--porcelain"],
+    ["status", "--porcelain", "-uall", "--", "."],
     QUICK_TIMEOUT_MS,
   );
   if (!result.ok) {
@@ -135,30 +160,54 @@ async function revCount(root: string, range: string): Promise<number> {
 }
 
 /**
- * Fetch (best-effort) and report ahead/behind vs upstream.
+ * Report ahead/behind vs upstream. Optionally fetch first.
  * Never throws — failures become `kind` / `error` fields.
  */
 export async function getGitSyncStatus(
   workspaceRoot: string,
+  options?: GitSyncStatusOptions,
 ): Promise<GitSyncStatus> {
+  const checkedAt = nowIsoUtcZ();
+  const doFetch = options?.fetch !== false;
+
   if (!(await isInsideWorkTree(workspaceRoot))) {
-    return { kind: "not-repo", behind: 0, ahead: 0, dirty: false };
+    return {
+      kind: "not-repo",
+      behind: 0,
+      ahead: 0,
+      dirty: false,
+      checkedAt,
+      fetched: false,
+    };
   }
 
   const dirty = await isDirty(workspaceRoot);
 
   if (!(await hasUpstream(workspaceRoot))) {
-    return { kind: "no-upstream", behind: 0, ahead: 0, dirty };
+    return {
+      kind: "no-upstream",
+      behind: 0,
+      ahead: 0,
+      dirty,
+      checkedAt,
+      fetched: false,
+    };
   }
 
   let error: string | undefined;
-  const fetchResult = await runGit(
-    workspaceRoot,
-    ["fetch", "--quiet"],
-    NETWORK_TIMEOUT_MS,
-  );
-  if (!fetchResult.ok) {
-    error = fetchResult.message || "git fetch failed";
+  let fetched = false;
+  if (doFetch) {
+    const fetchResult = await runGit(
+      workspaceRoot,
+      ["fetch", "--quiet"],
+      NETWORK_TIMEOUT_MS,
+    );
+    if (fetchResult.ok) {
+      fetched = true;
+    } else {
+      error = fetchResult.message || "git fetch failed";
+      fetched = false;
+    }
   }
 
   const behind = await revCount(workspaceRoot, "HEAD..@{upstream}");
@@ -169,6 +218,8 @@ export async function getGitSyncStatus(
     behind,
     ahead,
     dirty,
+    checkedAt,
+    fetched,
     ...(error ? { error } : {}),
   };
 }

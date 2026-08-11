@@ -1,6 +1,9 @@
 /**
  * DropdownMenu panel and item styles — local port of ui-system.
  * Maps `--shadow-popup-*` → `--shadow-md` / `--shadow-lg`.
+ *
+ * ↔ components/git-sync-panel/styles.module.scss — panel overrides Content
+ *   overflow to pin a sticky action (scroll lives inside the feature, not here)
  */
 @keyframes dropdown-menu-enter {
   from {

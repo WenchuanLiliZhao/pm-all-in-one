@@ -448,11 +448,20 @@ export type WikiSidebarTarget = WikiSidebarPlacement;
 /** Desktop git sync — keep in sync with electron/core/desktop/git-sync.ts */
 export type GitSyncStatusKind = "not-repo" | "no-upstream" | "ok";
 
+export type GitSyncStatusOptions = {
+  /** Default true. When false, skip network fetch (local counts only). */
+  fetch?: boolean;
+};
+
 export interface GitSyncStatus {
   kind: GitSyncStatusKind;
   behind: number;
   ahead: number;
   dirty: boolean;
+  /** ISO-8601 UTC …Z — when this status was computed. */
+  checkedAt: string;
+  /** Whether this call actually ran `git fetch`. */
+  fetched: boolean;
   /** Soft failure (e.g. fetch network error) while still returning counts. */
   error?: string;
 }
@@ -467,3 +476,34 @@ export type GitPullFailReason =
 export type GitPullResult =
   | { ok: true }
   | { ok: false; reason: GitPullFailReason; message: string };
+
+/**
+ * Desktop unsynced changes — keep in sync with electron/core/desktop/git-changes.ts.
+ * `ref` shape matches bridge `NodeRef`.
+ */
+export type UnsyncedChangesKind = "not-repo" | "no-upstream" | "ok";
+
+export type UnsyncedNodeState = "uncommitted" | "unpushed" | "both";
+
+export type UnsyncedNodeRef =
+  | { kind: "workspace" }
+  | { kind: "project"; projectId: string }
+  | { kind: "issue"; projectId: string; issueId: string }
+  | { kind: "wiki"; wikiNodeId: string }
+  | { kind: "member"; memberId: string }
+  | { kind: "handoff"; handoffId: string };
+
+export interface UnsyncedNodeChange {
+  ref: UnsyncedNodeRef;
+  propsChanged: boolean;
+  bodyChanged: boolean;
+  otherPaths: string[];
+  state: UnsyncedNodeState;
+}
+
+export interface UnsyncedChanges {
+  kind: UnsyncedChangesKind;
+  nodes: UnsyncedNodeChange[];
+  otherFiles: string[];
+  error?: string;
+}

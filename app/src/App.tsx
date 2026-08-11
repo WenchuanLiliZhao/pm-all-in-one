@@ -9,6 +9,7 @@ import { LabLayout } from "@/lab/layout";
 import { BannerPage } from "@/lab/pages/banner";
 import { ButtonPage } from "@/lab/pages/button";
 import { DropdownMenuPage } from "@/lab/pages/dropdown-menu";
+import { GitSyncPanelPage } from "@/lab/pages/git-sync-panel";
 import { InputPage } from "@/lab/pages/input";
 import { MarkdownEditorPage } from "@/lab/pages/markdown-editor";
 import { PageWidthPage } from "@/lab/pages/page-width";
@@ -125,6 +126,7 @@ export const router = createHashRouter([
                 { path: "textarea", element: <TextareaPage /> },
                 { path: "banner", element: <BannerPage /> },
                 { path: "markdown-editor", element: <MarkdownEditorPage /> },
+                { path: "git-sync-panel", element: <GitSyncPanelPage /> },
               ],
             },
           ]

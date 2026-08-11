@@ -27,6 +27,8 @@ import type {
   EntityId,
   GitPullResult,
   GitSyncStatus,
+  GitSyncStatusOptions,
+  UnsyncedChanges,
   Handoff,
   HandoffPatch,
   HandoffSnapshot,
@@ -142,9 +144,15 @@ export interface PmApi {
 
   /**
    * Desktop-only: fetch + ahead/behind vs upstream.
+   * Pass `{ fetch: false }` for local-only refresh (no network).
    * Web stub returns `not-repo`.
    */
-  getGitSyncStatus: () => Promise<GitSyncStatus>;
+  getGitSyncStatus: (options?: GitSyncStatusOptions) => Promise<GitSyncStatus>;
+  /**
+   * Desktop-only: uncommitted + unpushed paths aggregated by node (local only).
+   * Web stub returns `not-repo` with empty lists.
+   */
+  getUnsyncedChanges: () => Promise<UnsyncedChanges>;
   /**
    * Desktop-only: `git pull --ff-only` (refuses dirty tree).
    * Web stub returns `{ ok: false, reason: "git-error", … }`.

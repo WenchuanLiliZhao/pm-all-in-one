@@ -27,6 +27,7 @@ import {
   MemberPersonSelect,
   type TerminalPanelHandle,
 } from "@/components";
+import { GitSyncPanel } from "@/components/git-sync-panel";
 import { getPm, isWebPm } from "@/lib/bridge";
 import type { WikiNodeMeta, WorkspaceView } from "@/lib/types";
 import { issueRefKey } from "@/lib/types";
@@ -171,9 +172,6 @@ export function WorkspaceLayout() {
   const [viewsError, setViewsError] = useState<string | null>(null);
   const {
     available: gitAvailable,
-    status: gitStatus,
-    syncing,
-    sync,
     feedback,
     clearFeedback,
   } = useGitSync();
@@ -379,12 +377,8 @@ export function WorkspaceLayout() {
     .filter(Boolean)
     .join(" ");
 
-  /** mac titlebar: history + workspace name + Reveal + Sync; keep topbar tabs/actions only. */
+  /** mac titlebar: history + workspace name + Reveal + Changes; keep topbar tabs/actions only. */
   const identityInTitlebar = window.pm?.platform === "darwin";
-  const gitBehind =
-    gitStatus?.kind === "ok" && gitStatus.behind > 0 ? gitStatus.behind : 0;
-  const syncDisabled =
-    !gitAvailable || gitStatus?.kind === "no-upstream";
 
   return (
     <WikiProvider>
@@ -472,23 +466,7 @@ export function WorkspaceLayout() {
 
           <div className={styles.topbarActions}>
             {!identityInTitlebar && gitAvailable ? (
-              <Button
-                type="button"
-                size="medium"
-                variant="outlined"
-                disabled={syncDisabled}
-                loading={syncing}
-                title={
-                  gitStatus?.kind === "no-upstream"
-                    ? "No upstream branch configured"
-                    : gitBehind > 0
-                      ? `Sync (${gitBehind} behind)`
-                      : "Sync from remote"
-                }
-                onClick={() => void sync()}
-              >
-                {gitBehind > 0 ? `Sync (${gitBehind})` : "Sync"}
-              </Button>
+              <GitSyncPanel variant="topbar" />
             ) : null}
             <Button type="button" size="medium" variant="outlined" onClick={() => void createProject()}>
               New project
@@ -517,24 +495,6 @@ export function WorkspaceLayout() {
           onDismiss={clearFeedback}
         >
           {feedback.message}
-        </Banner>
-      ) : gitBehind > 0 ? (
-        <Banner tone="warn" role="status">
-          <span>
-            Remote has {gitBehind} new commit{gitBehind === 1 ? "" : "s"}. Sync
-            to update this workspace.
-          </span>
-          <span style={{ display: "inline-flex", gap: 8, marginLeft: 8 }}>
-            <Button
-              type="button"
-              variant="outlined"
-              disabled={syncDisabled}
-              loading={syncing}
-              onClick={() => void sync()}
-            >
-              Sync
-            </Button>
-          </span>
         </Banner>
       ) : null}
 
