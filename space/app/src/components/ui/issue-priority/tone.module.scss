@@ -1,0 +1,34 @@
+/**
+ * Issue priority tone — apply with `className={tone.tone}` + `data-priority={id}`.
+ * ↔ ./icon.tsx — Lucide glyphs consume this module
+ */
+
+.tone {
+  color: var(--color-use--text-secondary);
+
+  /* Quiet / deferred */
+  &[data-priority="very-low"] {
+    color: var(--color-use--text-secondary);
+    opacity: 0.65;
+  }
+
+  /* Below default */
+  &[data-priority="low"] {
+    color: var(--color-use--text-secondary);
+  }
+
+  /* Neutral baseline */
+  &[data-priority="medium"] {
+    color: var(--color-use--text-prime);
+  }
+
+  /* Near-term attention */
+  &[data-priority="high"] {
+    color: var(--color-use--warn-fg);
+  }
+
+  /* Drop-everything */
+  &[data-priority="very-high"] {
+    color: var(--color-use--danger);
+  }
+}

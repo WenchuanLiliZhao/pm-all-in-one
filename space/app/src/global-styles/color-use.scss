@@ -1,0 +1,333 @@
+/**
+ * Semantic color tokens (`--color-use--*`). Owned by this app; references
+ * primitives in `color.scss`.
+ *
+ * Theme contract: `data-theme="light"|"dark"` on `:root`, or auto via `:root:not([data-theme])`
+ * (light default) with `@media (prefers-color-scheme: dark)` override when `data-theme` is unset.
+ */
+
+// 1. Explicit light
+:root[data-theme="light"],
+.light-mode {
+  color-scheme: light;
+
+  // text
+  --color-use--text-prime: var(--color--gray-88);
+  --color-use--text-prime-hex: var(--color--gray-88-hex);
+  --color-use--text-secondary: var(--color--gray-48);
+  --color-use--text-secondary-hex: var(--color--gray-48-hex);
+  --color-use--text-negative: var(--color--gray-24);
+  --color-use--text-negative-hex: var(--color--gray-24-hex);
+  --color-use--text-prime-inverse: var(--color--white-88);
+
+  // bg
+  --color-use--bg-prime-hex: var(--color--gray-0-hex);
+  --color-use--bg-prime: var(--color--gray-0);
+  --color-use--bg-secondary: var(--color--gray-2);
+  --color-use--bg-secondary-hex: var(--color--gray-2-hex);
+  --color-use--bg-darken: var(--color--gray-6);
+  --color-use--bg-prime-hex-inverse: var(--color--white-8-hex);
+  --color-use--bg-prime-inverse: var(--color--gray-92);
+  --color-use--bg-secondary-inverse: var(--color--white-2);
+  --color-use--bg-secondary-hex-inverse: var(--color--white-8-hex);
+
+  // border
+  --color-use--border-prime-hex: var(--color--gray-6-hex);
+  --color-use--border-prime: var(--color--gray-6);
+  --color-use--border-emphasis: var(--color--gray-12);
+  --color-use--border-emphasis-hex: var(--color--gray-12-hex);
+  --color-use--border-focus: var(--color--gray-16);
+  --color-use--border-focus-hex: var(--color--gray-16-hex);
+
+  // hover-overlay
+  --color-use--hover-overlay-hover: var(--color--gray-4);
+  --color-use--hover-overlay-mouse-down: var(--color--gray-6);
+
+  // in-components
+  --color-use--in-components-switch-thumb-bg: var(--color--white-100-hex);
+  --color-use--in-components-switch-rail-bg-normal: var(--color--gray-12);
+  --color-use--in-components-switch-thumb-bg-active: var(--color--white-100-hex);
+  --color-use--in-components-switch-rail-bg-normal-active: var(--color--gray-88-hex);
+  --color-use--in-components-button-text-color-in-fill-mode: var(--color--white-100-hex);
+  --color-use--in-components-button-bg-color-in-fill-mode: var(--color--gray-88-hex);
+  // status / accent / grid
+  --color-use--danger: var(--color--red-60);
+  --color-use--danger-soft: var(--color--red-04);
+  --color-use--danger-border: var(--color--red-20);
+  --color-use--danger-fg: var(--color--red-70);
+  --color-use--danger-bg: var(--color--red-08);
+  --color-use--warn-fg: var(--color--amber-70);
+  --color-use--warn-bg: var(--color--amber-08);
+  --color-use--warn-border: var(--color--amber-30);
+  --color-use--warn-strong: var(--color--amber-50);
+  --color-use--success: var(--color--green-60);
+  --color-use--success-strong: var(--color--green-50);
+  --color-use--success-fg: var(--color--green-70);
+  --color-use--success-soft: var(--color--green-08);
+  --color-use--success-border: var(--color--green-30);
+  --color-use--accent: var(--color--blue-50);
+  --color-use--accent-text: var(--color--blue-40);
+  --color-use--accent-bg: var(--color--sky-30);
+  --color-use--on-inverse-action: var(--color--sky-40);
+  --color-use--on-inverse-action-hover: var(--color--sky-30);
+  // Timeline / roadmap grid — soft hierarchy: weekend < day tick < unit edge
+  --color-use--grid-line: var(--color--gray-12);
+  --color-use--grid-line-soft: var(--color--gray-6);
+  --color-use--grid-weekend: var(--color--gray-2);
+  // terminal (follows app theme)
+  --color-use--terminal-bg: var(--color-use--bg-prime-hex);
+  --color-use--terminal-fg: var(--color-use--text-prime-hex);
+  --color-use--terminal-toolbar: var(--color-use--bg-secondary-hex);
+  --color-use--terminal-border: var(--color-use--border-emphasis-hex);
+  --color-use--terminal-tab: var(--color-use--bg-darken);
+  --color-use--terminal-tab-active: var(--color-use--bg-darken);
+  --color-use--terminal-tab-active-border: var(--color-use--accent);
+  --color-use--terminal-muted: var(--color-use--text-secondary-hex);
+}
+
+// 2. Explicit dark
+:root[data-theme="dark"],
+.dark-mode {
+  color-scheme: dark;
+
+  // text
+  --color-use--text-prime: var(--color--white-88);
+  --color-use--text-prime-hex: var(--color--white-88-hex);
+  --color-use--text-secondary: var(--color--white-48);
+  --color-use--text-secondary-hex: var(--color--white-48-hex);
+  --color-use--text-negative: var(--color--white-24);
+  --color-use--text-negative-hex: var(--color--white-24-hex);
+  --color-use--text-prime-inverse: var(--color--gray-88);
+
+  // bg
+  --color-use--bg-prime-hex: var(--color--white-8-hex);
+  --color-use--bg-prime: var(--color--white-8);
+  --color-use--bg-secondary: var(--color--white-2);
+  --color-use--bg-secondary-hex: var(--color--white-12-hex);
+  --color-use--bg-darken: var(--color--white-6);
+  --color-use--bg-prime-hex-inverse: var(--color--gray-0-hex);
+  --color-use--bg-prime-inverse: var(--color--white-0);
+  --color-use--bg-secondary-inverse: var(--color--gray-2);
+  --color-use--bg-secondary-hex-inverse: var(--color--gray-2-hex);
+
+  // border
+  --color-use--border-prime-hex: var(--color--white-6);
+  --color-use--border-prime: var(--color--white-6);
+  --color-use--border-emphasis: var(--color--white-12);
+  --color-use--border-emphasis-hex: var(--color--white-12-hex);
+  --color-use--border-focus: var(--color--white-16);
+  --color-use--border-focus-hex: var(--color--white-16-hex);
+
+  // hover-overlay
+  --color-use--hover-overlay-hover: var(--color--white-4);
+  --color-use--hover-overlay-mouse-down: var(--color--white-6);
+
+  // in-components
+  --color-use--in-components-switch-thumb-bg: var(--color--white-100-hex);
+  --color-use--in-components-switch-rail-bg-normal: var(--color--white-24);
+  --color-use--in-components-switch-thumb-bg-active: var(--color--gray-88-hex);
+  --color-use--in-components-switch-rail-bg-normal-active: var(--color--white-80);
+  --color-use--in-components-button-text-color-in-fill-mode: var(--color--gray-88);
+  --color-use--in-components-button-bg-color-in-fill-mode: var(--color-use--text-prime);
+  // status / accent / grid
+  --color-use--danger: #f87171;
+  --color-use--danger-soft: rgba(248, 113, 113, 0.12);
+  --color-use--danger-border: rgba(248, 113, 113, 0.45);
+  --color-use--danger-fg: #fecaca;
+  --color-use--danger-bg: rgba(248, 113, 113, 0.16);
+  --color-use--warn-fg: #fcd34d;
+  --color-use--warn-bg: rgba(251, 191, 36, 0.14);
+  --color-use--warn-border: rgba(251, 191, 36, 0.4);
+  --color-use--warn-strong: #fb923c;
+  --color-use--success: #4ade80;
+  --color-use--success-strong: #4ade80;
+  --color-use--success-fg: #86efac;
+  --color-use--success-soft: rgba(74, 222, 128, 0.12);
+  --color-use--success-border: rgba(74, 222, 128, 0.45);
+  --color-use--accent: #60a5fa;
+  --color-use--accent-text: #7dd3fc;
+  --color-use--accent-bg: rgba(125, 211, 252, 0.18);
+  --color-use--on-inverse-action: var(--color--sky-40);
+  --color-use--on-inverse-action-hover: var(--color--sky-30);
+  // Timeline / roadmap grid — soft hierarchy: weekend < day tick < unit edge
+  --color-use--grid-line: var(--color--white-12);
+  --color-use--grid-line-soft: var(--color--white-6);
+  --color-use--grid-weekend: var(--color--white-2);
+  // terminal (follows app theme)
+  --color-use--terminal-bg: var(--color-use--bg-prime-hex);
+  --color-use--terminal-fg: var(--color-use--text-prime-hex);
+  --color-use--terminal-toolbar: var(--color-use--bg-secondary-hex);
+  --color-use--terminal-border: var(--color-use--border-emphasis-hex);
+  --color-use--terminal-tab: var(--color-use--bg-darken);
+  --color-use--terminal-tab-active: var(--color-use--bg-darken);
+  --color-use--terminal-tab-active-border: var(--color-use--accent);
+  --color-use--terminal-muted: var(--color-use--text-secondary-hex);
+}
+
+// 3. Auto — default light when `data-theme` is unset (incl. no-preference); dark overrides below
+:root:not([data-theme]) {
+  color-scheme: light;
+
+  // text
+  --color-use--text-prime: var(--color--gray-88);
+  --color-use--text-prime-hex: var(--color--gray-88-hex);
+  --color-use--text-secondary: var(--color--gray-48);
+  --color-use--text-secondary-hex: var(--color--gray-48-hex);
+  --color-use--text-negative: var(--color--gray-24);
+  --color-use--text-negative-hex: var(--color--gray-24-hex);
+  --color-use--text-prime-inverse: var(--color--white-88);
+
+  // bg
+  --color-use--bg-prime-hex: var(--color--gray-0-hex);
+  --color-use--bg-prime: var(--color--gray-0);
+  --color-use--bg-secondary: var(--color--gray-2);
+  --color-use--bg-secondary-hex: var(--color--gray-2-hex);
+  --color-use--bg-darken: var(--color--gray-6);
+  --color-use--bg-prime-hex-inverse: var(--color--white-8-hex);
+  --color-use--bg-prime-inverse: var(--color--gray-92);
+  --color-use--bg-secondary-inverse: var(--color--white-2);
+  --color-use--bg-secondary-hex-inverse: var(--color--white-8-hex);
+
+  // border
+  --color-use--border-prime-hex: var(--color--gray-6-hex);
+  --color-use--border-prime: var(--color--gray-6);
+  --color-use--border-emphasis: var(--color--gray-12);
+  --color-use--border-emphasis-hex: var(--color--gray-12-hex);
+  --color-use--border-focus: var(--color--gray-16);
+  --color-use--border-focus-hex: var(--color--gray-16-hex);
+
+  // hover-overlay
+  --color-use--hover-overlay-hover: var(--color--gray-4);
+  --color-use--hover-overlay-mouse-down: var(--color--gray-6);
+
+  // in-components
+  --color-use--in-components-switch-thumb-bg: var(--color--white-100-hex);
+  --color-use--in-components-switch-rail-bg-normal: var(--color--gray-12);
+  --color-use--in-components-switch-thumb-bg-active: var(--color--white-100-hex);
+  --color-use--in-components-switch-rail-bg-normal-active: var(--color--gray-88-hex);
+  --color-use--in-components-button-text-color-in-fill-mode: var(--color--white-100-hex);
+  --color-use--in-components-button-bg-color-in-fill-mode: var(--color--gray-88-hex);
+  // status / accent / grid
+  --color-use--danger: var(--color--red-60);
+  --color-use--danger-soft: var(--color--red-04);
+  --color-use--danger-border: var(--color--red-20);
+  --color-use--danger-fg: var(--color--red-70);
+  --color-use--danger-bg: var(--color--red-08);
+  --color-use--warn-fg: var(--color--amber-70);
+  --color-use--warn-bg: var(--color--amber-08);
+  --color-use--warn-border: var(--color--amber-30);
+  --color-use--warn-strong: var(--color--amber-50);
+  --color-use--success: var(--color--green-60);
+  --color-use--success-strong: var(--color--green-50);
+  --color-use--success-fg: var(--color--green-70);
+  --color-use--success-soft: var(--color--green-08);
+  --color-use--success-border: var(--color--green-30);
+  --color-use--accent: var(--color--blue-50);
+  --color-use--accent-text: var(--color--blue-40);
+  --color-use--accent-bg: var(--color--sky-30);
+  --color-use--on-inverse-action: var(--color--sky-40);
+  --color-use--on-inverse-action-hover: var(--color--sky-30);
+  // Timeline / roadmap grid — soft hierarchy: weekend < day tick < unit edge
+  --color-use--grid-line: var(--color--gray-12);
+  --color-use--grid-line-soft: var(--color--gray-6);
+  --color-use--grid-weekend: var(--color--gray-2);
+  // terminal (follows app theme)
+  --color-use--terminal-bg: var(--color-use--bg-prime-hex);
+  --color-use--terminal-fg: var(--color-use--text-prime-hex);
+  --color-use--terminal-toolbar: var(--color-use--bg-secondary-hex);
+  --color-use--terminal-border: var(--color-use--border-emphasis-hex);
+  --color-use--terminal-tab: var(--color-use--bg-darken);
+  --color-use--terminal-tab-active: var(--color-use--bg-darken);
+  --color-use--terminal-tab-active-border: var(--color-use--accent);
+  --color-use--terminal-muted: var(--color-use--text-secondary-hex);
+}
+
+// 4. Auto — dark (OS prefers dark, no explicit data-theme)
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+
+    // text
+    --color-use--text-prime: var(--color--white-88);
+    --color-use--text-prime-hex: var(--color--white-88-hex);
+    --color-use--text-secondary: var(--color--white-48);
+    --color-use--text-secondary-hex: var(--color--white-48-hex);
+    --color-use--text-negative: var(--color--white-24);
+    --color-use--text-negative-hex: var(--color--white-24-hex);
+    --color-use--text-prime-inverse: var(--color--gray-88);
+
+    // bg
+    --color-use--bg-prime-hex: var(--color--white-8-hex);
+    --color-use--bg-prime: var(--color--white-8);
+    --color-use--bg-secondary: var(--color--white-2);
+    --color-use--bg-secondary-hex: var(--color--white-12-hex);
+    --color-use--bg-darken: var(--color--white-6);
+    --color-use--bg-prime-hex-inverse: var(--color--gray-0-hex);
+    --color-use--bg-prime-inverse: var(--color--white-0);
+    --color-use--bg-secondary-inverse: var(--color--gray-2);
+    --color-use--bg-secondary-hex-inverse: var(--color--gray-2-hex);
+
+    // border
+    --color-use--border-prime-hex: var(--color--white-6);
+    --color-use--border-prime: var(--color--white-6);
+    --color-use--border-emphasis: var(--color--white-12);
+    --color-use--border-emphasis-hex: var(--color--white-12-hex);
+    --color-use--border-focus: var(--color--white-16);
+    --color-use--border-focus-hex: var(--color--white-16-hex);
+
+    // hover-overlay
+    --color-use--hover-overlay-hover: var(--color--white-4);
+    --color-use--hover-overlay-mouse-down: var(--color--white-6);
+
+    // in-components
+    --color-use--in-components-switch-thumb-bg: var(--color--white-100-hex);
+    --color-use--in-components-switch-rail-bg-normal: var(--color--white-24);
+    --color-use--in-components-switch-thumb-bg-active: var(--color--gray-88-hex);
+    --color-use--in-components-switch-rail-bg-normal-active: var(--color--white-80);
+    --color-use--in-components-button-text-color-in-fill-mode: var(--color--gray-88);
+    --color-use--in-components-button-bg-color-in-fill-mode: var(--color-use--text-prime);
+    // status / accent / grid
+    --color-use--danger: #f87171;
+    --color-use--danger-soft: rgba(248, 113, 113, 0.12);
+    --color-use--danger-border: rgba(248, 113, 113, 0.45);
+    --color-use--danger-fg: #fecaca;
+    --color-use--danger-bg: rgba(248, 113, 113, 0.16);
+    --color-use--warn-fg: #fcd34d;
+    --color-use--warn-bg: rgba(251, 191, 36, 0.14);
+    --color-use--warn-border: rgba(251, 191, 36, 0.4);
+    --color-use--warn-strong: #fb923c;
+    --color-use--success: #4ade80;
+    --color-use--success-strong: #4ade80;
+    --color-use--success-fg: #86efac;
+    --color-use--success-soft: rgba(74, 222, 128, 0.12);
+    --color-use--success-border: rgba(74, 222, 128, 0.45);
+    --color-use--accent: #60a5fa;
+    --color-use--accent-text: #7dd3fc;
+    --color-use--accent-bg: rgba(125, 211, 252, 0.18);
+    --color-use--on-inverse-action: var(--color--sky-40);
+    --color-use--on-inverse-action-hover: var(--color--sky-30);
+    // Timeline / roadmap grid — soft hierarchy: weekend < day tick < unit edge
+    --color-use--grid-line: var(--color--white-12);
+    --color-use--grid-line-soft: var(--color--white-6);
+    --color-use--grid-weekend: var(--color--white-2);
+    // terminal (follows app theme)
+    --color-use--terminal-bg: var(--color-use--bg-prime-hex);
+    --color-use--terminal-fg: var(--color-use--text-prime-hex);
+    --color-use--terminal-toolbar: var(--color-use--bg-secondary-hex);
+    --color-use--terminal-border: var(--color-use--border-emphasis-hex);
+    --color-use--terminal-tab: var(--color-use--bg-darken);
+    --color-use--terminal-tab-active: var(--color-use--bg-darken);
+    --color-use--terminal-tab-active-border: var(--color-use--accent);
+    --color-use--terminal-muted: var(--color-use--text-secondary-hex);
+  }
+}
+
+/* Body surface/text defaults; font-family stays in font.scss. */
+body {
+  background: var(--color-use--bg-prime-hex);
+  color: var(--color-use--text-prime);
+}
+
+a {
+  color: inherit;
+}

@@ -1,0 +1,13 @@
+/**
+ * Spacing scale for chrome / shell (layout foundation).
+ * Prefer these over ad-hoc rem/px in workspace shell SCSS.
+ */
+:root {
+  --space--4: 4px;
+  --space--8: 8px;
+  --space--12: 12px;
+  --space--16: 16px;
+  --space--20: 20px;
+  --space--24: 24px;
+  --space--28: 28px;
+}

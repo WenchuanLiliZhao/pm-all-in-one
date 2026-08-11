@@ -1,0 +1,24 @@
+.field {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--color-use--border-emphasis-hex);
+  border-radius: 4px;
+  background: var(--color-use--bg-prime-hex);
+  color: var(--color-use--text-prime);
+  font-family: var(--font-family-mono);
+  font-size: inherit;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+.field:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.field:focus-visible {
+  outline: 2px solid var(--color-use--border-focus-hex);
+  outline-offset: 1px;
+}

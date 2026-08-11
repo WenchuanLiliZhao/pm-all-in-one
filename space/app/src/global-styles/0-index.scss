@@ -1,0 +1,17 @@
+/**
+ * pm-all-in-one global stylesheet (self-contained under this directory).
+ */
+@forward "1-reset";
+@forward "color";
+@forward "color-use";
+@forward "shadow";
+@forward "font";
+@forward "icon";
+@forward "z-index";
+@forward "space";
+@forward "layout";
+
+code {
+  font-family: var(--font-family-mono);
+  font-size: 12px;
+}

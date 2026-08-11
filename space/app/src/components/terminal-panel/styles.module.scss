@@ -1,0 +1,94 @@
+/**
+ * Terminal panel chrome.
+ * ↔ src/global-styles/seams.md — terminal rail dialect (S10)
+ * ↔ pages/channels/workspace-page/styles.module.scss — `.terminal`
+ */
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--color-use--terminal-bg);
+  color: var(--color-use--terminal-fg);
+}
+
+.toolbar {
+  display: flex;
+  gap: var(--space--8);
+  padding: var(--space--4) var(--space--8);
+  background: var(--color-use--terminal-toolbar);
+  border-bottom: 1px solid var(--color-use--terminal-border);
+  flex-shrink: 0;
+}
+
+.tabs {
+  display: flex;
+  gap: var(--space--4);
+  align-items: center;
+}
+
+.tabs button {
+  font-size: 12px;
+}
+
+.tab {
+  border: 1px solid transparent;
+  background: var(--color-use--terminal-tab);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  /* Was 0.2rem 0.45rem (3.2/7.2) → 4/8 */
+  padding: var(--space--4) var(--space--8);
+  border-radius: 4px;
+}
+
+.tabActive {
+  border: 1px solid var(--color-use--terminal-tab-active-border);
+  background: var(--color-use--terminal-tab-active);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  padding: var(--space--4) var(--space--8);
+  border-radius: 4px;
+}
+
+.tabClose {
+  margin-left: var(--space--4);
+  opacity: 0.7;
+}
+
+.hostWrap {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  background: var(--color-use--terminal-bg);
+}
+
+.host {
+  height: 100%;
+  padding: var(--space--4);
+  position: relative;
+}
+
+.termSession {
+  position: absolute;
+  inset: var(--space--4);
+  height: auto;
+}
+
+.host :global(.xterm) {
+  height: 100%;
+}
+
+.empty {
+  color: var(--color-use--terminal-muted);
+  display: grid;
+  place-content: center;
+  position: absolute;
+  inset: 0;
+  gap: var(--space--8);
+  text-align: center;
+  z-index: 1;
+  background: var(--color-use--terminal-bg);
+}

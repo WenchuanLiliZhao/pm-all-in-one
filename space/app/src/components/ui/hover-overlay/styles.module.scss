@@ -1,0 +1,17 @@
+/**
+ * Base overlay layer — parent SCSS drives hover/active opacity on this class.
+ */
+.hover-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background-color: currentcolor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}

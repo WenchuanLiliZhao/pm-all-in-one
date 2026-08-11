@@ -1,0 +1,80 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.meta {
+  color: var(--color-use--text-secondary);
+  font-size: 0.85rem;
+  margin-left: 0.25rem;
+}
+
+.fixtures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.fixturesLabel {
+  color: var(--color-use--text-secondary);
+  font-size: 0.85rem;
+  margin-right: 0.25rem;
+}
+
+.fixtureTab,
+.fixtureTabActive {
+  border: 1px solid var(--color-use--border-emphasis-hex);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+}
+
+.fixtureTabActive {
+  background: var(--color-use--border-prime-hex);
+  font-weight: 600;
+}
+
+.fixtureTab:hover {
+  background: var(--color-use--bg-darken);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.desc {
+  margin: 0 0 0.75rem;
+  color: var(--color-use--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.log {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  min-height: 4.5rem;
+  border: 1px solid var(--color-use--border-emphasis-hex);
+  border-radius: 6px;
+  background: var(--color-use--bg-secondary-hex);
+  font-family: var(--font-family-mono);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow: auto;
+}
+
+.logEmpty {
+  color: var(--color-use--text-secondary);
+}

@@ -1,0 +1,138 @@
+/**
+ * Members inventory — fills WikiShell PageWidth full + `.mainBodyFull`.
+ * ↔ components/wiki-shell/styles.module.scss — `.mainBodyFull` / `.mainFull`
+ * ↔ components/ui/page-width — `width="full"` + padded
+ * ↔ pages/channels/workspace-page/route.tsx — `MembersAllPagesView`
+ * ↔ src/global-styles/seams.md — inherits page pad left edge
+ */
+.root {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  padding: 0 0 var(--space--4);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space--16);
+  margin-bottom: var(--space--16);
+  flex-shrink: 0;
+}
+
+.title {
+  margin: 0 0 var(--space--4);
+  font-size: 1.35rem;
+  font-weight: 650;
+  color: var(--color-use--text-prime);
+}
+
+.sub {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-use--text-secondary);
+  max-width: 42rem;
+  line-height: 1.45;
+}
+
+.headerAction {
+  flex-shrink: 0;
+}
+
+.error {
+  color: var(--color-use--danger);
+  font-size: 0.88rem;
+  flex-shrink: 0;
+}
+
+.empty {
+  color: var(--color-use--text-negative);
+  font-size: 0.9rem;
+  margin: var(--space--16) 0;
+  flex-shrink: 0;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--color-use--border-prime-hex);
+  border-radius: 8px;
+  background: var(--color-use--bg-prime-hex);
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space--12);
+  width: 100%;
+  /* Was 0.7rem 0.9rem (11.2/14.4) → 12/16 */
+  padding: var(--space--12) var(--space--16);
+  border: none;
+  border-bottom: 1px solid var(--color-use--border-prime-hex);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: var(--color-use--text-prime);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.row:hover {
+  background: var(--color-use--bg-secondary-hex);
+}
+
+.rowLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--space--8);
+  min-width: 0;
+}
+
+.rowTitle {
+  font-weight: 550;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowLefted {
+  color: var(--color-use--text-negative);
+}
+
+.rowLefted .rowTitle {
+  color: var(--color-use--text-negative);
+}
+
+.badge {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  /* Was 0.15rem 0.5rem (2.4/8) → 4/8 */
+  padding: var(--space--4) var(--space--8);
+  border-radius: 999px;
+  border: 1px solid var(--color-use--border-emphasis-hex);
+  color: var(--color-use--text-secondary);
+  background: var(--color-use--bg-secondary-hex);
+}
+
+.badgeInvolved {
+  border-color: var(--color-use--success-border);
+  background: var(--color-use--success-soft);
+  color: var(--color-use--success-fg);
+}
+
+.badgeLeft {
+  opacity: 0.85;
+}

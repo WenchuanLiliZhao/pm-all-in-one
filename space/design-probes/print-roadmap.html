@@ -1,0 +1,1215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>pm-all-in-one — roadmap sheet (print probe)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..700;1,6..72,200..700&family=Playfair+Display:ital,wght@0,400..700;1,400..600&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+  rel="stylesheet"
+/>
+<style>
+/* ============================================================
+   Print probe — “editorial / ink” direction for local-pm.
+   Static only. No interaction, no dark mode, no elevation.
+   Geometry law: zero radius, zero shadow, hairline rules only.
+   Hue budget: one spot colour, spent on “now”.
+   ============================================================ */
+
+:root {
+  /* ground */
+  --paper:        #f7f3ea;
+  --paper-band:   #f1ece0;
+  --paper-plate:  #efe9db;
+
+  /* ink */
+  --ink:          #191710;
+  --ink-80:       rgba(25, 23, 16, 0.80);
+  --ink-62:       rgba(25, 23, 16, 0.62);
+  --ink-45:       rgba(25, 23, 16, 0.45);
+  --ink-30:       rgba(25, 23, 16, 0.30);
+  --ink-18:       rgba(25, 23, 16, 0.18);
+
+  /* rules */
+  --rule:         rgba(25, 23, 16, 0.26);
+  --rule-mid:     rgba(25, 23, 16, 0.15);
+  --rule-soft:    rgba(25, 23, 16, 0.085);
+
+  /* the only hue */
+  --spot:         #a8331a;
+  --spot-soft:    rgba(168, 51, 26, 0.14);
+
+  /* type */
+  --display: "Playfair Display", "Times New Roman", Times, serif;
+  --text:    "Newsreader", Georgia, "Times New Roman", serif;
+  --mono:    "IBM Plex Mono", ui-monospace, Menlo, monospace;
+
+  /* metrics */
+  --rail-w:  280px;
+  --unit-w:  80px;
+  --track-w: 800px;
+  --row-h:   34px;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--text);
+  font-size: 17px;
+  line-height: 1.62;
+  font-optical-sizing: auto;
+}
+
+/* Extremely faint press grain. One fixed layer — never repaints on scroll. */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.038;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.page {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 44px 30px 96px;
+}
+
+/* ---------- shared typographic devices ---------- */
+
+.sc {
+  font-family: var(--text);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.135em;
+  text-transform: uppercase;
+  color: var(--ink-62);
+}
+
+.mono {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.rule-double {
+  border-top: 2.5px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  height: 4px;
+  margin: 14px 0 0;
+}
+
+.rule-hair { height: 1px; background: var(--rule); }
+
+/* ---------- masthead ---------- */
+
+.masthead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 40px;
+}
+
+.mh-kicker {
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-62);
+  margin-bottom: 8px;
+}
+
+.mh-title {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 46px;
+  line-height: 0.98;
+  letter-spacing: -0.018em;
+  margin: 0;
+}
+
+.mh-right {
+  text-align: right;
+  padding-bottom: 5px;
+}
+
+.mh-right div {
+  font-family: var(--text);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.135em;
+  text-transform: uppercase;
+  color: var(--ink-62);
+  line-height: 1.85;
+  white-space: nowrap;
+}
+
+.mh-right div:first-child { color: var(--ink-80); }
+
+/* ---------- plate header (chart title + controls) ---------- */
+
+.plate-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 30px;
+  margin: 30px 0 12px;
+}
+
+.plate-title {
+  font-family: var(--display);
+  font-size: 21px;
+  font-weight: 500;
+  letter-spacing: 0.005em;
+  margin: 0;
+}
+
+.plate-sub {
+  font-size: 13.5px;
+  font-style: italic;
+  color: var(--ink-62);
+  margin: 3px 0 0;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+  padding-bottom: 2px;
+}
+
+.btn-today {
+  font-family: var(--text);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.135em;
+  text-transform: uppercase;
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  padding: 5px 11px 4px;
+  background: transparent;
+}
+
+.zooms { display: flex; align-items: baseline; gap: 0; }
+
+.zoom {
+  font-family: var(--text);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.135em;
+  text-transform: uppercase;
+  color: var(--ink-45);
+  padding: 4px 0 3px;
+}
+
+.zoom + .zoom::before {
+  content: "·";
+  color: var(--ink-30);
+  margin: 0 9px;
+  letter-spacing: 0;
+}
+
+.zoom-on {
+  color: var(--spot);
+  border-bottom: 1.5px solid var(--spot);
+}
+
+/* ---------- chart ---------- */
+
+.chart-wrap { overflow-x: auto; }
+
+.chart {
+  width: calc(var(--rail-w) + var(--track-w));
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+}
+
+.chart-head { display: flex; background: var(--paper-band); }
+
+.corner {
+  width: var(--rail-w);
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 12px 5px;
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--ink);
+}
+
+.ruler-stack { flex-shrink: 0; width: var(--track-w); }
+
+.coarse {
+  display: flex;
+  height: 20px;
+  border-bottom: 1px solid var(--rule-mid);
+  background: var(--paper-plate);
+}
+
+.coarse-cell {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  border-right: 1px solid var(--rule-mid);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-62);
+}
+
+.coarse-cell:last-child { border-right: none; }
+
+.ruler {
+  position: relative;
+  display: flex;
+  height: 26px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.month {
+  width: var(--unit-w);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.19em;
+  text-transform: uppercase;
+  color: var(--ink-80);
+  border-right: 1px solid var(--rule-soft);
+}
+
+.month:last-child { border-right: none; }
+
+.chart-body { display: flex; }
+
+/* --- label rail --- */
+
+.rail {
+  width: var(--rail-w);
+  flex-shrink: 0;
+  border-right: 1px solid var(--rule);
+  background: var(--paper);
+}
+
+.rail-row {
+  height: var(--row-h);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 0 12px 0 12px;
+  border-bottom: 1px solid var(--rule-soft);
+  position: relative;
+}
+
+.rail-row:last-child { border-bottom: none; }
+
+.num {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  color: var(--ink-45);
+  flex-shrink: 0;
+  min-width: 15px;
+  letter-spacing: 0.02em;
+  position: relative;
+  top: -1px;
+}
+
+.title {
+  font-size: 13.5px;
+  line-height: 1;
+  color: var(--ink);
+  white-space: nowrap;
+  flex-shrink: 0;
+  max-width: 172px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.leader {
+  flex: 1 1 auto;
+  min-width: 6px;
+  border-bottom: 1px dotted var(--ink-30);
+  position: relative;
+  top: -3px;
+}
+
+.stat {
+  flex-shrink: 0;
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-45);
+  position: relative;
+  top: -1px;
+}
+
+/* level → indent + weight */
+.lv-epic { padding-left: 10px; }
+.lv-epic .title { font-size: 14.5px; font-weight: 600; letter-spacing: -0.004em; }
+.lv-epic .num   { color: var(--ink-80); font-weight: 600; }
+
+.lv-task { padding-left: 26px; }
+.lv-task .title { font-weight: 450; }
+
+.lv-subtask { padding-left: 44px; }
+.lv-subtask .title { font-size: 12.5px; color: var(--ink-80); }
+.lv-subtask .num,
+.lv-subtask .stat { font-size: 8.5px; }
+
+/* selection: a marginal rule + roman emphasis, no tint pill */
+.is-open { background: var(--spot-soft); }
+.is-open::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2.5px;
+  background: var(--spot);
+}
+.is-open .title { font-weight: 600; }
+.is-open .stat  { color: var(--spot); }
+
+/* --- track --- */
+
+.track {
+  position: relative;
+  width: var(--track-w);
+  flex-shrink: 0;
+  background-image:
+    /* quarter rules */
+    linear-gradient(to right, var(--rule-mid) 0 1px, transparent 1px),
+    /* month rules */
+    repeating-linear-gradient(to right, var(--rule-soft) 0 1px, transparent 1px var(--unit-w));
+  background-size: 240px 100%, auto;
+  background-position: 0 0, 0 0;
+  background-repeat: repeat-x, repeat;
+}
+
+.track-row {
+  height: var(--row-h);
+  border-bottom: 1px solid var(--rule-soft);
+  position: relative;
+}
+
+.track-row:last-child { border-bottom: none; }
+
+.track-row.is-open { background: var(--spot-soft); }
+.track-row.is-open::before { content: none; }
+
+.today {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 1px;
+  background: var(--spot);
+  z-index: 2;
+}
+
+/* --- bars: status by treatment, not by hue --- */
+
+.bar { position: absolute; z-index: 3; }
+
+.bar.epic { height: 13px; top: 10px; }
+.bar.task { height: 9px;  top: 12px; }
+.bar.subtask   { height: 7px;  top: 13px; }
+
+/* not yet drawn */
+.st-draft { border: 1px dashed var(--ink-45); background: transparent; }
+
+/* drawn, not inked */
+.st-todo { border: 1px solid var(--ink-80); background: transparent; }
+
+/* the live thing — the one place hue is spent */
+.st-progress { background: var(--spot); border: none; }
+
+/* set in ink */
+.st-done { background: var(--ink); border: none; }
+
+/* struck from the plate */
+.st-cancel {
+  border: 1px solid var(--ink-30);
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--ink-18) 0 1px,
+    transparent 1px 5px
+  );
+}
+.st-cancel::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  height: 1px;
+  background: var(--ink-30);
+}
+
+/* open end — the bar dissolves into a dotted leader */
+.open-end {
+  position: absolute;
+  height: 1px;
+  border-top: 1px dotted var(--ink-45);
+  z-index: 3;
+}
+.open-end::after {
+  content: "→";
+  position: absolute;
+  right: -13px;
+  top: -9px;
+  font-size: 12px;
+  color: var(--ink-45);
+  line-height: 1;
+}
+
+.nodate {
+  position: absolute;
+  left: 10px;
+  top: 9px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--ink-30);
+  letter-spacing: 0.08em;
+}
+
+/* --- chart footer: axis annotation --- */
+
+.chart-foot {
+  display: flex;
+  border-top: 1px solid var(--ink);
+  background: var(--paper-band);
+}
+
+.foot-corner {
+  width: var(--rail-w);
+  flex-shrink: 0;
+  border-right: 1px solid var(--rule);
+  padding: 4px 12px 5px;
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-45);
+}
+
+.foot-track {
+  position: relative;
+  width: var(--track-w);
+  flex-shrink: 0;
+  height: 21px;
+}
+
+.foot-today {
+  position: absolute;
+  top: 4px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--spot);
+}
+
+.foot-today::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -5px;
+  width: 1px;
+  height: 4px;
+  background: var(--spot);
+}
+
+.legend-line {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  margin: 11px 0 0;
+  flex-wrap: wrap;
+}
+
+.legend-item { display: flex; align-items: center; gap: 8px; }
+
+.swatch { width: 30px; height: 8px; position: relative; flex-shrink: 0; }
+
+.legend-item span:last-child {
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-62);
+}
+
+/* ============================================================
+   The expanded issue — set as an article, not a form panel.
+   ============================================================ */
+
+.article-sep {
+  border-top: 1px solid var(--ink);
+  margin: 54px 0 0;
+  padding-top: 5px;
+  border-bottom: 2.5px solid var(--ink);
+  height: 4px;
+}
+
+.art {
+  display: grid;
+  grid-template-columns: 244px minmax(0, 1fr);
+  gap: 0 54px;
+  margin-top: 34px;
+}
+
+/* --- left column: props as a printed ledger --- */
+
+.props { border-top: 1px solid var(--rule); }
+
+.prop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0 6px;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.prop-k {
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-45);
+  flex-shrink: 0;
+}
+
+.prop-v {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  text-align: right;
+  word-break: break-all;
+}
+
+.prop-v.words {
+  font-family: var(--text);
+  font-size: 13px;
+  word-break: normal;
+}
+
+.prop-v .now { color: var(--spot); }
+
+.props-head {
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-80);
+  padding-bottom: 7px;
+}
+
+.aside-note {
+  margin-top: 22px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--ink-62);
+}
+
+/* --- right column: the body --- */
+
+.art-kicker {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 7px;
+}
+
+.art-kicker .k {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--spot);
+}
+
+.art-kicker .saved {
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-45);
+}
+
+.art-title {
+  font-family: var(--display);
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 1.07;
+  letter-spacing: -0.014em;
+  margin: 18px 0 0;
+  max-width: 15em;
+}
+
+.art-dek {
+  font-size: 19px;
+  font-style: italic;
+  line-height: 1.48;
+  color: var(--ink-80);
+  margin: 14px 0 0;
+  max-width: 32em;
+}
+
+.art-byline {
+  margin: 20px 0 0;
+  padding: 7px 0 0;
+  border-top: 1px solid var(--rule-soft);
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-45);
+}
+
+.art-byline .sep { color: var(--ink-30); margin: 0 8px; }
+.art-byline .live { color: var(--spot); }
+
+/* Opaque nanoids are case-sensitive — never let small caps uppercase them. */
+.art-byline .mono { text-transform: none; letter-spacing: 0.04em; }
+
+.body-copy { max-width: 34.5em; margin-top: 26px; }
+
+.body-copy p { margin: 0; text-indent: 1.35em; }
+.body-copy p.lead,
+.body-copy p.flush { text-indent: 0; }
+
+.body-copy p.lead::first-letter {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 61px;
+  line-height: 0.78;
+  float: left;
+  padding: 6px 8px 0 0;
+  color: var(--ink);
+}
+
+.body-copy h3 {
+  font-family: var(--text);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin: 28px 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.body-copy code {
+  font-family: var(--mono);
+  font-size: 0.845em;
+  color: var(--ink);
+  background: rgba(25, 23, 16, 0.055);
+  padding: 0 0.28em;
+}
+
+.body-copy em { font-style: italic; }
+.body-copy strong { font-weight: 600; }
+
+blockquote {
+  margin: 24px 0 24px 1.6em;
+  padding: 0;
+  font-size: 18px;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--ink-80);
+  max-width: 26em;
+  text-indent: -0.42em;
+}
+
+blockquote cite {
+  display: block;
+  margin-top: 9px;
+  font-style: normal;
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-45);
+  text-indent: 0;
+}
+
+/* hanging-indent list — no bullets, em-rule markers */
+.hang { list-style: none; margin: 14px 0 0; padding: 0; max-width: 33em; }
+
+.hang li {
+  position: relative;
+  padding-left: 1.5em;
+  margin-bottom: 9px;
+}
+
+.hang li::before {
+  content: "—";
+  position: absolute;
+  left: 0;
+  color: var(--ink-45);
+}
+
+/* --- figure: the status plate --- */
+
+figure {
+  margin: 30px 0 0;
+  max-width: 34.5em;
+  border-top: 1px solid var(--ink);
+}
+
+.fig-row {
+  display: grid;
+  grid-template-columns: 84px 108px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.fig-swatch { position: relative; height: 9px; }
+
+.fig-name {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.fig-desc { font-size: 14.5px; line-height: 1.42; color: var(--ink-80); }
+
+figcaption {
+  margin-top: 10px;
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--ink-62);
+}
+
+figcaption b {
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  font-size: 9px;
+  color: var(--ink);
+  margin-right: 7px;
+}
+
+/* --- folio --- */
+
+.folio {
+  margin: 46px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--ink);
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-45);
+}
+</style>
+</head>
+<body>
+
+<div class="grain" aria-hidden="true"></div>
+
+<div class="page">
+
+  <!-- ============ masthead ============ -->
+  <header class="masthead">
+    <div>
+      <div class="mh-kicker">Local-first project manager &middot; workspace</div>
+      <h1 class="mh-title">pm-all-in-one</h1>
+    </div>
+    <div class="mh-right">
+      <div>Thursday, July 30, 2026</div>
+      <div>Vol. I &middot; No. 14</div>
+      <div>Sheet 1 &mdash; Roadmap</div>
+    </div>
+  </header>
+  <div class="rule-double"></div>
+
+  <!-- ============ plate: the roadmap ============ -->
+  <div class="plate-head">
+    <div>
+      <h2 class="plate-title">Plate I &mdash; Schedule</h2>
+      <p class="plate-sub">Three epics, fourteen tasks and subtasks, April 2026 through January 2027.</p>
+    </div>
+    <div class="controls">
+      <span class="btn-today">Today</span>
+      <span class="zooms">
+        <span class="zoom">Week</span>
+        <span class="zoom zoom-on">Month</span>
+        <span class="zoom">Quarter</span>
+      </span>
+    </div>
+  </div>
+
+  <div class="chart-wrap">
+    <div class="chart">
+
+      <!-- ruler -->
+      <div class="chart-head">
+        <div class="corner">
+          <span class="sc">Issue</span>
+          <span class="sc">Status</span>
+        </div>
+        <div class="ruler-stack">
+          <div class="coarse">
+            <div class="coarse-cell" style="width:240px">Q2 2026</div>
+            <div class="coarse-cell" style="width:240px">Q3 2026</div>
+            <div class="coarse-cell" style="width:240px">Q4 2026</div>
+            <div class="coarse-cell" style="width:80px">Q1 2027</div>
+          </div>
+          <div class="ruler">
+            <div class="month">Apr</div>
+            <div class="month">May</div>
+            <div class="month">Jun</div>
+            <div class="month">Jul</div>
+            <div class="month">Aug</div>
+            <div class="month">Sep</div>
+            <div class="month">Oct</div>
+            <div class="month">Nov</div>
+            <div class="month">Dec</div>
+            <div class="month">Jan</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-body">
+
+        <!-- label rail -->
+        <div class="rail">
+          <div class="rail-row lv-epic">
+            <span class="num">I</span><span class="title">Editorial visual system</span>
+            <span class="leader"></span><span class="stat">In progress</span>
+          </div>
+          <div class="rail-row lv-task">
+            <span class="num">1</span><span class="title">Geometry &amp; rule tokens</span>
+            <span class="leader"></span><span class="stat">Done</span>
+          </div>
+          <div class="rail-row lv-subtask">
+            <span class="num">a</span><span class="title">Extract radius tokens</span>
+            <span class="leader"></span><span class="stat">Done</span>
+          </div>
+          <div class="rail-row lv-subtask">
+            <span class="num">b</span><span class="title">Retire elevation shadows</span>
+            <span class="leader"></span><span class="stat">Done</span>
+          </div>
+          <div class="rail-row lv-task is-open">
+            <span class="num">2</span><span class="title">Paper &amp; ink palette</span>
+            <span class="leader"></span><span class="stat">In progress</span>
+          </div>
+          <div class="rail-row lv-subtask">
+            <span class="num">a</span><span class="title">Warm ground scale</span>
+            <span class="leader"></span><span class="stat">Done</span>
+          </div>
+          <div class="rail-row lv-subtask">
+            <span class="num">b</span><span class="title">Status without hue</span>
+            <span class="leader"></span><span class="stat">In progress</span>
+          </div>
+          <div class="rail-row lv-subtask">
+            <span class="num">c</span><span class="title">Spot colour policy</span>
+            <span class="leader"></span><span class="stat">Todo</span>
+          </div>
+          <div class="rail-row lv-task">
+            <span class="num">3</span><span class="title">Status vocabulary</span>
+            <span class="leader"></span><span class="stat">Todo</span>
+          </div>
+          <div class="rail-row lv-task">
+            <span class="num">4</span><span class="title">Dark plate theme</span>
+            <span class="leader"></span><span class="stat">Cancelled</span>
+          </div>
+          <div class="rail-row lv-task">
+            <span class="num">5</span><span class="title">Masthead &amp; folio</span>
+            <span class="leader"></span><span class="stat">Draft</span>
+          </div>
+          <div class="rail-row lv-epic">
+            <span class="num">II</span><span class="title">Roadmap engraving</span>
+            <span class="leader"></span><span class="stat">Todo</span>
+          </div>
+          <div class="rail-row lv-task">
+            <span class="num">1</span><span class="title">Hairline timeline ruler</span>
+            <span class="leader"></span><span class="stat">Todo</span>
+          </div>
+          <div class="rail-row lv-task">
+            <span class="num">2</span><span class="title">Bar textures by status</span>
+            <span class="leader"></span><span class="stat">Draft</span>
+          </div>
+          <div class="rail-row lv-task">
+            <span class="num">3</span><span class="title">Leader dots in the rail</span>
+            <span class="leader"></span><span class="stat">Draft</span>
+          </div>
+          <div class="rail-row lv-epic">
+            <span class="num">III</span><span class="title">Wiki as a contents page</span>
+            <span class="leader"></span><span class="stat">Draft</span>
+          </div>
+          <div class="rail-row lv-task">
+            <span class="num">1</span><span class="title">Curated contents</span>
+            <span class="leader"></span><span class="stat">Draft</span>
+          </div>
+        </div>
+
+        <!-- timeline -->
+        <div class="track">
+          <div class="today" style="left:315px" aria-hidden="true"></div>
+
+          <div class="track-row">
+            <div class="bar epic st-progress" style="left:88px;width:598px"></div>
+          </div>
+          <div class="track-row">
+            <div class="bar task st-done" style="left:106px;width:123px"></div>
+          </div>
+          <div class="track-row">
+            <div class="bar subtask st-done" style="left:106px;width:67px"></div>
+          </div>
+          <div class="track-row">
+            <div class="bar subtask st-done" style="left:179px;width:50px"></div>
+          </div>
+          <div class="track-row is-open">
+            <div class="bar task st-progress" style="left:235px;width:194px"></div>
+          </div>
+          <div class="track-row">
+            <div class="bar subtask st-done" style="left:235px;width:67px"></div>
+          </div>
+          <div class="track-row">
+            <div class="bar subtask st-progress" style="left:289px;width:103px"></div>
+          </div>
+          <div class="track-row">
+            <div class="bar subtask st-todo" style="left:397px;width:32px"></div>
+          </div>
+          <div class="track-row">
+            <div class="bar task st-todo" style="left:435px;width:141px"></div>
+          </div>
+          <div class="track-row">
+            <div class="bar task st-cancel" style="left:490px;width:123px"></div>
+          </div>
+          <div class="track-row">
+            <div class="bar task st-draft" style="left:619px;width:67px"></div>
+          </div>
+          <div class="track-row">
+            <div class="bar epic st-todo" style="left:416px;width:379px"></div>
+          </div>
+          <div class="track-row">
+            <div class="bar task st-todo" style="left:416px;width:141px"></div>
+          </div>
+          <div class="track-row">
+            <div class="bar task st-draft" style="left:563px;width:142px"></div>
+          </div>
+          <div class="track-row">
+            <div class="bar task st-draft" style="left:728px;width:67px"></div>
+          </div>
+          <div class="track-row">
+            <div class="bar epic st-draft" style="left:656px;width:56px"></div>
+            <div class="open-end" style="left:712px;width:56px;top:16px"></div>
+          </div>
+          <div class="track-row">
+            <span class="nodate">no dates</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- axis annotation -->
+      <div class="chart-foot">
+        <div class="foot-corner">17 rows &middot; month scale</div>
+        <div class="foot-track">
+          <span class="foot-today" style="left:315px">30 July</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend-line">
+    <span class="legend-item"><span class="swatch st-draft"></span><span>Draft</span></span>
+    <span class="legend-item"><span class="swatch st-todo"></span><span>Todo</span></span>
+    <span class="legend-item"><span class="swatch st-progress"></span><span>In progress</span></span>
+    <span class="legend-item"><span class="swatch st-done"></span><span>Done</span></span>
+    <span class="legend-item"><span class="swatch st-cancel"></span><span>Cancelled</span></span>
+  </div>
+
+  <!-- ============ the expanded issue ============ -->
+  <div class="article-sep"></div>
+
+  <div class="art">
+
+    <!-- props ledger -->
+    <aside>
+      <div class="props-head">Properties</div>
+      <div class="props">
+        <div class="prop"><span class="prop-k">Level</span><span class="prop-v words">task</span></div>
+        <div class="prop"><span class="prop-k">Status</span><span class="prop-v words"><span class="now">In progress</span></span></div>
+        <div class="prop"><span class="prop-k">Parent</span><span class="prop-v words">I &mdash; Editorial visual system</span></div>
+        <div class="prop"><span class="prop-k">Children</span><span class="prop-v">3</span></div>
+        <div class="prop"><span class="prop-k">Start</span><span class="prop-v">2026-06-29</span></div>
+        <div class="prop"><span class="prop-k">End</span><span class="prop-v">2026-09-11</span></div>
+        <div class="prop"><span class="prop-k">Estimate</span><span class="prop-v">8</span></div>
+        <div class="prop"><span class="prop-k">Created</span><span class="prop-v">2026-06-29T09:14:22Z</span></div>
+        <div class="prop"><span class="prop-k">Updated</span><span class="prop-v">2026-07-30T11:02:41Z</span></div>
+        <div class="prop"><span class="prop-k">Project</span><span class="prop-v">Kp3nR7wQz2LxV9aB1cDeF</span></div>
+        <div class="prop"><span class="prop-k">Issue</span><span class="prop-v">V1StGXR8_Z5jdHi6B-myT</span></div>
+        <div class="prop"><span class="prop-k">Assets</span><span class="prop-v">2 files</span></div>
+      </div>
+      <p class="aside-note">
+        Properties are read from <span class="mono" style="font-size:11.5px">props.ts</span>;
+        the body below is <span class="mono" style="font-size:11.5px">README.md</span>.
+        Both sit at <span class="mono" style="font-size:11.5px">issue-hierarchy/&lt;project&gt;/&lt;issue&gt;/</span>
+        and remain legible with no application running.
+      </p>
+    </aside>
+
+    <!-- the body -->
+    <article>
+      <div class="art-kicker">
+        <span class="k">Description &mdash; README.md</span>
+        <span class="saved">Saved 11:02</span>
+      </div>
+
+      <h1 class="art-title">Paper &amp; ink palette</h1>
+
+      <p class="art-dek">
+        The ground is warm, the ink is warm, and hue is spent exactly once.
+        Everything the old theme said with colour, this one says with weight,
+        rule, and texture.
+      </p>
+
+      <p class="art-byline">
+        Task
+        <span class="sep">&middot;</span>
+        <span class="mono">V1StGXR8_Z5jdHi6B-myT</span>
+        <span class="sep">&middot;</span>
+        <span class="live">In progress</span>
+        <span class="sep">&middot;</span>
+        29 Jun &ndash; 11 Sep 2026
+      </p>
+
+      <div class="body-copy">
+        <p class="lead">
+          Four theme blocks became one. The previous palette maintained light,
+          dark, auto-light and auto-dark variants of every semantic token, which
+          meant that any new colour was a four-way decision and that the app
+          carried two visual identities at once. A printed object has a single
+          ground. We keep one, warm it, and stop pretending that a sheet of paper
+          has a night mode.
+        </p>
+        <p>
+          The ink is not black and the paper is not white. Text sits at
+          <code>#191710</code>, a warm near-black that reads as pigment rather
+          than as screen; the ground is <code>#f7f3ea</code>, with two darker
+          bands reserved for ruler and plate areas. Every division that used to
+          be a one-pixel grey box is now a hairline rule at low alpha, and
+          <code>shadow.scss</code> is gone rather than re-valued — a page has no
+          z-axis, so elevation was never describing anything real.
+        </p>
+        <p>
+          That leaves the question this task exists to answer: with
+          <code>--color-use--danger</code>, <code>--warn</code>,
+          <code>--success</code> and <code>--accent</code> all retired, how does
+          a reader tell five statuses apart at a glance?
+        </p>
+
+        <blockquote>
+          “Issues are Markdown documents you own on disk. The aesthetic should
+          argue the thesis, not decorate it.”
+          <cite>Handoff &mdash; editorial direction</cite>
+        </blockquote>
+
+        <h3>What replaces the four hues</h3>
+
+        <p class="flush">
+          Duration bars carry status as a printing treatment. An outline is a
+          shape that has been drawn but not yet inked; a solid black bar is work
+          set in final ink; a hatched and struck bar is a plate pulled from the
+          run. Only one status gets pigment, and it is the one that is happening
+          now.
+        </p>
+
+        <figure>
+          <div class="fig-row">
+            <span class="fig-swatch st-draft"></span>
+            <span class="fig-name">Draft</span>
+            <span class="fig-desc">Dashed hairline, no fill. Sketched on the sheet, not committed.</span>
+          </div>
+          <div class="fig-row">
+            <span class="fig-swatch st-todo"></span>
+            <span class="fig-name">Todo</span>
+            <span class="fig-desc">Solid hairline, no fill. Drawn and agreed, waiting for ink.</span>
+          </div>
+          <div class="fig-row">
+            <span class="fig-swatch st-progress"></span>
+            <span class="fig-name">In progress</span>
+            <span class="fig-desc">Solid spot colour. The only hue on the sheet, reserved for now.</span>
+          </div>
+          <div class="fig-row">
+            <span class="fig-swatch st-done"></span>
+            <span class="fig-name">Done</span>
+            <span class="fig-desc">Solid ink. Set, printed, closed.</span>
+          </div>
+          <div class="fig-row">
+            <span class="fig-swatch st-cancel"></span>
+            <span class="fig-name">Cancelled</span>
+            <span class="fig-desc">Hatched and struck through. Present in the record, void in the run.</span>
+          </div>
+          <figcaption>
+            <b>Fig. 1</b>
+            Five treatments, one hue. Bar height also carries level — a slab for a
+            epic, a rule for a task, a hairline for a subtask.
+          </figcaption>
+        </figure>
+
+        <h3>Open questions</h3>
+
+        <ul class="hang">
+          <li>
+            Contrast on a warm ground needs auditing at the two lightest ink
+            steps; <code>--ink-30</code> currently fails against
+            <code>--paper-band</code> at small sizes.
+          </li>
+          <li>
+            The terminal panel stays a dark plate pinned to its own palette. A
+            dark rectangle on a light page is native to print, so this is not an
+            exception to the law — but the seam where its border meets paper
+            still needs drawing.
+          </li>
+          <li>
+            Spot colour is doing three jobs at once: selection, the today rule,
+            and in-progress. If that reads as noise at full workspace scale, the
+            today rule should drop to ink and keep hue for status alone.
+          </li>
+        </ul>
+      </div>
+
+      <div class="folio">
+        <span>pm-all-in-one &middot; roadmap sheet</span>
+        <span>I.2 &mdash; Paper &amp; ink palette</span>
+        <span>Page 1</span>
+      </div>
+    </article>
+  </div>
+</div>
+
+</body>
+</html>

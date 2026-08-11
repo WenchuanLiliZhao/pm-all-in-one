@@ -1,0 +1,204 @@
+/**
+ * Handoffs cards — fills WikiShell PageWidth full.
+ * ↔ pages/channels/workspace-page/route.tsx — CollaborationView
+ */
+.root {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  padding: 0 0 var(--space--4);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space--16);
+  margin-bottom: var(--space--16);
+  flex-shrink: 0;
+}
+
+.title {
+  margin: 0 0 var(--space--4);
+  font-size: 1.35rem;
+  font-weight: 650;
+  color: var(--color-use--text-prime);
+}
+
+.sub {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-use--text-secondary);
+  max-width: 42rem;
+  line-height: 1.45;
+}
+
+.headerAction {
+  flex-shrink: 0;
+}
+
+.error {
+  color: var(--color-use--danger);
+  font-size: 0.88rem;
+  flex-shrink: 0;
+}
+
+.empty {
+  color: var(--color-use--text-negative);
+  font-size: 0.9rem;
+  margin: var(--space--16) 0;
+  flex-shrink: 0;
+}
+
+.compose {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space--12);
+  margin-bottom: var(--space--16);
+  padding: var(--space--16);
+  border: 1px solid var(--color-use--border-prime-hex);
+  border-radius: 8px;
+  background: var(--color-use--bg-prime-hex);
+  flex-shrink: 0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space--4);
+  font-size: 0.85rem;
+}
+
+.field span {
+  color: var(--color-use--text-secondary);
+}
+
+.peopleRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space--16);
+}
+
+.input,
+.textarea {
+  font: inherit;
+  color: var(--color-use--text-prime);
+  background: var(--color-use--bg-secondary-hex, transparent);
+  border: 1px solid var(--color-use--border-prime-hex);
+  border-radius: 6px;
+  padding: var(--space--8) var(--space--12);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 6rem;
+}
+
+.composeActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space--8);
+}
+
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: var(--space--12);
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+  align-content: start;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space--8);
+  width: 100%;
+  text-align: left;
+  padding: var(--space--16);
+  border: 1px solid var(--color-use--border-prime-hex);
+  border-radius: 8px;
+  background: var(--color-use--bg-prime-hex);
+  color: inherit;
+  cursor: pointer;
+}
+
+.card:hover {
+  border-color: var(--color-use--border-strong-hex, var(--color-use--text-secondary));
+}
+
+.cardTitle {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--color-use--text-prime);
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space--8);
+  width: 100%;
+}
+
+.badgeOpen,
+.badgeClosed {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+}
+
+.badgeOpen {
+  color: var(--color-use--text-prime);
+  background: var(--color-use--bg-secondary-hex, transparent);
+  border: 1px solid var(--color-use--border-prime-hex);
+}
+
+.badgeClosed {
+  color: var(--color-use--text-secondary);
+  background: transparent;
+  border: 1px solid var(--color-use--border-prime-hex);
+  opacity: 0.85;
+}
+
+.cardDescription {
+  font-size: 0.85rem;
+  color: var(--color-use--text-secondary);
+  line-height: 1.35;
+}
+
+.cardDescriptionEmpty {
+  font-size: 0.78rem;
+  color: var(--color-use--text-negative);
+  font-style: italic;
+}
+
+.cardMeta {
+  font-size: 0.78rem;
+  font-family: var(--font-family-mono);
+  color: var(--color-use--text-secondary);
+}
+
+.cardPeople {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space--8);
+  margin-top: var(--space--4);
+}
+
+.arrow {
+  color: var(--color-use--text-secondary);
+}

@@ -1,0 +1,29 @@
+/**
+ * Shell geometry — titlebar, detail/terminal rails, page pad, reading width.
+ * ↔ src/components/ui/page-width — reading / full / narrow consumers
+ */
+:root {
+  --layout--titlebar-height: 37px;
+  /* Horizontal inset for React titlebar content (past traffic lights). */
+  --layout--titlebar-traffic-inset: 78px;
+  /* Electron main `MAC_TRAFFIC_LIGHT_POSITION.y` — keep in sync (not used in CSS). */
+  --layout--titlebar-traffic-y: 18px;
+  --layout--detail-min: 320px;
+  --layout--detail-max: 420px;
+  --layout--terminal-min: 280px;
+  --layout--terminal-max: 400px;
+  --layout--page-pad-x: var(--space--28);
+  --layout--page-pad-y: var(--space--24);
+  --layout--content-max: 52rem;
+  /* Secondary page column (forms / empty-state columns). */
+  --layout--content-narrow: 28rem;
+  --layout--topbar-pad-x: var(--space--12);
+  --layout--topbar-pad-y: var(--space--12);
+  /* Wiki Contents rail — matches cndt-wiki Layout sidebar default (was 240). */
+  --layout--wiki-rail-width: 280px;
+  /* TreeRow lead / overflow icon button — snapped 22→20 (≤2px). */
+  --layout--tree-lead-size: 20px;
+  /* Roadmap sheet label rail + row track — tokenize existing 280/36 (0 delta). */
+  --layout--roadmap-label-width: 280px;
+  --layout--roadmap-row-height: 36px;
+}

@@ -1,0 +1,9 @@
+{
+	"folders": [
+		{ "name": "pm-all-in-one", "path": "." },
+		{ "name": "new-world", "path": "/Users/wenchuanzhao/Desktop/PMs/new-world" }
+	],
+	"settings": {
+		"window.title": "pm-all-in-one — ${dirty}${activeEditorShort}${separator}${rootName}"
+	}
+}

@@ -1,0 +1,128 @@
+/**
+ * TreeRow lead — ported from ui-system SidebarTree lead swap contract.
+ * Put `rowHoverRoot` on the DnD / outer row so folder icon↔chevron swaps on whole-row hover.
+ * Never use :focus-within for the swap (click would pin chevron after pointer leaves).
+ *
+ * Host padding prompt (sidebar / hover-row chrome):
+ * - TreeRow is a fragment: `.lead` + `.select`. `.select` stays `padding: 0`.
+ * - Put row chrome padding AND lead↔title `gap` on the OUTER hover/selected
+ *   wrapper (`rowHoverRoot`) — never only on the select `className`. Otherwise
+ *   the lead sits flush (or different hosts drift, e.g. wiki Workspace vs Contents).
+ * - `.select` gap only spaces kind/title *inside* the button, not icon↔title.
+ * - Non-hover / non-select chrome in the same rail must use the same pad-x tokens
+ *   as that outer wrapper (`--space--16` L / `--space--4` R; see seams.md
+ *   `rail-row↔section-chrome` / `rail-bleed↔cndt-wiki`).
+ *
+ * ↔ src/global-styles/seams.md — `row-family` (`--layout--tree-lead-size`),
+ *   `rail-row↔section-chrome`, `rail-bleed↔cndt-wiki`, `rail-section-stack`
+ * ↔ src/components/wiki-shell/styles.module.scss — rail row chrome prompt
+ */
+
+.rowHoverRoot {
+  /* Compose onto DnD outer so :hover reaches folder lead swap. */
+  min-width: 0;
+}
+
+.lead,
+.leadSpacer {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: var(--layout--tree-lead-size);
+  height: var(--layout--tree-lead-size);
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-use--text-secondary);
+  line-height: 0;
+}
+
+button.lead {
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-use--hover-overlay-mouse-down);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+}
+
+.leadIcon,
+.leadChevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.leadChevron {
+  display: none;
+  transition: transform 160ms ease;
+
+  &[data-expanded="true"] {
+    transform: rotate(90deg);
+  }
+}
+
+/* folder without rest icon → chevron always visible */
+.lead[data-folder="true"]:not([data-has-icon]) {
+  .leadChevron {
+    display: flex;
+  }
+}
+
+/* whole-row hover + keyboard focus-visible on lead (not focus-within) */
+.rowHoverRoot:hover .lead[data-folder="true"],
+.lead[data-folder="true"]:focus-visible {
+  .leadIcon {
+    display: none;
+  }
+
+  .leadChevron {
+    display: flex;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leadChevron {
+    transition: none;
+  }
+}
+
+.leadSpacer {
+  cursor: default;
+}
+
+.select {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space--4);
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  /* Host owns chrome pad on the outer `rowHoverRoot` — do not add inset here. */
+  padding: 0;
+}
+
+.kind {
+  flex-shrink: 0;
+}
+
+.trailing {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.15rem;
+  margin-left: auto;
+  line-height: 0;
+}

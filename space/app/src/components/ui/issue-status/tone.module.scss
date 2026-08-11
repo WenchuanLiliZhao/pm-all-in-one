@@ -1,0 +1,29 @@
+/**
+ * Issue status tone — apply with `className={tone.tone}` + `data-status={id}`.
+ * ↔ ./css-color.ts — JS/CSS-var twin for bar fills
+ * ↔ ./icon.tsx — Lucide glyphs consume this module
+ */
+
+.tone {
+  color: var(--color-use--text-secondary);
+
+  &[data-status="draft"] {
+    color: var(--color-use--text-secondary);
+  }
+
+  &[data-status="todo"] {
+    color: var(--color-use--text-secondary);
+  }
+
+  &[data-status="in-progress"] {
+    color: var(--color-use--accent);
+  }
+
+  &[data-status="done"] {
+    color: var(--color-use--success);
+  }
+
+  &[data-status="cancel"] {
+    color: var(--color-use--warn-strong);
+  }
+}

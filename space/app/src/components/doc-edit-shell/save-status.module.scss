@@ -1,0 +1,24 @@
+.saveStatus {
+  font-size: 0.82rem;
+  color: var(--color-use--text-secondary);
+}
+
+.dirty {
+  color: var(--color-use--warn-fg);
+}
+
+.ok {
+  color: var(--color-use--success);
+}
+
+.error {
+  color: var(--color-use--danger);
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: underline;
+}

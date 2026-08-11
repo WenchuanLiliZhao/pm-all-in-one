@@ -1,0 +1,30 @@
+/**
+ * ↔ src/global-styles/layout.scss — content-max / content-narrow / page-pad
+ * ↔ src/components/wiki-shell/styles.module.scss — padded reading/full host
+ * ↔ src/lab/pages/page-width.tsx — visual matrix
+ */
+
+.root {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.reading {
+  max-width: var(--layout--content-max);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.full {
+  max-width: none;
+}
+
+.narrow {
+  max-width: var(--layout--content-narrow);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.padded {
+  padding: var(--layout--page-pad-y) var(--layout--page-pad-x);
+}

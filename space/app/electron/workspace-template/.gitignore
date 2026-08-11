@@ -1,0 +1,6 @@
+# Copied into new workspaces by scaffoldWorkspace — not app-repo config.
+.pm/index.json
+.pm/tree.md
+.pm/local.json
+.pm/local.md
+.DS_Store

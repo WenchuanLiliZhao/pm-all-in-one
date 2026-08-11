@@ -1,0 +1,85 @@
+/**
+ * macOS `titleBarStyle: hidden`: draggable top bar in normal document flow
+ * (not `position: fixed` — fixed layers interact badly with the system title strip).
+ *
+ * ↔ src/global-styles/seams.md — `titlebar↔topbar`
+ */
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 100vh;
+}
+
+.titlebar {
+  position: relative;
+  flex: 0 0 var(--layout--titlebar-height);
+  height: var(--layout--titlebar-height);
+  min-height: var(--layout--titlebar-height);
+  max-height: var(--layout--titlebar-height);
+  box-sizing: border-box;
+  width: 100%;
+  padding-left: var(--layout--titlebar-traffic-inset);
+  padding-right: var(--layout--topbar-pad-x);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space--8);
+  min-width: 0;
+  background: var(--color-use--bg-secondary-hex);
+  -webkit-app-region: drag;
+  app-region: drag;
+  user-select: none;
+}
+
+.titlebarFullscreen {
+  /* Native fullscreen hides traffic lights — drop their reserved inset. */
+  padding-left: var(--layout--topbar-pad-x);
+}
+
+.sideCluster {
+  display: flex;
+  align-items: center;
+  gap: var(--space--4);
+  flex: 0 0 auto;
+  z-index: 1;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+.sideClusterEnd {
+  margin-left: auto;
+}
+
+.titlebarButton {
+  /* Fit the 37px titlebar; ghost icon-only. */
+  --button-min-height: 24px;
+  --button-padding-x: 4px;
+  --button-icon-size: 14px;
+  --button-text-line-height: 18px;
+  min-width: 24px;
+}
+
+.workspaceName {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(40%, 280px);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-use--text-prime);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  pointer-events: none;
+}
+
+.content {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}

@@ -1,0 +1,209 @@
+/**
+ * Flat button variants with UI-304-style hover overlay.
+ * Anatomy mirrors Figma: icon slots match text line-height; `--button-icon-size` on
+ * `button__icon-container` — omit `size` on Lucide icons in startIcon / endIcon.
+ * `data-selected` raises `--button-fg` to text-prime (skip fill-inverse).
+ *
+ * ↔ components/member-person — card appearance / select trigger reuse these classes
+ * ↔ lab/pages/button — selected matrix
+ */
+.button {
+  --button-text-font-size: 13px;
+  --button-text-line-height: 22px;
+  --button-icon-size: 18px;
+  --button-padding-x: 8px;
+  --button-text-padding-x: 4px;
+  --button-gap: 2px;
+  --button-min-height: 32px;
+  --button-border-radius: 5px;
+  --button-hover-overlay-opacity: 0.08;
+  --button-active-overlay-opacity: 0.16;
+  --button-focus-overlay-opacity: 0.1;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  min-height: var(--button-min-height);
+  border: none;
+  margin: 0;
+  padding: 0 var(--button-padding-x);
+  gap: var(--button-gap);
+  border-radius: var(--button-border-radius);
+  overflow: hidden;
+  font-family: inherit;
+  font-weight: 500;
+  letter-spacing: 0.02857em;
+  text-decoration: none;
+  color: var(--button-fg, var(--color-use--text-prime-hex));
+  background-color: var(--button-bg, transparent);
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  vertical-align: middle;
+
+  &__hover-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+    background-color: currentcolor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease;
+  }
+
+  &__icon-container,
+  &__text-container,
+  &__label {
+    position: relative;
+    z-index: 1;
+  }
+
+  &__icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    height: var(--button-text-line-height);
+    font-size: var(--button-icon-size);
+    line-height: 1;
+    color: var(--button-icon-fg, inherit);
+
+    svg {
+      width: 1em;
+      height: 1em;
+      flex-shrink: 0;
+      stroke-width: var(--icon-stroke-width);
+    }
+  }
+
+  &__text-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    min-height: var(--button-text-line-height);
+    padding: 0 var(--button-text-padding-x);
+  }
+
+  &__label {
+    font-size: var(--button-text-font-size);
+    line-height: var(--button-text-line-height);
+    white-space: nowrap;
+  }
+
+  &__outline-border {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border: 1px solid var(--button-border, currentcolor);
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  /* interaction: fine pointer — overlay */
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:not(:disabled):not([data-loading="true"]) &__hover-overlay {
+      opacity: var(--button-hover-overlay-opacity);
+    }
+  }
+
+  /* interaction: active (touch + mouse) */
+  &:active:not(:disabled):not([data-loading="true"]) &__hover-overlay {
+    opacity: var(--button-active-overlay-opacity);
+  }
+
+  /* interaction: keyboard */
+  &:focus-visible:not(:disabled):not([data-loading="true"]) &__hover-overlay {
+    opacity: var(--button-focus-overlay-opacity);
+  }
+
+  /* interaction: coarse / no-hover — background fallback */
+  @media (hover: none), (pointer: coarse) {
+    &:hover:not(:disabled):not([data-loading="true"]) {
+      background-color: var(--button-hover-bg, #F5F5F5);
+    }
+
+    &:active:not(:disabled):not([data-loading="true"]) {
+      background-color: #EBEBEB;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &__hover-overlay {
+      transition: none;
+    }
+  }
+
+  &[data-size="small"] {
+    --button-text-font-size: 11px;
+    --button-text-line-height: 18px;
+    --button-icon-size: 14px;
+    --button-padding-x: 4px;
+    --button-text-padding-x: 2px;
+    --button-min-height: 22px;
+  }
+
+  &[data-size="large"] {
+    --button-text-font-size: 16px;
+    --button-text-line-height: 24px;
+    --button-icon-size: 20px;
+    --button-padding-x: 10px;
+    --button-text-padding-x: 4px;
+    --button-min-height: 34px;
+  }
+
+  /* Icon color defaults to inherit (`--button-fg`) unless `--button-icon-fg` is set. */
+  &[data-variant="ghost"] {
+    --button-fg: var(--color-use--text-secondary-hex);
+    --button-hover-bg: var(--color-use--bg-secondary-hex);
+  }
+
+  &[data-variant="fill"] {
+    --button-fg: var(--color-use--text-secondary-hex);
+    --button-bg: var(--color-use--bg-darken);
+    --button-hover-bg: var(--color-use--bg-secondary-hex);
+  }
+
+  &[data-variant="outlined"] {
+    --button-fg: var(--color-use--text-secondary-hex);
+    --button-border: var(--color-use--border-prime-hex);
+    --button-hover-bg: var(--color-use--bg-secondary-hex);
+  }
+
+  &[data-variant="fill-inverse"] {
+    --button-fg: var(--color-use--text-prime-inverse);
+    --button-bg: var(--color-use--bg-prime-hex-inverse);
+    --button-hover-bg: var(--color-use--bg-secondary-hex-inverse);
+    --button-hover-overlay-opacity: 0.12;
+    --button-active-overlay-opacity: 0.2;
+  }
+
+  /* After variants so selected wins; inline `colors.fg` still overrides. */
+  &[data-selected="true"]:not([data-variant="fill-inverse"]) {
+    --button-fg: var(--color-use--text-prime-hex);
+  }
+
+  &[data-loading="true"] {
+    cursor: wait;
+    opacity: 0.7;
+  }
+
+  &[data-loading="true"] &__icon-container svg {
+    animation: button-icon-spin 0.8s linear infinite;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+@keyframes button-icon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

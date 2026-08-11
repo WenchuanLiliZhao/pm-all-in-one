@@ -1,0 +1,157 @@
+.page {
+  /* Catalog chrome only — column width comes from `<PageWidth>`. */
+  min-width: 0;
+}
+
+.title {
+  margin: 0 0 0.35rem;
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.lead {
+  margin: 0 0 1.75rem;
+  color: var(--color-use--text-secondary);
+  line-height: 1.5;
+}
+
+.lead code,
+.swatchName,
+.fontLabel {
+  font-family: var(--font-family-mono);
+  font-size: 0.85em;
+}
+
+.sectionTitle {
+  margin: 0 0 0.75rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--color-use--border-prime-hex);
+  font-size: 1.05rem;
+}
+
+.swatchGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.swatch {
+  border: 1px solid var(--color-use--border-prime-hex);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--color-use--bg-prime-hex);
+}
+
+.swatchChip {
+  height: 52px;
+  border-bottom: 1px solid var(--color-use--border-prime-hex);
+}
+
+.swatchMeta {
+  padding: 0.5rem 0.65rem;
+}
+
+.swatchName {
+  display: block;
+  font-size: 0.7rem;
+  word-break: break-all;
+}
+
+.fontSans {
+  font-family: var(--font-family-sans);
+  margin: 0 0 0.5rem;
+  line-height: 1.5;
+}
+
+.fontMono {
+  font-family: var(--font-family-mono);
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.fontLabel {
+  color: var(--color-use--text-secondary);
+  margin-right: 0.5rem;
+}
+
+.block {
+  margin-bottom: 1.5rem;
+}
+
+.blockLabel {
+  margin: 0 0 0.5rem;
+  color: var(--color-use--text-secondary);
+  font-size: 0.85rem;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.toggle,
+.toggleActive {
+  border: 1px solid var(--color-use--border-emphasis-hex);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+}
+
+.toggleActive {
+  background: var(--color-use--border-prime-hex);
+  font-weight: 600;
+}
+
+.toggle:hover {
+  background: var(--color-use--bg-darken);
+}
+
+.field {
+  max-width: 280px;
+}
+
+.tokenList {
+  list-style: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.spaceRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.spaceBar {
+  flex-shrink: 0;
+  height: 12px;
+  min-width: 4px;
+  background: var(--color-use--accent);
+  border-radius: 2px;
+}
+
+.layoutRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--color-use--border-prime-hex);
+}
+
+.layoutValue {
+  color: var(--color-use--text-secondary);
+  font-family: var(--font-family-mono);
+  font-size: 0.75rem;
+}

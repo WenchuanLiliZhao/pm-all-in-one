@@ -1,0 +1,79 @@
+.shell {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  background: var(--color-use--bg-secondary-hex);
+  color: var(--color-use--text-prime);
+  font-family: var(--font-family-sans);
+}
+
+.sidebar {
+  flex: 0 0 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.25rem 1rem;
+  border-right: 1px solid var(--color-use--border-prime-hex);
+  background: var(--color-use--bg-prime-hex);
+  overflow: auto;
+}
+
+.brand {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.tagline {
+  margin: 0;
+  color: var(--color-use--text-secondary);
+  font-size: 0.8rem;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 0.5rem;
+}
+
+.categoryLabel {
+  margin-bottom: 0.4rem;
+  color: var(--color-use--text-negative);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.link {
+  display: block;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  color: var(--color-use--text-prime);
+}
+
+.link:hover {
+  background: var(--color-use--hover-overlay-hover);
+}
+
+.linkActive {
+  background: var(--color-use--bg-darken);
+  font-weight: 600;
+}
+
+.main {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: auto;
+  padding: 1.5rem 2rem 3rem;
+  background: var(--color-use--bg-prime-hex);
+}

@@ -1,0 +1,12 @@
+// ↔ ./preview.tsx — class names applied to Reading View ul/ol/li
+// ↔ AGENTS.md — host tokens (--color-use--*)
+
+.ul,
+.ol {
+  margin: 0.45em 0;
+  padding-left: 1.4em;
+}
+
+.li {
+  margin: 0.15em 0;
+}

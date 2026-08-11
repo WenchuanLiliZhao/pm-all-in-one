@@ -1,0 +1,96 @@
+/**
+ * Project detail pane body.
+ * ↔ src/global-styles/seams.md — `detailHeader↔detail-body`
+ * ↔ pages/channels/workspace-page/styles.module.scss — `.detailHeader`
+ */
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space--12);
+  /* Was 12px 14px — horizontal snap 14→12 to match detailHeader */
+  padding: var(--space--12);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space--12);
+  flex-wrap: wrap;
+}
+
+.headerMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space--8);
+}
+
+.level {
+  text-transform: uppercase;
+  font-size: 11px;
+  color: var(--color-use--text-secondary);
+  font-weight: 600;
+}
+
+.ref {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--color-use--text-secondary);
+}
+
+.saveStatus {
+  color: var(--color-use--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.saveStatusDirty {
+  color: var(--color-use--warn-fg);
+}
+
+.saveStatusOk {
+  color: var(--color-use--success);
+}
+
+.saveStatusError {
+  color: var(--color-use--danger);
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.headerActions {
+  display: flex;
+  gap: 8px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.field > span {
+  color: var(--color-use--text-secondary);
+  font-size: 12px;
+}
+
+.readonlyValue {
+  font: inherit;
+  padding: 0.35rem 0.5rem;
+  color: var(--color-use--text-prime);
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+}
+
+.row2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}

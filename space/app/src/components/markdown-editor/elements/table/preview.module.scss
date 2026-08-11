@@ -1,0 +1,28 @@
+.scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  margin: 0.65em 0;
+}
+
+.table {
+  border-collapse: collapse;
+  margin: 0;
+  font-size: 13px;
+  width: max-content;
+  max-width: none;
+  line-height: 1.5;
+}
+
+.th,
+.td {
+  border: 1px solid var(--color-use--border-emphasis-hex);
+  padding: 6px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.th {
+  font-weight: 650;
+  background: var(--color-use--bg-darken);
+}

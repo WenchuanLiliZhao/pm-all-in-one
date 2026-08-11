@@ -1,0 +1,97 @@
+{
+  "name": "local-pm",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Local-first project manager (Vite + React + Electron)",
+  "author": "local-pm contributors",
+  "type": "module",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "postinstall": "electron-rebuild -f -w node-pty",
+    "kill:dev-port": "lsof -tiTCP:5173 -sTCP:LISTEN | xargs kill 2>/dev/null || true",
+    "dev": "npm run build:electron && node ./node_modules/concurrently/dist/bin/concurrently.js -k \"node ./node_modules/vite/bin/vite.js\" \"node ./node_modules/typescript/bin/tsc -b tsconfig.electron.json --watch\" \"node ./node_modules/typescript/bin/tsc -b tsconfig.electron-preload.json --watch\" \"node ./node_modules/wait-on/bin/wait-on -l -t 120000 http-get://127.0.0.1:5173/ && node ./node_modules/cross-env/src/bin/cross-env.js NODE_ENV=development node ./node_modules/electron/cli.js .\"",
+    "build:electron": "node ./node_modules/typescript/bin/tsc -b tsconfig.electron.json --force && node ./node_modules/typescript/bin/tsc -b tsconfig.electron-preload.json --force && node ./scripts/copy-templates.mjs dist-electron",
+    "build:server": "node ./node_modules/typescript/bin/tsc -p tsconfig.server.json && node ./scripts/copy-templates.mjs dist-server/electron",
+    "dev:web": "npm run build:server && node ./node_modules/concurrently/dist/bin/concurrently.js -k \"node ./node_modules/vite/bin/vite.js\" \"node ./node_modules/typescript/bin/tsc -p tsconfig.server.json --watch --preserveWatchOutput\" \"node --watch ./dist-server/server/main.js\"",
+    "local-pm": "node ./dist-electron/cli.js",
+    "build:cli": "npm run build:electron && node ./scripts/build-cli-package.mjs dist-cli",
+    "test": "npm run build:electron && node --test \"dist-electron/core/*.test.js\"",
+    "test:md": "node --test --experimental-strip-types \"src/components/markdown-editor/**/*.test.ts\"",
+    "test:harness": "npm run build:electron && node ./scripts/dual-writer-harness.mjs",
+    "build": "node ./node_modules/typescript/bin/tsc -b && node ./node_modules/vite/bin/vite.js build",
+    "package:mac": "npm run build && npm run build:electron && node ./node_modules/electron-builder/cli.js --mac",
+    "preview": "node ./node_modules/vite/bin/vite.js preview"
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "^6.20.3",
+    "@codemirror/commands": "^6.10.4",
+    "@codemirror/lang-markdown": "^6.5.1",
+    "@codemirror/language": "^6.12.4",
+    "@codemirror/language-data": "^6.5.2",
+    "@codemirror/state": "^6.7.1",
+    "@codemirror/view": "^6.43.6",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@fontsource-variable/material-symbols-outlined": "^5.3.2",
+    "@lezer/highlight": "^1.2.3",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/xterm": "^5.5.0",
+    "chokidar": "^4.0.3",
+    "esbuild": "^0.28.1",
+    "gray-matter": "^4.0.3",
+    "js-yaml": "^4.1.0",
+    "lucide-react": "^0.525.0",
+    "nanoid": "^5.1.5",
+    "node-pty": "^1.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-markdown": "^10.1.0",
+    "react-router-dom": "^7.18.1",
+    "rehype-highlight": "^7.0.2",
+    "remark-gfm": "^4.0.1",
+    "zod": "^3.24.2"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^3.7.1",
+    "@types/hast": "^3.0.5",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "sass": "^1.101.6",
+    "typescript": "~5.6.2",
+    "vite": "^5.4.11",
+    "wait-on": "^8.0.1"
+  },
+  "build": {
+    "appId": "com.local-pm.desktop",
+    "productName": "Local PM",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "!dist-electron/**/*.test.*",
+      "package.json"
+    ],
+    "asar": true,
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "hardenedRuntime": false
+    }
+  }
+}

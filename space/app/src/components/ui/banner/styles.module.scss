@@ -1,0 +1,36 @@
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.75rem;
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+}
+
+.body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.error {
+  background: var(--color-use--danger-bg);
+  color: var(--color-use--danger-fg);
+}
+
+.warn {
+  background: var(--color-use--warn-bg);
+  color: var(--color-use--warn-fg);
+}
+
+.dismiss {
+  flex: 0 0 auto;
+  text-decoration: underline;
+  color: inherit;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}

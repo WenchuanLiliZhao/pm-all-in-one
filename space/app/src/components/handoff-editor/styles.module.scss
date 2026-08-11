@@ -1,0 +1,89 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.slug {
+  font-family: var(--font-family-mono);
+  font-size: 0.85rem;
+  color: var(--color-use--text-secondary);
+}
+
+.propsRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.field span {
+  color: var(--color-use--text-secondary);
+}
+
+.field input {
+  font: inherit;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--color-use--border-emphasis-hex);
+  border-radius: 6px;
+  background: var(--color-use--bg-prime-hex);
+  color: var(--color-use--text-prime);
+  min-width: 16rem;
+}
+
+.field select {
+  font: inherit;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--color-use--border-emphasis-hex);
+  border-radius: 6px;
+  background: var(--color-use--bg-prime-hex);
+  color: var(--color-use--text-prime);
+  min-width: 12rem;
+}
+
+.meta {
+  display: flex;
+  gap: 1rem;
+  font-family: var(--font-family-mono);
+  font-size: 0.75rem;
+  color: var(--color-use--text-secondary);
+}
+
+.peoplePreview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.error {
+  color: var(--color-use--danger);
+  font-size: 0.88rem;
+}

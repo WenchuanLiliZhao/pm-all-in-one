@@ -1,0 +1,12 @@
+.DS_Store
+.env
+.env.local
+*.tsbuildinfo
+
+# app build / deps (also listed under space/app/.gitignore)
+space/app/node_modules/
+space/app/dist/
+space/app/dist-cli/
+space/app/dist-electron/
+space/app/dist-server/
+space/app/release/

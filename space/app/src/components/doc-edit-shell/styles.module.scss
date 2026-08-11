@@ -1,0 +1,68 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.header {
+  min-width: 0;
+}
+
+.title {
+  min-width: 0;
+}
+
+.props {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.body {
+  min-width: 0;
+}
+
+.titleInput {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0.15rem 0;
+  border: none;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-use--text-prime);
+  font: inherit;
+  font-weight: 650;
+  line-height: 1.25;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.titleInput::placeholder {
+  color: var(--color-use--text-negative);
+  font-weight: 500;
+}
+
+.titleInput:focus-visible {
+  border-bottom-color: var(--color-use--border-focus);
+}
+
+.titleInput:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.titlePage {
+  font-size: 1.65rem;
+}
+
+.titleSidebar {
+  font-size: 1.25rem;
+}

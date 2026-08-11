@@ -1,0 +1,131 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.slug {
+  font-family: var(--font-family-mono);
+  font-size: 0.85rem;
+  color: var(--color-use--text-secondary);
+}
+
+.contentsChip,
+.contentsChipOn {
+  border: 1px solid var(--color-use--border-emphasis-hex);
+  background: var(--color-use--bg-prime-hex);
+  color: var(--color-use--text-prime);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.contentsChip:hover {
+  border-color: var(--color-use--text-negative);
+  background: var(--color-use--bg-secondary-hex);
+}
+
+.contentsChipOn {
+  border-color: var(--color-use--success-border);
+  background: var(--color-use--success-soft);
+  color: var(--color-use--success-fg);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.field span {
+  color: var(--color-use--text-secondary);
+}
+
+.field input {
+  font: inherit;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--color-use--border-emphasis-hex);
+  border-radius: 6px;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  font-family: var(--font-family-mono);
+  font-size: 0.75rem;
+  color: var(--color-use--text-secondary);
+}
+
+.metaPerson {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: inherit;
+}
+
+.descriptionField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.descriptionField > span {
+  color: var(--color-use--text-secondary);
+}
+
+.descriptionInput {
+  font: inherit;
+  width: 100%;
+  max-width: 40rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--color-use--border-emphasis-hex);
+  border-radius: 6px;
+  background: var(--color-use--bg-prime-hex);
+  color: var(--color-use--text-prime);
+}
+
+.saveStatus {
+  font-size: 0.82rem;
+  color: var(--color-use--text-secondary);
+}
+
+.dirty {
+  color: var(--color-use--warn-fg);
+}
+
+.ok {
+  color: var(--color-use--success);
+}
+
+.err {
+  color: var(--color-use--danger);
+}

@@ -1,0 +1,10 @@
+node_modules/
+dist/
+dist-cli/
+dist-electron/
+dist-server/
+release/
+*.tsbuildinfo
+.DS_Store
+.env
+.env.local

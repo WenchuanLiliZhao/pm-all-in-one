@@ -1,0 +1,64 @@
+/**
+ * Font stacks and body defaults.
+ */
+:root {
+  --font-cmu-serif: "CMU Serif", "Latin Modern Roman", "Times New Roman", Times, serif;
+  --font-family-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+  --font-family-serif: var(--font-cmu-serif), "Noto Serif SC", "Songti SC";
+  --font-family-mono: var(--font-geist-mono, ui-monospace, SFMono-Regular, "SF Mono", Menlo,
+    Consolas, monospace);
+  --font-family-tex: "KaTeX_Main", "Times New Roman", Times, serif;
+}
+
+html {
+  height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  &[data-scroll-lock] {
+    overflow: hidden;
+
+    body {
+      overflow: hidden;
+    }
+  }
+}
+
+body {
+  min-height: 100%;
+  margin: 0;
+  line-height: 1.5;
+  font-family: var(--font-geist-sans, var(--font-family-sans));
+}
+
+/* Optional content-font hook (unused by default). */
+article {
+  font-family: var(--wiki-content-font-family, inherit);
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: //
+    "FILL" 0,
+    //
+    "wght" 300,
+    //
+    "GRAD" 0,
+    //
+    "opsz" 24;
+}
+
+.katex {
+  overflow: hidden;
+  font-size: 1em !important;
+}
+
+.katex-html {
+  padding: 2px 0;
+}

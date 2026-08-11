@@ -1,0 +1,237 @@
+/**
+ * Issue detail pane body.
+ * ↔ src/global-styles/seams.md — `detailHeader↔detail-body`
+ * ↔ pages/channels/workspace-page/styles.module.scss — `.detailHeader`
+ */
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space--12);
+  /* Was 12px 14px — horizontal snap 14→12 to match detailHeader */
+  padding: var(--space--12);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space--12);
+  flex-wrap: wrap;
+}
+
+.headerMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space--8);
+}
+
+.level {
+  text-transform: uppercase;
+  font-size: 11px;
+  color: var(--color-use--text-secondary);
+  font-weight: 600;
+}
+
+.ref {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--color-use--text-secondary);
+}
+
+.saveStatus {
+  color: var(--color-use--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.saveStatusDirty {
+  color: var(--color-use--warn-fg);
+}
+
+.saveStatusOk {
+  color: var(--color-use--success);
+}
+
+.saveStatusError {
+  color: var(--color-use--danger);
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.headerActions {
+  display: flex;
+  gap: 8px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.field > span {
+  color: var(--color-use--text-secondary);
+  font-size: 12px;
+}
+
+.blockedByTrigger {
+  justify-content: space-between;
+  width: 100%;
+  max-width: 100%;
+}
+
+.blockedByTriggerLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.blockedByChips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space--4);
+}
+
+.blockedByChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  border: 1px solid var(--color-use--border-prime-hex);
+  border-radius: 4px;
+  background: var(--color-use--bg-prime-hex);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.blockedByChipLabel {
+  border: none;
+  background: transparent;
+  padding: var(--space--4) var(--space--8);
+  margin: 0;
+  font: inherit;
+  color: var(--color-use--text-prime);
+  cursor: pointer;
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.blockedByChipLabel:disabled {
+  cursor: default;
+  color: var(--color-use--text-secondary);
+}
+
+.blockedByChipRemove {
+  border: none;
+  background: transparent;
+  padding: var(--space--4) var(--space--8);
+  margin: 0;
+  font: inherit;
+  line-height: 1;
+  color: var(--color-use--text-secondary);
+  cursor: pointer;
+}
+
+.blockedByChipRemove:hover:not(:disabled) {
+  color: var(--color-use--danger);
+}
+
+.blockedByChipRemove:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.fieldLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-use--text-secondary);
+  font-size: 12px;
+}
+
+.helpTip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-use--border-emphasis-hex);
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1;
+  text-decoration: none;
+  cursor: help;
+  color: var(--color-use--text-secondary);
+}
+
+.readonlyValue {
+  font: inherit;
+  padding: 0.35rem 0.5rem;
+  color: var(--color-use--text-prime);
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+}
+
+.row2 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mdFields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mdFields h3 {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+
+.violation {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.violationTitle {
+  margin: 0;
+  font-weight: 600;
+}
+
+.violationList {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.violationList code {
+  font-family: ui-monospace, monospace;
+  margin-right: 6px;
+}
+
+.violationActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}

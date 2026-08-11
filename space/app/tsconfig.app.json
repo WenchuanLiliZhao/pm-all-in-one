@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "types": ["vite/client"],
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+    "paths": {
+      "@/*": ["./src/*"],
+      "@pm-core/*": ["./electron/core/*"]
+    }
+  },
+  "include": [
+    "src",
+    "electron/core/ladder.ts",
+    "electron/core/view-order-apply.ts",
+    "electron/core/types.ts",
+    "electron/core/ai-locator.ts",
+    "electron/core/links.ts",
+    "electron/core/dir-id.ts"
+  ],
+  "exclude": ["src/**/*.test.ts"]
+}

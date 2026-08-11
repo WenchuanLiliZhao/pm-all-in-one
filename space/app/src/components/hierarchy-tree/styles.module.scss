@@ -1,0 +1,81 @@
+.paneHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-use--border-emphasis-hex);
+  font-size: 13px;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  background: var(--color-use--bg-prime-hex);
+  z-index: 1;
+}
+
+.headerActions {
+  display: flex;
+  gap: 6px;
+}
+
+.treeList,
+.treeList ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.treeRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 0;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.treeRow:hover {
+  background: var(--color-use--hover-overlay-hover);
+}
+
+.treeRowSelected {
+  background: var(--color-use--bg-darken);
+}
+
+.treeType {
+  color: var(--color-use--text-secondary);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.treeTitle {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.treeStatus {
+  color: var(--color-use--text-secondary);
+  font-size: 11px;
+}
+
+.treeAdd {
+  padding: 0 6px;
+  line-height: 1.4;
+}
+
+.treeViolation {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-use--danger);
+  color: var(--color-use--in-components-button-text-color-in-fill-mode);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+}

@@ -1,0 +1,91 @@
+/**
+ * Workspace Home reading header (inside WikiShell → PageWidth reading).
+ * ↔ src/global-styles/seams.md — inherits `rail↔mainBody` / page pad
+ * ↔ src/components/ui/page-width — column + pad SoT
+ */
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space--12);
+  padding: 0 0 var(--space--16);
+  border-bottom: 1px solid var(--color-use--border-prime-hex);
+  margin-bottom: var(--space--16);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space--12);
+  flex-wrap: wrap;
+}
+
+.headerMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space--8);
+}
+
+.level {
+  text-transform: uppercase;
+  font-size: 11px;
+  color: var(--color-use--text-secondary);
+  font-weight: 600;
+}
+
+.saveStatus {
+  color: var(--color-use--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.saveStatusDirty {
+  color: var(--color-use--warn-fg);
+}
+
+.saveStatusOk {
+  color: var(--color-use--success);
+}
+
+.saveStatusError {
+  color: var(--color-use--danger);
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.headerActions {
+  display: flex;
+  gap: var(--space--8);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space--4);
+  font-size: 13px;
+  max-width: 28rem;
+}
+
+.field span {
+  color: var(--color-use--text-secondary);
+  font-size: 12px;
+}
+
+.field input {
+  font: inherit;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--color-use--border-emphasis-hex);
+  border-radius: 6px;
+}
+
+.readonlyValue {
+  font: inherit;
+  padding: 0.35rem 0.5rem;
+  color: var(--color-use--text-prime);
+}

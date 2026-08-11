@@ -1,0 +1,611 @@
+/**
+ * Workspace page chrome — topbar, detail rail, table/page pads, stub rows.
+ *
+ * ↔ src/global-styles/seams.md — `titlebar↔topbar`, `left-edge--topbar-page-banner`, `detailHeader↔detail-body`, `row-family`
+ */
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+}
+
+.topbar {
+  background: var(--color-use--bg-prime-hex);
+  border-bottom: 1px solid var(--color-use--border-prime-hex);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0 var(--layout--topbar-pad-x);
+  flex-shrink: 0;
+}
+
+.topbarRow {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space--16);
+  min-height: calc(var(--layout--topbar-pad-y) * 2 + 1.5rem);
+}
+
+.topbarTitle {
+  align-items: baseline;
+  align-self: center;
+  display: flex;
+  gap: var(--space--12);
+  min-width: 0;
+  max-width: 22rem;
+  flex-shrink: 1;
+}
+
+.topbarActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space--8);
+  flex-shrink: 0;
+  align-items: center;
+  align-self: center;
+  margin-left: auto;
+}
+
+/** Display-only local `me` avatar (signing identity; not a control yet). */
+.topbarMe {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.identityChip {
+  font-size: 0.88rem;
+  /* Was 0.3rem 0.65rem (4.8/10.4) → 4/12 */
+  padding: var(--space--4) var(--space--12);
+  border: 1px solid var(--color-use--border-emphasis-hex);
+  background: var(--color-use--bg-secondary-hex);
+  color: var(--color-use--text-prime);
+  border-radius: 0.25rem;
+  cursor: default;
+}
+
+.identityChip:hover {
+  background: var(--color-use--bg-darken);
+}
+
+.workspaceName {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.topbarPath {
+  color: var(--color-use--text-secondary);
+  font-family: var(--font-family-mono);
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.viewBar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--space--4);
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.viewTabGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space--4);
+}
+
+.chromeBtn {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  /* Was 0.25rem 0.5rem (4/8) → 4/8 */
+  padding: var(--space--4) var(--space--8);
+}
+
+.chromeBtn:hover {
+  text-decoration: underline;
+}
+
+.layout {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+  grid-template-areas: "page";
+}
+
+.layoutTerminalOpen {
+  grid-template-columns: 1fr minmax(var(--layout--terminal-min), var(--layout--terminal-max));
+  grid-template-areas: "page terminal";
+}
+
+.pageScroll {
+  grid-area: page;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  background: var(--color-use--bg-prime-hex);
+}
+
+.pageRow {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.pageRowDetailOpen {
+  grid-template-columns: 1fr minmax(var(--layout--detail-min), var(--layout--detail-max));
+}
+
+.center {
+  position: relative;
+  overflow: visible;
+  min-width: 0;
+}
+
+.detail {
+  border-left: 1px solid var(--color-use--border-emphasis-hex);
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  background: var(--color-use--bg-secondary-hex);
+  min-width: 0;
+}
+
+.detailHeader {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--space--8) var(--space--12) 0;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--color-use--bg-secondary-hex);
+}
+
+.terminal {
+  grid-area: terminal;
+  border-left: 1px solid var(--color-use--border-emphasis-hex);
+  min-width: 0;
+  min-height: 0;
+  background: var(--color-use--terminal-bg);
+}
+
+/*
+ * Fill-viewport Outlet box: pageScroll stops being the scroller; the child root
+ * must fill (height:100% and/or flex:1 + min-height:0) and own its own overflow.
+ *
+ * Path SoT: is-fill-viewport-path.ts (WikiShell + Roadmap + Table).
+ * ↔ is-fill-viewport-path.ts
+ * ↔ components/wiki-shell/is-wiki-shell-path.ts — WikiShell subset
+ * ↔ components/wiki-shell/styles.module.scss — `.shell` fills that box
+ * ↔ sub-components/roadmap/styles.module.scss — `.board` fills that box
+ * ↔ .tablePage + sub-components/issue-table/styles.module.scss — Table fills
+ */
+.layoutFillViewport .pageScroll {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.layoutFillViewport .pageRow {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+.layoutFillViewport .center {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/*
+ * Detail aside scrolls inside the fill-viewport row (Roadmap / Table).
+ * ↔ is-fill-viewport-path.ts — `needsFillDetailScroll`
+ */
+.layoutFillDetail .detail {
+  min-height: 0;
+  overflow: auto;
+}
+
+/*
+ * Table channel root — fills `.layoutFillViewport` Outlet; table owns scroll.
+ * ↔ is-fill-viewport-path.ts — `/w/table`
+ * ↔ sub-components/issue-table/styles.module.scss — `.root` / `.tableWrap`
+ * ↔ route.tsx — `TableView`
+ */
+.tablePage {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--layout--page-pad-y) var(--layout--page-pad-x);
+}
+
+.tablePageHeader {
+  flex-shrink: 0;
+}
+
+.tablePageHeader h1 {
+  margin: 0 0 var(--space--8);
+  font-size: 1.5rem;
+}
+
+.tablePageHeader p {
+  margin: 0 0 var(--space--16);
+  color: var(--color-use--text-secondary);
+}
+
+.placeholder {
+  /* Reading width / centering live on WikiShell → PageWidth. */
+  width: 100%;
+}
+
+.projectSettings {
+  /* Padding / reading width come from WikiShell → PageWidth. */
+  width: 100%;
+  overflow: visible;
+  box-sizing: border-box;
+}
+
+.projectSettingsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space--16);
+  margin-bottom: var(--space--8);
+}
+
+.projectSettingsHeader h1 {
+  /* Was 0.15rem (2.4) → 4 */
+  margin: var(--space--4) 0 0;
+  font-size: 1.5rem;
+}
+
+.projectSettingsEyebrow {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-use--text-secondary);
+}
+
+.placeholder h1 {
+  margin: 0 0 var(--space--8);
+  font-size: 1.5rem;
+}
+
+.placeholder p {
+  margin: 0 0 var(--space--16);
+  color: var(--color-use--text-secondary);
+}
+
+.emptyProjects {
+  margin-top: var(--space--16);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space--12);
+}
+
+.emptyProjects p {
+  margin: 0;
+}
+
+.stubList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  /* Was 0.35rem (5.6) → 4 */
+  gap: var(--space--4);
+}
+
+.outlineToolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space--8);
+  margin-bottom: var(--space--8);
+}
+
+.stubListNested {
+  list-style: none;
+  /* Was 0.35rem (5.6) → 4 */
+  margin: var(--space--4) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space--4);
+}
+
+.stubItem {
+  margin: 0;
+}
+
+.stubRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space--4);
+  width: 100%;
+  text-align: left;
+  /* TreeRow host: chrome pad on this outer hover/DnD row (lead is outside select). */
+  padding: var(--space--4) var(--space--8) var(--space--4) 0;
+  border: 1px solid var(--color-use--border-prime-hex);
+  border-radius: 6px;
+  background: var(--color-use--bg-prime-hex);
+  cursor: grab;
+  touch-action: none;
+}
+
+.stubRow:active {
+  cursor: grabbing;
+}
+
+.stubRowSelected {
+  border-color: var(--color-use--text-secondary);
+  background: var(--color-use--bg-darken);
+}
+
+.dropGroup {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-use--text-secondary-hex) 35%, transparent);
+  background: color-mix(in srgb, var(--color-use--text-negative-hex) 12%, transparent);
+}
+
+.dropGroupLegal {
+  box-shadow: inset 0 0 0 1px var(--color-use--success-border);
+  background: var(--color-use--success-soft);
+}
+
+.dropGroupIllegal {
+  box-shadow: inset 0 0 0 1px var(--color-use--danger-border);
+  background: var(--color-use--danger-soft);
+}
+
+.dropFlashOk,
+.dropFlashBad {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.dropFlashOk {
+  animation: dropFlashOk 0.9s ease-in-out;
+}
+
+.dropFlashBad {
+  animation: dropFlashBad 0.9s ease-in-out;
+}
+
+@keyframes dropFlashOk {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 2px transparent;
+    background: transparent;
+  }
+  12%,
+  38%,
+  64% {
+    box-shadow: inset 0 0 0 2px var(--color-use--success);
+    background: color-mix(in srgb, var(--color-use--success) 22%, transparent);
+  }
+  25%,
+  51%,
+  77% {
+    box-shadow: inset 0 0 0 2px transparent;
+    background: transparent;
+  }
+}
+
+@keyframes dropFlashBad {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 2px transparent;
+    background: transparent;
+  }
+  12%,
+  38%,
+  64% {
+    box-shadow: inset 0 0 0 2px var(--color-use--danger);
+    background: color-mix(in srgb, var(--color-use--danger) 18%, transparent);
+  }
+  25%,
+  51%,
+  77% {
+    box-shadow: inset 0 0 0 2px transparent;
+    background: transparent;
+  }
+}
+
+.stubRowSelected.dropGroup,
+.stubRowSelected.dropGroupLegal,
+.stubRowSelected.dropGroupIllegal {
+  /* Keep selection readable under group wash. */
+  border-color: var(--color-use--text-secondary);
+}
+
+.dragOverlay {
+  /* Was 0.4rem 0.75rem (6.4/12) → 8/12 */
+  padding: var(--space--8) var(--space--12);
+  border: 2px solid var(--color-use--text-secondary);
+  border-radius: 6px;
+  background: var(--color-use--bg-prime-hex);
+  box-shadow: var(--shadow-md);
+  font-size: 0.9rem;
+}
+
+.dragOverlayLegal {
+  border-color: var(--color-use--success);
+}
+
+.dragOverlayIllegal {
+  border-color: var(--color-use--danger);
+}
+
+.stubSelect {
+  display: flex;
+  align-items: center;
+  gap: var(--space--8);
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  /* Was 0.35rem 0.5rem 0.35rem 0 (5.6/8/5.6/0) → 4/8/4/0 */
+  padding: var(--space--4) var(--space--8) var(--space--4) 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  border-radius: 4px;
+}
+
+.stubSelect:hover {
+  background: color-mix(in srgb, var(--color-use--text-negative-hex) 12%, transparent);
+}
+
+.stubTitle {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stubRef {
+  flex-shrink: 0;
+  font-family: var(--font-family-mono);
+  font-size: 0.75rem;
+  color: var(--color-use--text-negative);
+}
+
+.strayBanner {
+  background: var(--color-use--warn-bg);
+  color: var(--color-use--warn-fg);
+  /* Was 0.75rem 1.25rem (12/20) — converge horizontal to page pad (seed left-edge). */
+  margin: var(--space--12) var(--layout--page-pad-x) 0;
+}
+
+.strayTitle {
+  margin: 0 0 var(--space--8);
+  font-size: 0.9rem;
+}
+
+.strayList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  /* Was 0.45rem (7.2) → 8 */
+  gap: var(--space--8);
+}
+
+.strayItem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space--8);
+  font-size: 0.85rem;
+}
+
+.strayMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  /* Was 0.4rem 0.65rem (6.4/10.4) → 8/12 */
+  gap: var(--space--8) var(--space--12);
+  min-width: 0;
+}
+
+.strayKind {
+  font-family: var(--font-family-mono);
+  font-size: 0.75rem;
+  background: var(--color-use--warn-bg);
+  /* Was 0.1rem 0.35rem (1.6/5.6) → 0/4 (vert 4 would be +2.4) */
+  padding: 0 var(--space--4);
+  border-radius: 4px;
+}
+
+.strayActions {
+  display: flex;
+  flex-wrap: wrap;
+  /* Was 0.35rem (5.6) → 4 */
+  gap: var(--space--4);
+  flex-shrink: 0;
+}
+
+.settingsField {
+  display: flex;
+  flex-direction: column;
+  /* Was 0.35rem (5.6) → 4 */
+  gap: var(--space--4);
+  /* Was 0.85rem (13.6) → 12 */
+  margin-bottom: var(--space--12);
+  max-width: 28rem;
+}
+
+.settingsField > span {
+  font-size: 0.85rem;
+  color: var(--color-use--text-secondary);
+}
+
+.settingsField input {
+  /* Was 0.45rem 0.55rem (7.2/8.8) → 8/8 */
+  padding: var(--space--8) var(--space--8);
+  border: 1px solid var(--color-use--border-emphasis-hex);
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.settingsReadonly {
+  font-family: var(--font-family-mono);
+  color: var(--color-use--text-prime);
+}
+
+.settingsActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space--12);
+  margin-bottom: var(--space--12);
+}
+
+.settingsHint {
+  font-size: 0.85rem;
+  color: var(--color-use--text-secondary);
+}
+
+.settingsHintDirty {
+  color: var(--color-use--warn-fg);
+  font-weight: 600;
+}
+
+.settingsHintOk {
+  color: var(--color-use--success);
+  font-weight: 600;
+}
+
+.settingsHintError {
+  color: var(--color-use--danger);
+  font-weight: 600;
+}

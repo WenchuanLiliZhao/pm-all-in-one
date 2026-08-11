@@ -1,0 +1,435 @@
+/**
+ * WikiShell geometry: fills workspace `.layoutFillViewport` Outlet box.
+ * Reading / full column + page pad: `ui/page-width` (this file keeps rail +
+ * full-bleed flex/scroll extras only).
+ * ↔ pages/channels/workspace-page/styles.module.scss — `.layoutFillViewport`
+ * ↔ pages/channels/workspace-page/is-fill-viewport-path.ts — fill membership
+ * ↔ components/wiki-shell/is-wiki-shell-path.ts — WikiShell route subset
+ * ↔ components/ui/page-width — padded reading/full SoT
+ * ↔ components/wiki-all-pages/styles.module.scss — full-width / inner-scroll child
+ * ↔ src/global-styles/seams.md — `rail↔mainBody`, `rail-bleed↔cndt-wiki`, `row-family`,
+ *   `left-edge--topbar-page-banner`, `rail-row↔section-chrome`,
+ *   `rail-section-chrome-height`, `rail-section-stack`
+ */
+.shell {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  /* Prefer flex:1 inside the fill-viewport column; height:100% covers non-flex parents. */
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+  gap: 0;
+}
+
+.rail {
+  width: var(--layout--wiki-rail-width);
+  flex-shrink: 0;
+  align-self: stretch;
+  border-right: 1px solid var(--color-use--border-prime-hex);
+  background-color: var(--color-use--bg-prime-hex);
+  /* Bleed model (cndt-wiki): column pad-x 0; inset lives on rows/chrome.
+   * pad-y + section stack gap share `--space--16` (seams `rail-bleed↔cndt-wiki`,
+   * `rail-section-stack`). */
+  padding: var(--space--16) 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space--16);
+  box-sizing: border-box;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Child owns vertical scroll when `contentWidth="full"` (All pages).
+ * ↔ components/wiki-all-pages/styles.module.scss — `.root` / `.tableWrap`
+ * ↔ components/ui/page-width — width/pad; this class adds flex fill only */
+.mainFull {
+  overflow: hidden;
+}
+
+.mainBodyFull {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  /* Must stay 0. Row density is owned by `.railNavRow` / `.tocRow*` pad-y;
+   * chrome→first-row gap is owned by `.sectionTitle` / `.sectionHeader`
+   * margin-bottom. A non-zero gap here made Workspace rows looser than
+   * Contents (tocList gap 0) and double-counted with chrome margin-bottom.
+   * ↔ src/global-styles/seams.md — `rail-section-stack` */
+  gap: 0;
+}
+
+/*
+ * Section chrome (`rail-section-chrome-height`):
+ * Bare `.sectionTitle` (Workspace) and `.sectionHeader` (Contents +
+ * Add) share one min-height so the Add button cannot change the band.
+ * Vertical gap to rows is only `margin-bottom` — never title padding-bottom
+ * and never `.section` gap (that used to stack / diverge across sections).
+ *
+ * ↔ src/global-styles/seams.md — `rail-section-chrome-height`, `rail-section-stack`
+ */
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space--4);
+  margin-bottom: var(--space--4);
+  /* Same content edge as rows (pad-L 16 / pad-R 8). */
+  padding: 0 var(--space--8) 0 var(--space--16);
+  box-sizing: border-box;
+  min-height: var(--space--24);
+}
+
+/*
+ * Rail row chrome prompt (`rail-row↔section-chrome`):
+ * TreeRow is a fragment (`.lead` + `.select`). On the OUTER hover wrapper
+ * (`.railNavRow` / `.tocRow` / `.tocRowStatic`):
+ *   - pad so lead sits inside the wash; `.rowSelect` stays padding 0
+ *   - `gap` for lead↔title (and trailing actions) — never rely on `.rowSelect`
+ *     gap alone (that only spaces kind/title *inside* the select button)
+ *   - full-bleed wash: no border-radius; pad-L `--space--16` / pad-R `--space--8`
+ * Contents nest depth (`--toc-indent`): add to pad-L on `.tocRow*` only — never
+ * pad the `<li>`. Background paints through padding, so wash stays edge-to-edge
+ * while lead/title inset with depth (`rail-bleed↔cndt-wiki`).
+ * Non-hover chrome (`.sectionTitle` / `.emptyHint` / `.railError`) reuses the
+ * same pad-x so labels share the rail content edge.
+ *
+ * ↔ src/components/ui/tree-row/styles.module.scss — host chrome prompt
+ * ↔ src/components/wiki-shell/index.tsx — `tocIndentStyle` / `TOC_INDENT_STEP_REM`
+ * ↔ src/global-styles/seams.md — `rail-bleed↔cndt-wiki`, `rail-row↔section-chrome`
+ */
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: var(--space--24);
+  margin-bottom: var(--space--4);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-use--text-secondary);
+  /* Horizontal inset only; vertical band = min-height, gap below = margin-bottom. */
+  padding: 0 var(--space--8) 0 var(--space--16);
+}
+
+.sectionHeader .sectionTitle {
+  /* Header owns inset, min-height, and margin-bottom. */
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  margin-bottom: 0;
+  padding: 0;
+}
+
+.railNavRow {
+  display: flex;
+  align-items: center;
+  /* Same lead↔title gap as `.tocRow*` — was missing → Workspace tighter than Contents. */
+  gap: var(--space--4);
+  min-width: 0;
+  border-radius: 0;
+  /* Full-bleed wash: pad-L 16 / pad-R 8. Was R 4 (too tight for Add / ···). */
+  padding: var(--space--8) var(--space--8) var(--space--8) var(--space--16);
+}
+
+.railNavRow:hover:not(.rowActive) {
+  background: color-mix(in srgb, var(--color-use--text-negative-hex) 8%, transparent);
+}
+
+.rowActive {
+  background: var(--color-use--bg-darken);
+}
+
+.rowActive:hover {
+  background: color-mix(
+    in srgb,
+    var(--color-use--text-negative-hex) 8%,
+    var(--color-use--bg-darken)
+  );
+}
+
+.rowActive .title {
+  font-weight: 600;
+}
+
+.rowSelect {
+  display: flex;
+  align-items: center;
+  /* Inside select only (kind↔title). Icon↔title gap is on the outer row. */
+  gap: var(--space--4);
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border-radius: 0;
+  color: var(--color-use--text-prime);
+  font-size: 0.88rem;
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.groupTitle {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-use--text-secondary);
+}
+
+.titleBroken {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-use--danger);
+  font-style: italic;
+}
+
+.addWrap {
+  position: relative;
+}
+
+.inlineLink {
+  color: var(--color-use--accent-text);
+  font: inherit;
+  padding: 0;
+  min-height: 0;
+  text-decoration: underline;
+}
+
+.tocList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  /* Keep 0 — same as `.section` gap; row pad-y owns density (`rail-section-stack`). */
+  gap: 0;
+}
+
+.tocGroup {
+  /* Was 0.35rem (5.6) → 4 */
+  margin-top: var(--space--4);
+}
+
+.tocItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.tocRow,
+.tocRowStatic {
+  display: flex;
+  align-items: center;
+  /* Was 0.15rem (2.4) → 4 */
+  gap: var(--space--4);
+  min-width: 0;
+  position: relative;
+  border-radius: 0;
+  /* Full-bleed wash: pad-L 16 (+ `--toc-indent` nest) / pad-R 8.
+   * Depth lives here (not on `<li>`) so hover/active still spans the rail. */
+  padding: var(--space--8) var(--space--8) var(--space--8)
+    calc(var(--space--16) + var(--toc-indent, 0px));
+}
+
+.tocRow {
+  cursor: grab;
+  /* Required by dnd-kit's pointer sensor: otherwise the trackpad/touch gesture
+     scrolls the rail instead of starting a drag. */
+  touch-action: none;
+}
+
+.tocRow:active {
+  cursor: grabbing;
+}
+
+.tocRow:hover:not(.rowActive),
+.tocRowStatic:hover:not(.rowActive) {
+  background: color-mix(in srgb, var(--color-use--text-negative-hex) 8%, transparent);
+}
+
+.tocActions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  /* Was 2px → 4 */
+  gap: var(--space--4);
+  position: relative;
+  margin-right: 0;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.tocRow:hover .tocActions,
+.tocRow:focus-within .tocActions {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tocActions {
+    transition: none;
+  }
+}
+
+.rowMenuWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ↔ src/global-styles/seams.md — `row-family` (`--layout--tree-lead-size`)
+ * Icon-only: use Button `startIcon` (not children/label). Size vars fill the
+ * 20px lead box so MaterialIcon.MoreHoriz centers with the row. */
+.rowMenuBtn {
+  width: var(--layout--tree-lead-size);
+  height: var(--layout--tree-lead-size);
+  padding: 0;
+  --button-min-height: var(--layout--tree-lead-size);
+  --button-padding-x: 0;
+  --button-icon-size: 18px;
+  --button-text-line-height: var(--layout--tree-lead-size);
+}
+
+.dropBefore {
+  box-shadow: inset 0 2px 0 0 var(--color-use--accent);
+}
+
+.dropAfter {
+  box-shadow: inset 0 -2px 0 0 var(--color-use--accent);
+}
+
+.dropInto {
+  outline: 1px solid var(--color-use--accent);
+  outline-offset: -1px;
+  border-radius: 0;
+}
+
+.dropGroup {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-use--text-secondary-hex) 35%, transparent);
+  background: color-mix(in srgb, var(--color-use--text-negative-hex) 12%, transparent);
+}
+
+.dropGroupLegal {
+  box-shadow: inset 0 0 0 1px var(--color-use--success-border);
+  background: var(--color-use--success-soft);
+}
+
+.dropGroupIllegal {
+  box-shadow: inset 0 0 0 1px var(--color-use--danger-border);
+  background: var(--color-use--danger-soft);
+}
+
+.dropFlashOk,
+.dropFlashBad {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.dropFlashOk {
+  animation: dropFlashOk 0.9s ease-in-out;
+}
+
+.dropFlashBad {
+  animation: dropFlashBad 0.9s ease-in-out;
+}
+
+@keyframes dropFlashOk {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 2px transparent;
+    background: transparent;
+  }
+  12%,
+  38%,
+  64% {
+    box-shadow: inset 0 0 0 2px var(--color-use--success);
+    background: color-mix(in srgb, var(--color-use--success) 22%, transparent);
+  }
+  25%,
+  51%,
+  77% {
+    box-shadow: inset 0 0 0 2px transparent;
+    background: transparent;
+  }
+}
+
+@keyframes dropFlashBad {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 2px transparent;
+    background: transparent;
+  }
+  12%,
+  38%,
+  64% {
+    box-shadow: inset 0 0 0 2px var(--color-use--danger);
+    background: color-mix(in srgb, var(--color-use--danger) 18%, transparent);
+  }
+  25%,
+  51%,
+  77% {
+    box-shadow: inset 0 0 0 2px transparent;
+    background: transparent;
+  }
+}
+
+.dragOverlay {
+  /* Was 0.4rem 0.75rem (6.4/12) → 8/12 */
+  padding: var(--space--8) var(--space--12);
+  border: 2px solid var(--color-use--text-secondary);
+  border-radius: 6px;
+  background: var(--color-use--bg-prime-hex);
+  box-shadow: var(--shadow-md);
+  font-size: 0.88rem;
+  color: var(--color-use--text-prime);
+  cursor: grabbing;
+}
+
+.dragOverlayLegal {
+  border-color: var(--color-use--success);
+}
+
+.dragOverlayIllegal {
+  border-color: var(--color-use--danger);
+}
+
+.emptyHint {
+  margin: var(--space--4) var(--space--8) 0 var(--space--16);
+  font-size: 0.82rem;
+  color: var(--color-use--text-negative);
+}
+
+.railError {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--color-use--danger);
+  padding: 0 var(--space--8) 0 var(--space--16);
+}

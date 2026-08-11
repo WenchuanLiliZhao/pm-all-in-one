@@ -1,0 +1,123 @@
+/**
+ * Primitive color palette (`--color--*`). Owned by this app; edit in place.
+ *
+ * Semantic use tokens live in `color-use.scss` (`--color-use--*`).
+ */
+
+:root {
+  color-scheme: light;
+
+  // gray
+  --color--gray-100: rgb(0, 0, 0);
+  --color--gray-88: rgba(0, 0, 0, 0.88);
+  --color--gray-80: rgba(0, 0, 0, 0.8);
+  --color--gray-100-hex: #000000;
+  --color--gray-88-hex: #1f1f1f;
+  --color--gray-80-hex: #333333;
+  --color--gray-72: rgba(0, 0, 0, 0.72);
+  --color--gray-72-hex: #474747;
+  --color--gray-64: rgba(0, 0, 0, 0.64);
+  --color--gray-64-hex: #5c5c5c;
+  --color--gray-56: rgba(0, 0, 0, 0.56);
+  --color--gray-56-hex: #707070;
+  --color--gray-48: rgba(0, 0, 0, 0.48);
+  --color--gray-48-hex: #858585;
+  --color--gray-40: rgba(0, 0, 0, 0.4);
+  --color--gray-40-hex: #999999;
+  --color--gray-32: rgba(0, 0, 0, 0.32);
+  --color--gray-32-hex: #adadad;
+  --color--gray-24: rgba(0, 0, 0, 0.24);
+  --color--gray-24-hex: #c2c2c2;
+  --color--gray-16: rgba(0, 0, 0, 0.16);
+  --color--gray-16-hex: #d6d6d6;
+  --color--gray-8: rgba(0, 0, 0, 0.08);
+  --color--gray-8-hex: #ebebeb;
+  --color--gray-4: rgba(0, 0, 0, 0.04);
+  --color--gray-4-hex: #f5f5f5;
+  --color--gray-2: rgba(0, 0, 0, 0.02);
+  --color--gray-2-hex: #fafafa;
+  --color--gray-0: rgba(0, 0, 0, 0);
+  --color--gray-0-hex: #ffffff;
+
+  // white
+  --color--white-100: rgb(255, 255, 255);
+  --color--white-100-hex: #ffffff;
+  --color--white-88: rgba(255, 255, 255, 0.88);
+  --color--white-88-hex: #e0e0e0;
+  --color--white-80: rgba(255, 255, 255, 0.8);
+  --color--white-80-hex: #cccccc;
+  --color--white-72: rgba(255, 255, 255, 0.72);
+  --color--white-72-hex: #b8b8b8;
+  --color--white-64: rgba(255, 255, 255, 0.64);
+  --color--white-64-hex: #a3a3a3;
+  --color--white-56: rgba(255, 255, 255, 0.56);
+  --color--white-56-hex: #8f8f8f;
+  --color--white-48: rgba(255, 255, 255, 0.48);
+  --color--white-48-hex: #7a7a7a;
+  --color--white-40: rgba(255, 255, 255, 0.4);
+  --color--white-40-hex: #666666;
+  --color--white-32: rgba(255, 255, 255, 0.32);
+  --color--white-32-hex: #525252;
+  --color--white-24: rgba(255, 255, 255, 0.24);
+  --color--white-24-hex: #3d3d3d;
+  --color--white-16: rgba(255, 255, 255, 0.16);
+  --color--white-16-hex: #292929;
+  --color--white-8: rgba(255, 255, 255, 0.08);
+  --color--white-8-hex: #141414;
+  --color--white-4: rgba(255, 255, 255, 0.04);
+  --color--white-4-hex: #0a0a0a;
+  --color--white-2: rgba(255, 255, 255, 0.02);
+  --color--white-2-hex: #050505;
+  --color--white-0: rgba(255, 255, 255, 0);
+  --color--white-0-hex: #000000;
+
+  // gray
+  --color--gray-6: rgba(0, 0, 0, 0.06);
+  --color--gray-6-hex: #f0f0f0;
+
+  // white
+  --color--white-6: rgba(255, 255, 255, 0.06);
+  --color--white-6-hex: #0f0f0f;
+
+  // gray
+  --color--gray-12: rgba(0, 0, 0, 0.12);
+  --color--gray-12-hex: #e0e0e0;
+
+  // white
+  --color--white-12: rgba(255, 255, 255, 0.12);
+  --color--white-12-hex: #1f1f1f;
+
+  // gray
+  --color--gray-92: rgba(0, 0, 0, 0.92);
+  --color--gray-92-hex: #141414;
+
+  // white
+  --color--white-92: rgba(255, 255, 255, 0.92);
+  --color--white-92-hex: #ebebeb;
+
+  // status / accent pigments (theme-independent; color-use remaps semantics)
+  --color--red-60: #b91c1c;
+  --color--red-70: #991b1b;
+  --color--red-20: #fca5a5;
+  --color--red-08: #fee2e2;
+  --color--red-04: #fef2f2;
+
+  --color--amber-70: #92400e;
+  --color--amber-60: #c2410c;
+  --color--amber-50: #f97316;
+  --color--amber-30: #fdba74;
+  --color--amber-10: #ffedd5;
+  --color--amber-08: #fef3c7;
+
+  --color--green-70: #166534;
+  --color--green-60: #15803d;
+  --color--green-50: #16a34a;
+  --color--green-30: #86efac;
+  --color--green-08: #f0fdf4;
+
+  --color--blue-60: #2563eb;
+  --color--blue-50: #3b82f6;
+  --color--blue-40: #0369a1;
+  --color--sky-40: #7dd3fc;
+  --color--sky-30: #bae6fd;
+}

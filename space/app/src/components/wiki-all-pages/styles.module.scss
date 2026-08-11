@@ -1,0 +1,192 @@
+/**
+ * All pages inventory layout — fills WikiShell PageWidth full + `.mainBodyFull`; table scrolls.
+ * ↔ components/wiki-shell/styles.module.scss — `.mainBodyFull` / `.mainFull`
+ * ↔ components/ui/page-width — `width="full"` + padded
+ * ↔ pages/channels/workspace-page/route.tsx — `WikiAllPagesView`
+ * ↔ src/global-styles/seams.md — inherits page pad left edge
+ */
+.root {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  padding: 0 0 var(--space--4);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space--16);
+  margin-bottom: var(--space--16);
+  flex-shrink: 0;
+}
+
+.title {
+  margin: 0 0 var(--space--4);
+  font-size: 1.35rem;
+  font-weight: 650;
+  color: var(--color-use--text-prime);
+}
+
+.sub {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-use--text-secondary);
+  max-width: 42rem;
+  line-height: 1.45;
+}
+
+.headerAction {
+  flex-shrink: 0;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space--12);
+  margin-bottom: var(--space--12);
+  flex-shrink: 0;
+}
+
+.filter {
+  flex: 1;
+  min-width: 0;
+  max-width: 28rem;
+  width: auto;
+}
+
+.checkbox {
+  display: inline-block;
+  width: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 0;
+}
+
+.count {
+  font-size: 0.82rem;
+  color: var(--color-use--text-negative);
+}
+
+.error {
+  color: var(--color-use--danger);
+  font-size: 0.88rem;
+  flex-shrink: 0;
+}
+
+.empty {
+  color: var(--color-use--text-negative);
+  font-size: 0.9rem;
+  margin: var(--space--16) 0;
+  flex-shrink: 0;
+}
+
+.tableWrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--color-use--border-prime-hex);
+  border-radius: 8px;
+  background: var(--color-use--bg-prime-hex);
+}
+
+.table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.88rem;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  /* Was 0.55rem 0.7rem (8.8/11.2) → 8/12 */
+  padding: var(--space--8) var(--space--12);
+  border-bottom: 1px solid var(--color-use--border-prime-hex);
+  vertical-align: middle;
+}
+
+.checkCol {
+  width: 2rem;
+  text-align: center;
+  padding-left: var(--space--8);
+  padding-right: var(--space--8);
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--color-use--bg-secondary-hex);
+  color: var(--color-use--text-secondary);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.table th button {
+  /* sort header chrome — native button, not design Button */
+  padding: 0;
+  min-height: 0;
+  font-weight: 600;
+  color: inherit;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
+.table th button:hover {
+  color: var(--color-use--text-prime);
+}
+
+.table tbody tr:hover {
+  background: var(--color-use--bg-secondary-hex);
+}
+
+.titleLink {
+  color: var(--color-use--text-prime);
+  text-decoration: none;
+  font-weight: 550;
+}
+
+.titleLink:hover {
+  text-decoration: underline;
+}
+
+.description {
+  margin-top: 0.25rem;
+  font-size: 0.82rem;
+  color: var(--color-use--text-secondary);
+  line-height: 1.35;
+  max-width: 28rem;
+}
+
+.descriptionEmpty {
+  margin-top: 0.25rem;
+  font-size: 0.78rem;
+  color: var(--color-use--text-negative);
+  font-style: italic;
+}
+
+.id {
+  font-size: 0.78rem;
+  color: var(--color-use--text-secondary);
+}
+
+.ts {
+  color: var(--color-use--text-secondary);
+  white-space: nowrap;
+  font-size: 0.82rem;
+}
+
+.actions {
+  display: flex;
+  /* Was 0.35rem (5.6) → 4 */
+  gap: var(--space--4);
+  white-space: nowrap;
+}

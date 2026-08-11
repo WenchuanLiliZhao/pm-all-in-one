@@ -1,0 +1,114 @@
+.block {
+  margin: 0.75em 0;
+  border: 1px solid var(--color-use--border-emphasis-hex);
+  border-radius: 6px;
+  background: var(--color-use--bg-darken);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--color-use--border-prime-hex);
+  background: var(--color-use--bg-secondary-hex);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75em;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  text-transform: lowercase;
+  color: var(--color-use--text-secondary);
+}
+
+.pre {
+  margin: 0;
+  padding: 10px 14px;
+  overflow: auto;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+.fenceCode {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.92em;
+  padding: 0;
+  background: transparent;
+  color: var(--color-use--text-prime);
+}
+
+.inlineCode {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.92em;
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+  background: var(--color-use--bg-darken);
+}
+
+// Token colors for rehype-highlight / highlight.js (token-driven, no hljs theme).
+.fenceCode:global(.hljs),
+.pre :global(.hljs) {
+  color: var(--color-use--text-prime);
+  background: transparent;
+}
+
+.pre :global(.hljs-comment),
+.pre :global(.hljs-quote) {
+  color: var(--color-use--text-secondary);
+  font-style: italic;
+}
+
+.pre :global(.hljs-keyword),
+.pre :global(.hljs-selector-tag),
+.pre :global(.hljs-addition) {
+  color: var(--color-use--accent-text);
+}
+
+.pre :global(.hljs-number),
+.pre :global(.hljs-string),
+.pre :global(.hljs-meta .hljs-meta-string),
+.pre :global(.hljs-literal),
+.pre :global(.hljs-doctag),
+.pre :global(.hljs-regexp) {
+  color: var(--color-use--success-fg);
+}
+
+.pre :global(.hljs-title),
+.pre :global(.hljs-section),
+.pre :global(.hljs-name),
+.pre :global(.hljs-selector-id),
+.pre :global(.hljs-selector-class) {
+  color: var(--color-use--warn-fg);
+}
+
+.pre :global(.hljs-attribute),
+.pre :global(.hljs-attr),
+.pre :global(.hljs-variable),
+.pre :global(.hljs-template-variable),
+.pre :global(.hljs-class .hljs-title),
+.pre :global(.hljs-type) {
+  color: var(--color-use--accent);
+}
+
+.pre :global(.hljs-symbol),
+.pre :global(.hljs-bullet),
+.pre :global(.hljs-link),
+.pre :global(.hljs-meta),
+.pre :global(.hljs-selector-attr),
+.pre :global(.hljs-selector-pseudo) {
+  color: var(--color-use--warn-strong);
+}
+
+.pre :global(.hljs-built_in),
+.pre :global(.hljs-deletion) {
+  color: var(--color-use--danger-fg);
+}
+
+.pre :global(.hljs-emphasis) {
+  font-style: italic;
+}
+
+.pre :global(.hljs-strong) {
+  font-weight: 700;
+}
