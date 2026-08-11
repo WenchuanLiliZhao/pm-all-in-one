@@ -68,10 +68,45 @@ Bump template `.pm/agent.md` only when the **install path or package name** chan
    Dry-run first when unsure: `npm publish ./dist-cli --dry-run`. If npm rejects the version (previously used under this name), bump patch and retry both app and CLI together. Prefer a granular access token with Bypass 2FA for publish (interactive OTP is easy to rate-limit).
 
 7. Create / update the Release for tag `vX.Y.Z` and upload **only** the DMG and zip (`.blockmap` files are for future auto-update; skip them). Do not treat the source tarball GitHub adds as the install story.
-8. While unsigned, every Release must say so in its notes and repeat the `xattr -dr com.apple.quarantine` step. Mark it as a prerelease so GitHub does not surface it as Latest. Bundle name must be `pm all in one.app` (not the retired `Local PM`).
-9. Signing / notarization: follow the product-trust checklist when shipping a Gatekeeper-clean build (`hardenedRuntime`, staple, cold-path smoke).
+8. While unsigned, paste the **Unsigned Release notes template** below (fill `X.Y.Z` / changelog), mark the Release as a **prerelease** so GitHub does not surface it as Latest, and keep the title honest (e.g. `vX.Y.Z (unsigned …)`). Bundle name must be `pm all in one.app` (not the retired `Local PM`).
+9. Signing / notarization: follow the product-trust checklist when shipping a Gatekeeper-clean build (`hardenedRuntime`, staple, cold-path smoke). Drop the unsigned template once Developer ID + notarization are in place.
 
 Uploading both app artifacts takes on the order of 15 minutes on a home connection (~250 MB total). Budget for it; the upload, not the build, is the slow step. CLI publish is seconds once logged in.
+
+## Unsigned Release notes template
+
+Copy into every unsigned GitHub Release body. Mark the Release **prerelease**. Do not teach the right-click Gatekeeper bypass — it is not reliable on current macOS.
+
+**Release title:** `vX.Y.Z (unsigned — …)`
+
+~~~~markdown
+## Unsigned developer preview — not a trusted download
+
+Tag, `package.json`, and the in-app version all read **`X.Y.Z`**. Bundle name is **`pm all in one.app`**.
+
+### What you get
+
+- macOS **arm64 DMG** and **zip** (Apple Silicon)
+
+### Changelog
+
+- …what changed in this cut…
+
+### Read this before downloading
+
+- **Unsigned and not notarized.** There is no Apple Developer ID on the build machine. macOS will refuse the first open; on Apple Silicon it usually reports the app as *damaged* rather than *unsigned*. That is expected, and it is not a corrupted download.
+- To open it anyway, after moving the app into `/Applications`:
+
+  ```sh
+  xattr -dr com.apple.quarantine "/Applications/pm all in one.app"
+  ```
+
+  Only do this if you trust this source. The app embeds a terminal and reads your workspace directory.
+- **Friction-free alternative:** build from source. A locally built app carries no quarantine attribute. See the README.
+- **`1.0.0` is reserved** for the first signed and notarized build (end of epic v1).
+
+Packaging steps: `docs/releasing.md` (includes the required packaged-workspace smoke).
+~~~~
 
 ## Naming
 

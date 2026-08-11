@@ -34,7 +34,6 @@ export const ISSUE_EDITABLE_KEYS = [
   "startDate",
   "endDate",
   "blockedBy",
-  "estimatePoint",
   "description",
   "assignee",
   "fields",
@@ -50,7 +49,6 @@ export type IssueEditableSlice = {
   startDate: string | null;
   endDate: string | null;
   blockedBy: string[];
-  estimatePoint: number;
   description: string;
   assignee: string | null;
   fields: Record<string, unknown>;
@@ -146,7 +144,6 @@ export function pickIssueEditable(issue: Issue): IssueEditableSlice {
     startDate: issue.startDate,
     endDate: issue.endDate,
     blockedBy: [...issue.blockedBy],
-    estimatePoint: issue.estimatePoint,
     description: issue.description,
     assignee: issue.assignee,
     fields: { ...issue.fields },
@@ -282,7 +279,6 @@ export type IssueClassifyResult = {
     startDate: FieldVerdict;
     endDate: FieldVerdict;
     blockedBy: FieldVerdict;
-    estimatePoint: FieldVerdict;
     description: FieldVerdict;
     assignee: FieldVerdict;
   };
@@ -383,11 +379,6 @@ export function classifyIssue(
       draft.blockedBy,
       disk.blockedBy,
     ),
-    estimatePoint: classifyScalar(
-      baseline.estimatePoint,
-      draft.estimatePoint,
-      disk.estimatePoint,
-    ),
     description: classifyScalar(
       baseline.description,
       draft.description,
@@ -478,12 +469,6 @@ export function classifyIssue(
     draft.blockedBy,
     disk.blockedBy,
   );
-  const estimatePoint = pickScalar(
-    "estimatePoint",
-    baseline.estimatePoint,
-    draft.estimatePoint,
-    disk.estimatePoint,
-  );
   const description = pickScalar(
     "description",
     baseline.description,
@@ -523,7 +508,6 @@ export function classifyIssue(
       startDate: startDate.merged,
       endDate: endDate.merged,
       blockedBy: blockedBy.merged,
-      estimatePoint: estimatePoint.merged,
       description: description.merged,
       assignee: assignee.merged,
       fields: fieldsMerge.merged,
@@ -536,7 +520,6 @@ export function classifyIssue(
       startDate: startDate.nextBase,
       endDate: endDate.nextBase,
       blockedBy: blockedBy.nextBase,
-      estimatePoint: estimatePoint.nextBase,
       description: description.nextBase,
       assignee: assignee.nextBase,
       fields: fieldsMerge.nextBase,
@@ -652,7 +635,6 @@ export function issueSlicesEqual(
     equalsForSync(a.startDate, b.startDate) &&
     equalsForSync(a.endDate, b.endDate) &&
     equalsForSync(a.blockedBy, b.blockedBy) &&
-    equalsForSync(a.estimatePoint, b.estimatePoint) &&
     equalsForSync(a.description, b.description) &&
     equalsForSync(a.assignee, b.assignee) &&
     equalsForSync(normalizeFieldsMap(a.fields), normalizeFieldsMap(b.fields)) &&
@@ -675,7 +657,6 @@ export function applyIssueEditable(
     startDate: slice.startDate,
     endDate: slice.endDate,
     blockedBy: [...slice.blockedBy],
-    estimatePoint: slice.estimatePoint,
     description: slice.description,
     assignee: slice.assignee,
     fields: { ...slice.fields },

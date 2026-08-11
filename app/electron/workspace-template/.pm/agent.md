@@ -1,4 +1,4 @@
-<!-- local-pm agent.md rev 6 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/custom/ (see pm-create-skill). -->
+<!-- local-pm agent.md rev 7 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/custom/ (see pm-create-skill). -->
 # Agent rules (local-pm)
 
 ## Finding things
@@ -209,7 +209,7 @@ Hand-created directories under a project are **not** issues until adopted
 
 Fine to edit: workspace / issue / project / member `README.md`, `wiki/*/README.md`,
 markdown prop files, and the non-structural fields of `workspace.ts`,
-`project.ts`, and `props.ts` (title, `startDate`/`endDate`, `blockedBy`, estimate,
+`project.ts`, and `props.ts` (title, `startDate`/`endDate`, `blockedBy`,
 `assignee`, custom props, member `membership`).
 
 **Title vs body.** Title lives in `workspace.ts` / `project.ts` / issue, wiki-node,

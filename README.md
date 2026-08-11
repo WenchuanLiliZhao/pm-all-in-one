@@ -26,11 +26,13 @@ The desktop UI is the **easy way in** — an intuitive path so people can accept
 
 ## Status: v0 (open-source, unsigned)
 
-Builds are **unsigned and not notarized**. There is no Apple Developer ID on the build machine yet, so macOS treats a downloaded build as an unidentified app.
+Builds are **unsigned and not notarized**. There is no Apple Developer ID on the build machine yet.
+
+**What happens on first open of a downloaded build:** macOS will refuse to launch it. On Apple Silicon it usually reports the app as *damaged* rather than *unsigned*. That is Gatekeeper reacting to an unidentified download — not a corrupted file.
 
 **Version rule:** epic `vN` ships only when that epic ends. **v0** ends with an unsigned `0.x` developer preview; **v1** ends with signed, notarized `1.0.0`. Do not spend `1.0.0` on an unsigned build.
 
-Today this is aimed at developers who will clear quarantine or build from source — not a friction-free double-click download for a general audience.
+Today this is aimed at developers who will clear quarantine or build from source — not a friction-free double-click download for a general audience. See **Get it** below for the exact `xattr` command and the source-build path.
 
 ## Get it
 
@@ -73,6 +75,7 @@ Only do that if you trust this source. The app embeds a terminal and reads/write
 | --- | --- |
 | [docs/cli.md](docs/cli.md) | CLI install and common commands |
 | [docs/releasing.md](docs/releasing.md) | Cut app + npm releases |
+| [docs/v0-misc-log.md](docs/v0-misc-log.md) | Temporary pointer → dogfood catch-all for misc v0 changes (delete when that issue closes) |
 | [app/DEVELOPMENT.md](app/DEVELOPMENT.md) | Develop the desktop shell |
 
 Inside an opened workspace, agent-facing law lives in `AGENTS.md` → `.pm/agent.md` (not duplicated here).

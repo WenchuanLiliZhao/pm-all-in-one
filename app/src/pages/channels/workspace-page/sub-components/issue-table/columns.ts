@@ -25,7 +25,6 @@ export const SYSTEM_COLUMN_IDS = [
   "priority",
   "startDate",
   "endDate",
-  "estimatePoint",
   "created",
   "updated",
 ] as const;
@@ -153,13 +152,6 @@ export function formatDateCell(value: string | null | undefined): string {
   return value ?? "";
 }
 
-export function formatEstimateCell(issue: Issue | null): string {
-  if (!issue) {
-    return "";
-  }
-  return String(issue.estimatePoint);
-}
-
 export function formatCreatedCell(
   entry: TreeNode,
   issue: Issue | null,
@@ -203,7 +195,6 @@ export function rowSearchHaystack(args: {
     parts.push(issue.priority);
     parts.push(formatDateCell(issue.startDate));
     parts.push(formatDateCell(issue.endDate));
-    parts.push(formatEstimateCell(issue));
     for (const col of customColumns) {
       parts.push(formatCustomCell(issue, col, declaredKeys));
     }

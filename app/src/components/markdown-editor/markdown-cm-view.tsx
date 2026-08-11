@@ -1,4 +1,4 @@
-// ↔ markdown-editor.tsx — mounts this for Live / Source modes
+// ↔ markdown-editor.tsx — mounts this for Live editing
 // ↔ extensions/live-preview.ts — same-pane Live decorations + element hosts
 // ↔ extensions/auto-pair.ts — delimiter auto-pair keymap
 // ↔ autocomplete/mention.ts — generic @ mention completion shell
@@ -119,8 +119,6 @@ export type MarkdownCmViewProps = {
   handleRef?: Ref<MarkdownCmViewHandle | null>;
   /** ArrowUp/Left at doc start → leave editor (title handoff). */
   onNavigateOutAtStart?: () => void;
-  /** Mod-Shift-M → toggle Live/Source (borderless hosts). */
-  onToggleMode?: () => void;
 };
 
 function mentionExtensions(mention: MentionAutocompleteProps | undefined) {
@@ -273,21 +271,6 @@ function edgeNavigateKeymap(
   ]);
 }
 
-function toggleModeKeymap(onToggleMode: (() => void) | undefined): Extension {
-  if (!onToggleMode) {
-    return [];
-  }
-  return keymap.of([
-    {
-      key: "Mod-Shift-m",
-      run: () => {
-        onToggleMode();
-        return true;
-      },
-    },
-  ]);
-}
-
 export function MarkdownCmView({
   value,
   onChange,
@@ -300,7 +283,6 @@ export function MarkdownCmView({
   borderless = false,
   handleRef,
   onNavigateOutAtStart,
-  onToggleMode,
 }: MarkdownCmViewProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -310,8 +292,6 @@ export function MarkdownCmView({
   const allowProgrammaticFocusRef = useRef(false);
   const onNavigateOutRef = useRef(onNavigateOutAtStart);
   onNavigateOutRef.current = onNavigateOutAtStart;
-  const onToggleModeRef = useRef(onToggleMode);
-  onToggleModeRef.current = onToggleMode;
 
   const liveComp = useMemo(() => new Compartment(), []);
   const pairComp = useMemo(() => new Compartment(), []);
@@ -319,7 +299,6 @@ export function MarkdownCmView({
   const phComp = useMemo(() => new Compartment(), []);
   const themeComp = useMemo(() => new Compartment(), []);
   const edgeComp = useMemo(() => new Compartment(), []);
-  const toggleComp = useMemo(() => new Compartment(), []);
 
   useImperativeHandle(
     handleRef,
@@ -376,13 +355,6 @@ export function MarkdownCmView({
         mentionComp.of(mentionExtensions(mentionAutocomplete)),
         edgeComp.of(
           edgeNavigateKeymap(() => onNavigateOutRef.current?.()),
-        ),
-        toggleComp.of(
-          onToggleMode
-            ? toggleModeKeymap(() => {
-                onToggleModeRef.current?.();
-              })
-            : [],
         ),
       ],
     });
@@ -491,18 +463,6 @@ export function MarkdownCmView({
       ),
     });
   }, [onNavigateOutAtStart, edgeComp]);
-
-  useEffect(() => {
-    viewRef.current?.dispatch({
-      effects: toggleComp.reconfigure(
-        onToggleMode
-          ? toggleModeKeymap(() => {
-              onToggleModeRef.current?.();
-            })
-          : [],
-      ),
-    });
-  }, [onToggleMode, toggleComp]);
 
   return <div ref={hostRef} className={className} />;
 }

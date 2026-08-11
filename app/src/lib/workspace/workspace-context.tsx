@@ -287,7 +287,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
               startDate: issue.startDate,
               endDate: issue.endDate,
               blockedBy: issue.blockedBy,
-              estimatePoint: issue.estimatePoint,
               description: issue.description,
               fields: issue.fields,
               markdownFields: issue.markdownFields,
@@ -710,7 +709,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           endDate: patch.endDate !== undefined ? patch.endDate : i.endDate,
           blockedBy:
             patch.blockedBy !== undefined ? patch.blockedBy : i.blockedBy,
-          estimatePoint: patch.estimatePoint ?? i.estimatePoint,
           description:
             patch.description !== undefined ? patch.description : i.description,
           assignee:
@@ -1042,7 +1040,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           startDate,
           endDate,
           blockedBy: issue.blockedBy,
-          estimatePoint: issue.estimatePoint,
           description: issue.description,
           fields: issue.fields,
           markdownFields: issue.markdownFields,
@@ -1103,7 +1100,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           startDate: issue.startDate,
           endDate: issue.endDate,
           blockedBy,
-          estimatePoint: issue.estimatePoint,
           description: issue.description,
           fields: issue.fields,
           markdownFields: issue.markdownFields,
@@ -1168,7 +1164,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           startDate: issue.startDate,
           endDate: issue.endDate,
           blockedBy: issue.blockedBy,
-          estimatePoint: issue.estimatePoint,
           description: issue.description,
           fields: issue.fields,
           markdownFields: issue.markdownFields,

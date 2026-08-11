@@ -5,9 +5,16 @@
 import type { ReactNode, Ref } from "react";
 import type { Components } from "react-markdown";
 
+/**
+ * Retained on the public API. UI is temporarily locked to Live — `source` /
+ * `preview` values are accepted but ignored until mode switching returns.
+ */
 export type MarkdownEditorMode = "live" | "source" | "preview";
 
-/** chrome = labeled three-state toggle + bordered shell; borderless = no chrome, Live↔Source escape hatch. */
+/**
+ * chrome = optional label header + bordered shell; borderless = no header,
+ * no border/radius on the CM shell. Mode switching is paused for both.
+ */
 export type MarkdownEditorVariant = "chrome" | "borderless";
 
 /** Imperative handle for title→body handoff (and Lab focus demos). */
@@ -56,12 +63,15 @@ export type MarkdownEditorProps = {
   value: string;
   onChange: (next: string) => void;
   placeholder?: string;
-  /** Default editor mode. Defaults to `"live"`. Ignored when `variant="borderless"` (uses localStorage preference). */
+  /**
+   * Retained for API compatibility. Defaults to `"live"`. Currently ignored —
+   * the editor always renders Live.
+   */
   defaultMode?: MarkdownEditorMode;
   /**
-   * chrome (default): label + Live/Source/Preview header + bordered shell.
-   * borderless: hide mode chrome; Live↔Source via Mod-Shift-M / hover ghost control
-   * (preference in localStorage); no border/radius on CM shell; preview not available.
+   * chrome (default): optional label header + bordered shell.
+   * borderless: no header; no border/radius on CM shell.
+   * Mode switching is paused; both variants always render Live.
    */
   variant?: MarkdownEditorVariant;
   /** Imperative focus (e.g. after Title Enter). */
@@ -77,7 +87,7 @@ export type MarkdownEditorProps = {
   className?: string;
   /** Approximate min height in rows (mapped to px for CM). */
   rows?: number;
-  /** Optional label shown left of the mode toggle. Ignored when borderless. */
+  /** Optional label in the chrome header. Ignored when borderless. */
   label?: ReactNode;
   /** When false, skip closeBrackets / custom pair keymap. Default true. */
   autoPair?: boolean;

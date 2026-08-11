@@ -72,7 +72,6 @@ export function renderSchemaDts(schema: CustomPropsSchema): string {
     `  priority: ${ISSUE_PRIORITY_IDS.map((id) => JSON.stringify(id)).join(" | ")};`,
     "  startDate?: string | null;",
     "  endDate?: string | null;",
-    "  estimatePoint?: number;",
     "  /** Same-project issue ids that must complete before this one. */",
     "  blockedBy?: string[];",
     "  /** Member id who should do this; null = unassigned. */",

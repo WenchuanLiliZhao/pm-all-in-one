@@ -375,13 +375,14 @@ function toIssue(
     "priority",
     "startDate",
     "endDate",
-    "estimatePoint",
     "blockedBy",
     "assignee",
     "createdBy",
     "created",
     "updated",
     "id",
+    // Legacy drop: ignore leftover estimatePoint on disk (do not map to fields).
+    "estimatePoint",
     ...defs.filter((d) => d.type === "markdown").map((d) => d.key),
   ]);
   for (const [k, v] of Object.entries(props)) {
@@ -406,6 +407,7 @@ function toIssue(
       priority,
     };
     delete next.id;
+    delete next.estimatePoint;
     fs.writeFileSync(
       path.join(raw.dir, "props.ts"),
       writePropsTs(next, { satisfies: LEVEL_TYPE_NAME[level] }),
@@ -435,7 +437,6 @@ function toIssue(
         return [];
       }
     })(),
-    estimatePoint: props.estimatePoint ?? 0,
     description: readText(path.join(raw.dir, "README.md")),
     created: ts.created,
     updated: ts.updated,
@@ -654,12 +655,6 @@ function assertIssueBaseline(
     expected.blockedBy,
   );
   check(
-    "estimatePoint",
-    patch.estimatePoint !== undefined,
-    current.estimatePoint,
-    expected.estimatePoint,
-  );
-  check(
     "description",
     patch.description !== undefined,
     current.description,
@@ -811,7 +806,6 @@ export async function createIssue(
         startDate: null,
         endDate: null,
         blockedBy: [],
-        estimatePoint: 0,
         assignee: null,
         created: now,
         updated: now,
@@ -860,7 +854,6 @@ export async function updateIssue(
     delete safeFields.startDate;
     delete safeFields.endDate;
     delete safeFields.blockedBy;
-    delete safeFields.estimatePoint;
     delete safeFields.assignee;
     delete safeFields.createdBy;
   }
@@ -903,12 +896,10 @@ export async function updateIssue(
       patch.startDate !== undefined ? patch.startDate : (props.startDate ?? null),
     endDate: patch.endDate !== undefined ? patch.endDate : (props.endDate ?? null),
     blockedBy: nextBlockedBy,
-    estimatePoint:
-      patch.estimatePoint !== undefined
-        ? patch.estimatePoint
-        : (props.estimatePoint ?? 0),
     assignee: nextAssignee,
   };
+  // Drop legacy estimatePoint if still present on disk.
+  delete next.estimatePoint;
   if (nextCreatedBy) {
     next.createdBy = nextCreatedBy;
   } else {
@@ -947,7 +938,6 @@ export async function updateIssue(
     patch.startDate !== undefined ||
     patch.endDate !== undefined ||
     patch.blockedBy !== undefined ||
-    patch.estimatePoint !== undefined ||
     patch.description !== undefined ||
     patch.assignee !== undefined ||
     (safeFields !== undefined && Object.keys(safeFields).length > 0) ||

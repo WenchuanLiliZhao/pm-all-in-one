@@ -1,45 +1,12 @@
-// ↔ markdown-cm-view.tsx — Live / Source CodeMirror host
-// ↔ markdown-preview.tsx — Preview Reading View
+// ↔ markdown-cm-view.tsx — Live CodeMirror host
 // ↔ types.ts — MarkdownEditorProps / mode / variant / handle
-// ↔ styles.module.scss — borderless ghost mode control
-// ↔ AGENTS.md — borderless live↔source + localStorage preference
+// ↔ styles.module.scss — chrome label header + borderless shell
+// ↔ AGENTS.md — UI always Live; mode props retained (temporarily unused)
 
-import { useCallback, useImperativeHandle, useRef, useState } from "react";
+import { useImperativeHandle, useRef } from "react";
 import { MarkdownCmView, type MarkdownCmViewHandle } from "./markdown-cm-view";
-import { MarkdownPreview } from "./markdown-preview";
-import type { MarkdownEditorMode, MarkdownEditorProps } from "./types";
+import type { MarkdownEditorProps } from "./types";
 import styles from "./styles.module.scss";
-
-const MODE_CYCLE: MarkdownEditorMode[] = ["live", "source", "preview"];
-
-const MODE_LABEL: Record<MarkdownEditorMode, string> = {
-  live: "Live",
-  source: "Source",
-  preview: "Preview",
-};
-
-/** Global borderless Live/Source preference (not product state — see AGENTS.md). */
-const BORDERLESS_MODE_KEY = "pm.markdown-editor.borderless-mode";
-
-type BorderlessMode = "live" | "source";
-
-function readBorderlessMode(): BorderlessMode {
-  try {
-    const v = localStorage.getItem(BORDERLESS_MODE_KEY);
-    if (v === "live" || v === "source") return v;
-  } catch {
-    // privacy mode / storage disabled
-  }
-  return "live";
-}
-
-function writeBorderlessMode(mode: BorderlessMode) {
-  try {
-    localStorage.setItem(BORDERLESS_MODE_KEY, mode);
-  } catch {
-    // privacy mode / storage disabled
-  }
-}
 
 export function MarkdownEditor({
   value,
@@ -57,17 +24,13 @@ export function MarkdownEditor({
   autoPair = true,
   mentionAutocomplete,
 }: MarkdownEditorProps) {
+  // Mode props stay on the public contract; UI is temporarily locked to Live.
+  void defaultMode;
+  void plugins; // Reading View / Preview path paused with mode switching
+
   const borderless = variant === "borderless";
-  const [mode, setMode] = useState<MarkdownEditorMode>(() =>
-    borderless ? readBorderlessMode() : defaultMode,
-  );
   const cmRef = useRef<MarkdownCmViewHandle | null>(null);
   const minHeightPx = Math.max(120, rows * 18);
-  // borderless never enters preview (Decision 1); chrome uses full three-state mode.
-  const effectiveMode = mode;
-  const showCm = effectiveMode === "live" || effectiveMode === "source";
-  const borderlessModeLabel: BorderlessMode =
-    mode === "source" ? "source" : "live";
 
   useImperativeHandle(
     editorRef,
@@ -78,24 +41,6 @@ export function MarkdownEditor({
     }),
     [],
   );
-
-  function cycleMode() {
-    if (borderless) {
-      return;
-    }
-    setMode((m) => {
-      const i = MODE_CYCLE.indexOf(m);
-      return MODE_CYCLE[(i + 1) % MODE_CYCLE.length]!;
-    });
-  }
-
-  const toggleBorderlessMode = useCallback(() => {
-    setMode((m) => {
-      const next: BorderlessMode = m === "source" ? "live" : "source";
-      writeBorderlessMode(next);
-      return next;
-    });
-  }, []);
 
   return (
     <div
@@ -118,49 +63,24 @@ export function MarkdownEditor({
         onBlur();
       }}
     >
-      {borderless ? (
-        <button
-          type="button"
-          className={styles.borderlessModeGhost}
-          onClick={toggleBorderlessMode}
-          title="Toggle Live / Source (⌘⇧M / Ctrl+Shift+M)"
-        >
-          {MODE_LABEL[borderlessModeLabel]}
-        </button>
-      ) : (
+      {!borderless ? (
         <div className={styles.header}>
           <span>{label ?? "Markdown"}</span>
-          <button
-            type="button"
-            onClick={cycleMode}
-            title="Cycle Live / Source / Preview"
-          >
-            {MODE_LABEL[mode]}
-          </button>
         </div>
-      )}
-      {effectiveMode === "preview" ? (
-        <div className={styles.previewShell} style={{ minHeight: minHeightPx }}>
-          <MarkdownPreview source={value} plugins={plugins} />
-        </div>
-      ) : showCm ? (
-        <MarkdownCmView
-          handleRef={cmRef}
-          className={
-            borderless ? styles.cmShellBorderless : styles.cmShell
-          }
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          live={effectiveMode === "live"}
-          autoPair={autoPair}
-          mentionAutocomplete={mentionAutocomplete}
-          minHeightPx={minHeightPx}
-          borderless={borderless}
-          onNavigateOutAtStart={onNavigateOutAtStart}
-          onToggleMode={borderless ? toggleBorderlessMode : undefined}
-        />
       ) : null}
+      <MarkdownCmView
+        handleRef={cmRef}
+        className={borderless ? styles.cmShellBorderless : styles.cmShell}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        live
+        autoPair={autoPair}
+        mentionAutocomplete={mentionAutocomplete}
+        minHeightPx={minHeightPx}
+        borderless={borderless}
+        onNavigateOutAtStart={onNavigateOutAtStart}
+      />
     </div>
   );
 }

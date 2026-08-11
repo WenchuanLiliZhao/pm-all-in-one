@@ -73,7 +73,6 @@ import {
   formatCreatedCell,
   formatCustomCell,
   formatDateCell,
-  formatEstimateCell,
   formatStatusCell,
   formatUpdatedCell,
   keysDeclaredForRow,
@@ -469,7 +468,6 @@ export function IssueTable({
                   <th>Priority</th>
                   <th>Start</th>
                   <th>End</th>
-                  <th>Estimate</th>
                   <th>Created</th>
                   <th>Updated</th>
                   {customColumns.map((col) => (
@@ -481,7 +479,7 @@ export function IssueTable({
                 {rows.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={9 + customColumns.length}
+                      colSpan={8 + customColumns.length}
                       className={styles.muted}
                     >
                       {queryActive
@@ -776,13 +774,6 @@ function SortableTableRow({
       <td className={styles.mono}>
         {issue ? formatDateCell(issue.endDate) || (
           <span className={styles.muted}>—</span>
-        ) : (
-          <span className={styles.muted}>—</span>
-        )}
-      </td>
-      <td className={styles.mono}>
-        {issue ? (
-          formatEstimateCell(issue)
         ) : (
           <span className={styles.muted}>—</span>
         )}

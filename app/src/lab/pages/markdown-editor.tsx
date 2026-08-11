@@ -94,9 +94,9 @@ export function MarkdownEditorPage() {
     <PageWidth width="full" className={pageStyles.page}>
       <h1 className={pageStyles.title}>Markdown editor</h1>
       <p className={pageStyles.lead}>
-        Real module: <code>@/components/markdown-editor</code>. Live / source /
-        preview, auto-pair, @ mention autocomplete, plugins. Mock providers
-        only — no workspace data.
+        Real module: <code>@/components/markdown-editor</code>. Live editor
+        (mode switching paused), auto-pair, @ mention autocomplete, plugins.
+        Mock providers only — no workspace data.
       </p>
 
       <div className={styles.toolbar}>
@@ -133,8 +133,8 @@ export function MarkdownEditorPage() {
             MarkdownEditor — baseline
           </h2>
           <p className={styles.desc}>
-            No plugins. Cycle Live / Source / Preview. Auto-pair on. Controlled
-            value.
+            No plugins. Always Live (mode props retained, ignored). Auto-pair
+            on. Controlled value.
           </p>
           <MarkdownEditor
             label="Baseline"
@@ -150,8 +150,8 @@ export function MarkdownEditorPage() {
             MarkdownEditor — mock @wiki + autocomplete
           </h2>
           <p className={styles.desc}>
-            Preview chips via plugin. Type @ in Live/Source for mock
-            candidates.
+            Preview chips via plugin (standalone Preview below). Type @ in Live
+            for mock candidates.
           </p>
           <MarkdownEditor
             label="With plugin"
@@ -168,7 +168,7 @@ export function MarkdownEditorPage() {
 
       <section className={pageStyles.block}>
         <h2 className={pageStyles.sectionTitle}>
-          MarkdownEditor — borderless (locked Live)
+          MarkdownEditor — borderless (Live)
         </h2>
         <p className={styles.desc}>
           Doc-shell variant: no mode chrome, no border. Use Focus start to
@@ -219,7 +219,7 @@ export function MarkdownEditorPage() {
         <pre className={styles.log}>
           {logLines.length === 0 ? (
             <span className={styles.logEmpty}>
-              No events yet — switch to Preview and click a wiki chip.
+              No events yet — click a wiki chip in MarkdownPreview below.
             </span>
           ) : (
             logLines.join("\n")

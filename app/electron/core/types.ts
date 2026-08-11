@@ -77,7 +77,6 @@ export interface Issue {
    * Orthogonal to `parentId`. Empty when none.
    */
   blockedBy: EntityId[];
-  estimatePoint: number;
   description: string;
   /** ISO-8601 UTC; immutable after create */
   created: string;
@@ -135,7 +134,6 @@ export interface IssuePatch {
   startDate?: string | null;
   endDate?: string | null;
   blockedBy?: EntityId[];
-  estimatePoint?: number;
   description?: string;
   /** Set or clear assignee. createdBy is system — not patchable. */
   assignee?: EntityId | null;

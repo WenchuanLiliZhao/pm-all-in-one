@@ -572,16 +572,6 @@ export function IssueDetail({
                 onChange={(e) => onChange({ endDate: e.target.value || null })}
               />
             </label>
-            <label className={styles.field}>
-              <span>Estimate</span>
-              <Input
-                type="number"
-                value={issue.estimatePoint}
-                onChange={(e) =>
-                  onChange({ estimatePoint: Number(e.target.value) || 0 })
-                }
-              />
-            </label>
           </div>
         </>
       }

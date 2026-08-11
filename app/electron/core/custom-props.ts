@@ -85,7 +85,6 @@ const RESERVED_CUSTOM_KEYS = new Set([
   "priority",
   "startDate",
   "endDate",
-  "estimatePoint",
   "assignee",
   "createdBy",
 ]);

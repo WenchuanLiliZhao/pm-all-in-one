@@ -663,7 +663,6 @@ export function adoptStray(workspaceRoot: string, strayPath: string): AdoptResul
           priority: DEFAULT_ISSUE_PRIORITY,
           startDate: null,
           endDate: null,
-          estimatePoint: 0,
           created: now,
           updated: now,
         },

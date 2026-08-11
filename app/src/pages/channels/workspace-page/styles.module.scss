@@ -501,8 +501,6 @@
 .strayBanner {
   background: var(--color-use--warn-bg);
   color: var(--color-use--warn-fg);
-  /* Was 0.75rem 1.25rem (12/20) — converge horizontal to page pad (seed left-edge). */
-  margin: var(--space--12) var(--layout--page-pad-x) 0;
 }
 
 .strayTitle {

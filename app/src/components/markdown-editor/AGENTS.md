@@ -3,8 +3,8 @@ aliases:
   - markdown-editor
 updated: 2026-08-06
 description: >-
-  App-local Markdown live/source/preview module—CodeMirror 6 +
-  react-markdown Reading View; GFM tables/lists/codeblocks; per-element
+  App-local Markdown Live editor module—CodeMirror 6 +
+  react-markdown Reading View (standalone); GFM tables/lists/codeblocks; per-element
   encapsulation; pluggable transforms; no product ids in core.
 ---
 
@@ -15,9 +15,9 @@ description: >-
 <!-- ↔ src/lib/markdown/ — product MarkdownPlugin adapters (issue/wiki) -->
 <!-- ↔ src/lab/pages/markdown-editor.tsx — DEV review harness -->
 
-App-local Markdown edit / preview module. SoT remains raw Markdown. Product adapters (`@issue-…` / `@wiki-…`) live in `src/lib/markdown/`, not here.
+App-local Markdown edit module. SoT remains raw Markdown. Product adapters (`@issue-…` / `@wiki-…`) live in `src/lib/markdown/`, not here.
 
-**What it is:** CodeMirror 6 editor chrome (live / source / preview) + react-markdown Reading View, with a pluggable transform/components surface. Core stays product-agnostic — no project/issue ids, no host-specific completions. View-mode preference for borderless hosts may use browser `localStorage` (see below); that is editor UI state, not product storage.
+**What it is:** CodeMirror 6 Live editor (same-pane decorations) + standalone `MarkdownPreview` Reading View, with a pluggable transform/components surface. Core stays product-agnostic — no project/issue ids, no host-specific completions.
 
 **What it is not:** issue-link semantics, wiki resolution, IPC, or any product adapter.
 
@@ -25,15 +25,13 @@ App-local Markdown edit / preview module. SoT remains raw Markdown. Product adap
 
 **Every new feature must be judged before implementation.** Ask, in order:
 
-1. **Belong in this module?** — Generic Markdown editing / preview behavior (modes, CM engine, auto-pair, live decorations, Reading View shell, plugin *types* / hooks). Put it here.
+1. **Belong in this module?** — Generic Markdown editing / preview behavior (CM engine, auto-pair, live decorations, Reading View shell, plugin *types* / hooks). Put it here.
 2. **A plugin for this module?** — Domain or product behavior that plugs into `MarkdownPlugin` / mention autocomplete without baking product ids into core (e.g. `@issue-…` preview chips, wiki links). Implement as a plugin under `src/lib/markdown/` (or lab mock), not in this module.
 3. **Neither?** — App chrome, storage, IPC, project/issue CRUD. Keep it elsewhere.
 
 Do not default new work into this module. If it fails (1) and (2), it stays out.
 
 **Import rule:** this module must not import `@/lib/bridge`, `@pm-core/*`, workspace stores, or other host product modules. Consumers import `@/components/markdown-editor` directly (not via `@/components` barrel) when they also export from that barrel — avoid cycles.
-
-**`localStorage` exception:** borderless Live/Source preference may read/write `localStorage` key `pm.markdown-editor.borderless-mode` (`"live"` | `"source"`) from `markdown-editor.tsx` only. That is editor-own view state (escape hatch), not product/workspace state — do **not** move it to `.pm/local.json` / `PmApi` without a dedicated Zone 2/3 session. Reads/writes must be `try/catch`; illegal or missing values fall back to `"live"`.
 
 ## Layout
 
@@ -42,9 +40,9 @@ Do not default new work into this module. If it fails (1) and (2), it stays out.
 | `index.ts` | Public exports (`MarkdownEditor`, `MarkdownPreview`, types, `linkChipStyles`) |
 | `types.ts` | `MarkdownPlugin` + editor/preview/mention prop contracts |
 | `merge-plugins.ts` | Reading View: transform / components / URL-scheme merge |
-| `markdown-editor.tsx` | Mode chrome (live / source / preview) |
+| `markdown-editor.tsx` | Editor shell (UI locked to Live; mode props retained) |
 | `markdown-cm-view.tsx` | CodeMirror host (GFM via `markdownLanguage`) |
-| `markdown-preview.tsx` | Reading View (`react-markdown` + `remark-gfm`) |
+| `markdown-preview.tsx` | Reading View (`react-markdown` + `remark-gfm`) — standalone only for now |
 | `extensions/` | CM engine plugins (live-preview orchestrator, auto-pair) |
 | `autocomplete/` | Generic `@` mention shell |
 | `elements/<name>/` | **Per Markdown element** — preview components/styles + live decorations |
@@ -108,7 +106,7 @@ Element packages often style line chrome with **`EditorView.baseTheme`** (lower 
 
 Widget styles (list bullets, HR `<hr>`, image stub, mention chips) are **not** on `.cm-line` — this wipe does not apply to them.
 
-Verify in Lab **Live** mode (screenshot or `getComputedStyle` on `.cm-line.cm-md-…`); do not trust Source/Preview alone.
+Verify in Lab **Live** (screenshot or `getComputedStyle` on `.cm-line.cm-md-…`); do not trust standalone Preview alone.
 
 Shipped: `elements/table/` — Preview (remark-gfm HTML) + Live **idle projection** (`chrome.ts`); active caret falls back to parent CM pipe text.
 
@@ -148,15 +146,15 @@ Raw embedded HTML is out of scope.
 
 | Export | Role |
 | --- | --- |
-| `MarkdownEditor` | Live / Source / Preview chrome + controlled CM \| Reading View; `variant="borderless"` hides mode header, defaults Live, toggles Live↔Source via Mod-Shift-M / hover ghost (`localStorage` preference; no Preview) |
+| `MarkdownEditor` | Live CM editor (UI locked to Live); `variant="borderless"` hides label header and shell border; `defaultMode` / `MarkdownEditorMode` retained but ignored until mode switching returns |
 | `MarkdownEditorHandle` / `editorRef` | Imperative `focus({ at })` for title→body handoff (bypasses accidental-focus gate) |
-| `MarkdownPreview` | Preview-only renderer (Reading View) |
+| `MarkdownPreview` | Preview-only renderer (Reading View) — Lab / standalone; not mounted by `MarkdownEditor` while modes are paused |
 | `MarkdownPlugin` | `transformSource` + `components` + optional `allowedUrlSchemes` (Reading View) |
 | `MentionAutocompleteCandidate` / `MentionAutocompleteProps` | Generic `@` autocomplete shell (product fills `insertText`) |
 | `replaceOutsideCode` | Regex replace that skips fenced + inline code (for mention adapters) |
 | `linkChipStyles` | Optional CSS module class names for generic link chips (`ok` / `broken`) |
 
-**Modes:** `live` (default — same-pane decorations), `source` (raw CM), `preview` (Reading View). Live preview ≠ split-pane. `variant="borderless"` hides the mode header; defaults to Live; `Mod-Shift-M` or the hover-revealed ghost control toggles Live↔Source; preference is stored in `localStorage` (`pm.markdown-editor.borderless-mode`); `preview` is not part of the borderless cycle.
+**Modes (API retained, UI paused):** `MarkdownEditorMode` is still `"live" | "source" | "preview"` and `defaultMode` / `variant` remain on `MarkdownEditorProps`. The editor **always renders Live** for now — no chrome cycle button, no borderless ghost, no `Mod-Shift-M`, no `localStorage` preference. Standalone `MarkdownPreview` still exists for Lab / reading-only hosts.
 
 Plugins that emit custom href schemes in Reading View (e.g. `issue:`, `wiki:`) must set `allowedUrlSchemes` on `MarkdownPlugin`.
 
@@ -187,11 +185,11 @@ DEV-only: `#/lab/markdown-editor` (`src/lab/pages/markdown-editor.tsx`). Mock wi
 
 **Review checklist**
 
-- `MarkdownEditor` baseline: live / source / preview, label, placeholder, controlled value
-- `MarkdownEditor` **borderless**: no mode header; Live↔Source via Mod-Shift-M and hover-revealed ghost control; preference persists in `localStorage`; Focus start button lands caret (programmatic focus gate bypass); in **Source**, autosave / blur flush / title↔body handoff still work
+- `MarkdownEditor` baseline: Live only (mode props accepted, ignored), label, placeholder, controlled value
+- `MarkdownEditor` **borderless**: no mode header; no Live↔Source toggle; Focus start button lands caret (programmatic focus gate bypass); autosave / blur flush / title↔body handoff still work
 - Auto-pair: `[]` / `*` / `**` / `()` — **not** backticks
 - Live: markers hide off-cursor; headings/emphasis styled; `@…` mentions show resolved title when inactive; mentions inside `` `inline` `` / fenced code stay literal (no chip)
-- Preview: same — `@…` inside code is not rewritten to chips (`replaceOutsideCode`)
+- Preview (standalone `MarkdownPreview`): same — `@…` inside code is not rewritten to chips (`replaceOutsideCode`)
 - Live **lists**: inactive `ListItem` hides `-` / `*` / `+` / `1.` `ListMark` and shows bullet `•` or **sibling-index** ordinal widget (not raw SoT digits — so Enter→renumber then indent does not leave a nested `2` / outer `3`); indent/dedent (`Mod-]` / `Mod-[`) also rewrites touched OrderedList marks to `1..n`; GFM `- [ ]` / `- [x]` show checkboxes (click toggles SoT); caret anywhere in the item reveals raw marks; nested bullets / ordered under bullet stay indented
 - Live **links**: inactive `Link` / `Autolink` hide `[]()` / `<>` and URL chrome; label (or URL for autolink) styled with accent; caret in construct reveals source
 - Live **blockquote**: hide `>` when inactive; left-border muted line chrome

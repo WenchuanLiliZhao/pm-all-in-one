@@ -52,7 +52,6 @@ const IssuePropsZod = z
     priority: z.string().optional(),
     startDate: z.string().nullable().optional(),
     endDate: z.string().nullable().optional(),
-    estimatePoint: z.number().optional(),
     blockedBy: z.array(z.string()).optional(),
     assignee: OptionalMemberIdZod,
     createdBy: OptionalMemberIdZod,
