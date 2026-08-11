@@ -24,7 +24,7 @@ Local-first project manager for personal (and later small-team) developers who f
 | [[app/README\|app/]] | Electron + Vite + React desktop app (+ local web API skeleton) |
 | [[app/src/components/markdown-editor/AGENTS\|app/src/components/markdown-editor/]] | App-local Markdown edit/preview module |
 
-Dogfood PM library (outside repo): `/Users/wenchuanzhao/Documents/GitHub/new-world` — also a folder in `pm-all-in-one.code-workspace`. Durable product orientation lives there as wiki (not in this repo): nodes disk pattern `@wiki-WZ_eBxLpaAG_HYKecNZeW`; Electron vs server `@wiki-X-Z3_3kcrIQ--pNVQhzcw`.
+Dogfood PM library (outside repo): `/Users/wenchuanzhao/Documents/GitHub/new-world`. Durable product orientation lives there as wiki (not in this repo): nodes disk pattern `@wiki-WZ_eBxLpaAG_HYKecNZeW`; Electron vs server `@wiki-X-Z3_3kcrIQ--pNVQhzcw`.
 
 **Source of truth:** the files under `issue-hierarchy/`. **Project** is a special container (`project.ts`); **issues** are epic → task → subtask (`props.ts` + `README.md`). Workspace root has `workspace.ts` + `README.md` (title / createdDate / Home body). Wiki-nodes live under `wiki/<id>/{props.ts,README.md}` with opaque `nanoid(21)` ids; **Contents** (`wiki/sidebar.ts` `ref` tree) is the required hierarchy — every wiki-node must appear there (All pages is the flat admin inventory of the same set); create always places into Contents (`parentId` optional, default root) — link with `@wiki-<id>`. Storage is **flat** — `issue-hierarchy/<projectId>/<issueId>/` — so `@issue-<projectId>::<issueId>` resolves to a path by joining those ids, with no index and no running app. Ids are **opaque `nanoid(21)` tokens** (URL-safe alphabet, e.g. `V1StGXR8_Z5jdHi6B-myT`); directory name = id and is never renamed. Hierarchy lives in `props.ts` as `parentId` + `level`, checked against each other at runtime. Disk pattern overview: dogfood `@wiki-WZ_eBxLpaAG_HYKecNZeW`. Issues also carry system `status` (`draft` | `todo` | `in-progress` | `done` | `cancel`; create default `draft`) and `priority` (`very-low` | `low` | `medium` | `high` | `very-high`; create default `medium`). Custom props are declared per project in `custom-props.ts`. Derived `.pm/index.json` and `.pm/tree.md` are rebuildable and gitignored. There is **no writer handle**, no `.pm/handles.json` / `.pm/members.ts`, and no per-handle counters — create (app or CLI) allocates ids via a single local draw; collab is git. Identity / assignee are not encoded in ids.
 
@@ -63,5 +63,3 @@ In-flight product work lives in dogfood issues (e.g. Prop「这是什么」+ Pro
 Nodes (disk pattern): dogfood `@wiki-WZ_eBxLpaAG_HYKecNZeW`.
 Electron vs server: dogfood `@wiki-X-Z3_3kcrIQ--pNVQhzcw`.
 Save / leave contracts: dogfood `@wiki-n8_7zg25NlxwdV6nIBVcD`.
-
-Open via [[pm-all-in-one.code-workspace|pm-all-in-one.code-workspace]].
