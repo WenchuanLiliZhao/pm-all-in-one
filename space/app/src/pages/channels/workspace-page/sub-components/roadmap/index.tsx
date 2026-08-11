@@ -92,7 +92,6 @@ import {
   inboundLinkAnchor,
   outwardDepPath,
   layoutDepEdges,
-  rowCenterY,
   type DepBarAnchor,
 } from "./dep-edges";
 import styles from "./styles.module.scss";
@@ -2220,6 +2219,7 @@ export function RoadmapBoard({
                 const ghost =
                   rowHovered &&
                   dateModHeld &&
+                  hoverPx !== null &&
                   entry.kind === "issue" &&
                   issue
                     ? ghostPreviewForIssue(

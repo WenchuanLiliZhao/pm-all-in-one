@@ -648,7 +648,7 @@ export function IssueDetail({
                             variant="outlined"
                             size="small"
                             endIcon={<Lucide.ChevronDown />}
-                            aria-label={fieldLabel(def)}
+                            aria-label={def.label?.trim() || def.key}
                           >
                             {boolLabel}
                           </Button>

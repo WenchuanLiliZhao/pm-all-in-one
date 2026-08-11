@@ -1080,6 +1080,10 @@ export function CustomViewPage() {
     );
   }
 
+  if (!view) {
+    return <Navigate to="/w/home" replace />;
+  }
+
   return (
     <div className={styles.placeholder}>
       <h1>{view.name}</h1>

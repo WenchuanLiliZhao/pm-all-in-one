@@ -1,4 +1,5 @@
 import { useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   MarkdownEditor,
   type MarkdownEditorHandle,
@@ -94,6 +95,7 @@ export function ProjectDetail({
   issues,
   wikiNodes = [],
 }: ProjectDetailProps) {
+  const navigate = useNavigate();
   const saveHostSave = useCallback(() => onSave(), [onSave]);
   const saveHostHasUnsaved = useCallback(
     () =>
