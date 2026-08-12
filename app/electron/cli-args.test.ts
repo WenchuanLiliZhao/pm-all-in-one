@@ -45,3 +45,19 @@ test("short -p accepts leading-dash project id", () => {
   const { flags } = parseCliArgs(["issue", "list", "-p", id]);
   assert.equal(flags.p, id);
 });
+
+test("--index is a value flag", () => {
+  const { flags } = parseCliArgs([
+    "wiki",
+    "move",
+    "--id",
+    "V1StGXR8_Z5jdHi6B-myT",
+    "--parent",
+    "root",
+    "--index",
+    "0",
+  ]);
+  assert.equal(flags.index, "0");
+  assert.equal(flags.id, "V1StGXR8_Z5jdHi6B-myT");
+  assert.equal(flags.parent, "root");
+});

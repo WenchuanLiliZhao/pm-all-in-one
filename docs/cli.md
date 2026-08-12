@@ -1,6 +1,6 @@
 # CLI manual (`pm-all-in-one`)
 
-The public npm package **`pm-all-in-one`** allocates and inspects workspace nodes without the desktop app: projects, issues, members, handoffs, `doctor`, and `adopt`.
+The public npm package **`pm-all-in-one`** allocates and inspects workspace nodes without the desktop app: projects, issues, members, handoffs, wiki-nodes, `doctor`, and `adopt`.
 
 It does **not** host data. Collaboration remains git. The app’s **Install Command Line Tool…** and the in-app terminal shim install the **same** command name on `PATH`.
 
@@ -63,6 +63,11 @@ pm-all-in-one handoff create --from <memberId> --to <memberId> --related-project
 pm-all-in-one handoff list
 pm-all-in-one handoff update <id> [--title <t>] [--from <id>] [--to <id>] [--related-project <id>] [--open|--closed]
 
+pm-all-in-one wiki create --title "…" [--parent <wikiNodeId|root>] [--description <d>]
+pm-all-in-one wiki move   --id <wikiNodeId> --parent <wikiNodeId|root> [--index <n>]
+pm-all-in-one wiki delete --id <wikiNodeId>
+pm-all-in-one wiki list
+
 pm-all-in-one doctor
 pm-all-in-one adopt path/to/stray-dir
 ```
@@ -82,7 +87,6 @@ Live locators in Markdown bodies (bare text, not backticks):
 
 ## Current limits
 
-- **No `wiki create` in the CLI yet** — wiki nodes still allocate via the app (same core).
 - **Windows “Install Command Line Tool…”** is not supported yet; use `npx` / global npm on Windows.
 - Publishing CLI versions: see [releasing.md](releasing.md).
 

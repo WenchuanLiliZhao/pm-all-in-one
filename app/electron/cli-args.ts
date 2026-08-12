@@ -32,6 +32,7 @@ export const CLI_VALUE_FLAGS = new Set([
   "createdBy",
   "assignee",
   "description",
+  "index",
 ]);
 
 function takesValue(key: string): boolean {

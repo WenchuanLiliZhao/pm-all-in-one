@@ -10,6 +10,7 @@ import {
   handoffLinkSyntax,
   issueLinkSyntax,
   memberLinkSyntax,
+  wikiLinkSyntax,
 } from "./core/identity/links.js";
 import {
   backfillMemberRefs,
@@ -36,6 +37,13 @@ import {
   listProjects,
   moveIssue,
 } from "./core/domain/store.js";
+import {
+  createWikiNode,
+  deleteWikiNode,
+  getWikiSnapshot,
+  moveWikiNodeToSidebarPosition,
+  type WikiSidebarNode,
+} from "./core/domain/wiki.js";
 import {
   countDescendants,
   formatDescendantCost,
@@ -129,6 +137,10 @@ Usage:
   pm-all-in-one handoff create --from <memberId> --to <memberId> --related-project <projectId> [--title <t>] [--closed]
   pm-all-in-one handoff list
   pm-all-in-one handoff update <id> [--title <t>] [--from <id>] [--to <id>] [--related-project <id>] [--open|--closed]
+  pm-all-in-one wiki create --title <t> [--parent <wikiNodeId|root>] [--description <d>]
+  pm-all-in-one wiki move   --id <wikiNodeId> --parent <wikiNodeId|root> [--index <n>]
+  pm-all-in-one wiki delete --id <wikiNodeId>
+  pm-all-in-one wiki list
   pm-all-in-one doctor
   pm-all-in-one adopt <path>
 
@@ -138,6 +150,243 @@ Options:
   --force              Cascade-delete when the issue has children
   -h, --help           Show help
 `;
+}
+
+type WikiListRow = {
+  id: string;
+  title: string;
+  depth: number;
+  parentId: string | null;
+  ref: string;
+};
+
+function flattenWikiContents(
+  nodes: WikiSidebarNode[],
+  parentId: string | null = null,
+  depth = 0,
+): WikiListRow[] {
+  const rows: WikiListRow[] = [];
+  for (const node of nodes) {
+    if (node.type === "ref") {
+      rows.push({
+        id: node.id,
+        title: node.label ?? node.id,
+        depth,
+        parentId,
+        ref: wikiLinkSyntax(node.id),
+      });
+      if (node.children?.length) {
+        rows.push(...flattenWikiContents(node.children, node.id, depth + 1));
+      }
+      continue;
+    }
+    if (node.type === "group") {
+      rows.push(...flattenWikiContents(node.children, parentId, depth));
+    }
+  }
+  return rows;
+}
+
+function sidebarChildCount(
+  nodes: WikiSidebarNode[],
+  parentId: string | null,
+): number {
+  if (parentId === null) {
+    return nodes.length;
+  }
+  const walk = (list: WikiSidebarNode[]): number | null => {
+    for (const node of list) {
+      if (node.type === "ref" && node.id === parentId) {
+        return node.children?.length ?? 0;
+      }
+      if (node.type === "ref" && node.children) {
+        const found = walk(node.children);
+        if (found !== null) {
+          return found;
+        }
+      }
+      if (node.type === "group") {
+        const found = walk(node.children);
+        if (found !== null) {
+          return found;
+        }
+      }
+    }
+    return null;
+  };
+  const n = walk(nodes);
+  if (n === null) {
+    throw new Error(`Contents parent not found: ${parentId}`);
+  }
+  return n;
+}
+
+function findWikiPlacement(
+  nodes: WikiSidebarNode[],
+  id: string,
+  parentId: string | null = null,
+): { parentId: string | null; index: number } | null {
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i]!;
+    if (node.type === "ref" && node.id === id) {
+      return { parentId, index: i };
+    }
+    if (node.type === "ref" && node.children) {
+      const found = findWikiPlacement(node.children, id, node.id);
+      if (found) {
+        return found;
+      }
+    }
+    if (node.type === "group") {
+      const found = findWikiPlacement(node.children, id, parentId);
+      if (found) {
+        return found;
+      }
+    }
+  }
+  return null;
+}
+
+async function cmdWikiCreate(
+  root: string,
+  flags: Record<string, string | boolean>,
+  json: boolean,
+): Promise<void> {
+  const title = flagStr(flags, "title", "t");
+  if (!title) {
+    throw new Error("--title is required");
+  }
+  const parentId = parseParentId(flagStr(flags, "parent"));
+  const description = flagStr(flags, "description");
+  const node = await createWikiNode(root, {
+    title,
+    parentId,
+    ...(description !== undefined ? { description } : {}),
+  });
+  const ref = wikiLinkSyntax(node.id);
+  if (json) {
+    printJson({ ...node, ref });
+  } else {
+    process.stdout.write(
+      `Created ${ref}\n  path: ${node.relPath}\n  title: ${node.title}\n`,
+    );
+  }
+}
+
+async function cmdWikiMove(
+  root: string,
+  flags: Record<string, string | boolean>,
+  json: boolean,
+): Promise<void> {
+  const id = flagId(flags, "id");
+  const parentRaw = flagStr(flags, "parent");
+  if (id === undefined || parentRaw === undefined) {
+    throw new Error("--id and --parent are required");
+  }
+  const parentId = parseParentId(parentRaw);
+  const snapBefore = await getWikiSnapshot(root);
+  const indexRaw = flagStr(flags, "index");
+  let index: number;
+  if (indexRaw === undefined) {
+    index = sidebarChildCount(snapBefore.sidebar, parentId);
+  } else {
+    const parsed = Number(indexRaw);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      throw new Error("--index must be a non-negative number");
+    }
+    index = Math.floor(parsed);
+  }
+  const snap = await moveWikiNodeToSidebarPosition(root, id, {
+    parentId,
+    index,
+  });
+  const placement = findWikiPlacement(snap.sidebar, id);
+  const ref = wikiLinkSyntax(id);
+  const parentOut = placement?.parentId ?? parentId;
+  const indexOut = placement?.index ?? index;
+  if (json) {
+    printJson({
+      id,
+      ref,
+      parentId: parentOut,
+      index: indexOut,
+      sidebar: snap.sidebar,
+    });
+  } else {
+    process.stdout.write(
+      `Moved ${ref}\n  parent: ${parentOut ?? "root"}\n  index: ${indexOut}\n`,
+    );
+  }
+}
+
+async function cmdWikiList(root: string, json: boolean): Promise<void> {
+  const snap = await getWikiSnapshot(root);
+  const rows = flattenWikiContents(snap.sidebar);
+  if (json) {
+    printJson(rows);
+  } else {
+    for (const row of rows) {
+      const indent = "  ".repeat(row.depth);
+      process.stdout.write(`${indent}${row.ref}\t${row.title}\n`);
+    }
+  }
+}
+
+function countDirectWikiChildren(
+  nodes: WikiSidebarNode[],
+  id: string,
+): number {
+  const walk = (list: WikiSidebarNode[]): number | null => {
+    for (const node of list) {
+      if (node.type === "ref" && node.id === id) {
+        return (node.children ?? []).filter((c) => c.type === "ref").length;
+      }
+      if (node.type === "ref" && node.children) {
+        const found = walk(node.children);
+        if (found !== null) {
+          return found;
+        }
+      }
+      if (node.type === "group") {
+        const found = walk(node.children);
+        if (found !== null) {
+          return found;
+        }
+      }
+    }
+    return null;
+  };
+  return walk(nodes) ?? 0;
+}
+
+async function cmdWikiDelete(
+  root: string,
+  flags: Record<string, string | boolean>,
+  json: boolean,
+): Promise<void> {
+  const id = flagId(flags, "id");
+  if (id === undefined) {
+    throw new Error("--id is required");
+  }
+  const snap = await getWikiSnapshot(root);
+  if (!snap.nodes.some((n) => n.id === id)) {
+    throw new Error(`Wiki-node not found: ${id}`);
+  }
+  const lifted = countDirectWikiChildren(snap.sidebar, id);
+  const ok = await deleteWikiNode(root, id, { removeFile: true });
+  if (!ok) {
+    throw new Error(`Failed to delete wiki-node: ${id}`);
+  }
+  const ref = wikiLinkSyntax(id);
+  if (json) {
+    printJson({ ok: true, id, ref, liftedChildren: lifted });
+  } else if (lifted > 0) {
+    process.stdout.write(
+      `Deleted ${ref}\n  Contents children promoted: ${lifted}\n`,
+    );
+  } else {
+    process.stdout.write(`Deleted ${ref}\n`);
+  }
 }
 
 async function cmdIssueCreate(
@@ -681,6 +930,26 @@ async function main(): Promise<void> {
       return;
     }
     throw new Error(`Unknown handoff subcommand: ${sub ?? "(none)"}\n${usage()}`);
+  }
+  if (cmd === "wiki") {
+    const root = resolveWorkspace(flags);
+    if (sub === "create") {
+      await cmdWikiCreate(root, flags, json);
+      return;
+    }
+    if (sub === "move") {
+      await cmdWikiMove(root, flags, json);
+      return;
+    }
+    if (sub === "delete") {
+      await cmdWikiDelete(root, flags, json);
+      return;
+    }
+    if (sub === "list") {
+      await cmdWikiList(root, json);
+      return;
+    }
+    throw new Error(`Unknown wiki subcommand: ${sub ?? "(none)"}\n${usage()}`);
   }
 
   void rest;
