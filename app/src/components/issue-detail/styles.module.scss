@@ -1,84 +1,73 @@
 /**
  * Issue detail pane body.
- * ↔ src/global-styles/seams.md — `detailHeader↔detail-body`
- * ↔ pages/channels/workspace-page/styles.module.scss — `.detailHeader`
+ * ↔ src/global-styles/seams.md — `detailHeader↔detail-body`, `detail-prop-controls`
+ * ↔ pages/channels/workspace-page/styles.module.scss — `.detail` container
+ * ↔ components/doc-edit-shell/styles.module.scss — panel CSS vars
+ * ↔ components/ui/button · ui/input · member-person — props controls size=small
+ *
+ * Prop layout contract: props stack vertically only.
+ * Key/value inside a prop is `inline` (row) or `stack` (column) by field kind/type.
+ *
+ * Control size invariant: every interactive control in the props strip shares
+ * Button/Input `small` (22px) — Status, Priority, Assignee, dates, custom scalars.
  */
 .root {
   display: flex;
   flex-direction: column;
-  gap: var(--space--12);
-  /* Was 12px 14px — horizontal snap 14→12 to match detailHeader */
-  padding: var(--space--12);
+  min-width: 0;
+  /* Panel: no PageWidth pull-up; chrome/content fill the aside. */
+  --doc-edit-pull-top: 0px;
+  --doc-edit-content-max: none;
+  --doc-edit-content-pad-x: var(--space--12);
+  --doc-edit-chrome-bg: var(--color-use--bg-secondary-hex);
+  --doc-edit-chrome-pad-x: var(--layout--topbar-pad-x);
 }
 
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space--12);
-  flex-wrap: wrap;
+.bodyPad {
+  padding-bottom: var(--space--12);
 }
 
-.headerMeta {
+/* One prop per row. data-layout chooses key↔value orientation. */
+.propField {
   display: flex;
-  align-items: center;
+  min-width: 0;
+  font-size: 13px;
   gap: var(--space--8);
 }
 
-.level {
-  text-transform: uppercase;
-  font-size: 11px;
-  color: var(--color-use--text-secondary);
-  font-weight: 600;
+.propField[data-layout="inline"] {
+  flex-direction: row;
+  align-items: center;
 }
 
-.ref {
-  font-family: ui-monospace, monospace;
+.propField[data-layout="stack"] {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space--4);
+}
+
+.propFieldKey {
+  flex-shrink: 0;
+  color: var(--color-use--text-secondary);
   font-size: 12px;
-  color: var(--color-use--text-secondary);
 }
 
-.saveStatus {
-  color: var(--color-use--text-secondary);
-  font-size: 11px;
-  font-weight: 600;
+.propField[data-layout="inline"] .propFieldKey {
+  width: 7rem;
 }
 
-.saveStatusDirty {
-  color: var(--color-use--warn-fg);
-}
-
-.saveStatusOk {
-  color: var(--color-use--success);
-}
-
-.saveStatusError {
-  color: var(--color-use--danger);
-  border: none;
-  background: transparent;
-  padding: 0;
-  cursor: pointer;
-  font: inherit;
-  font-size: 11px;
-  font-weight: 600;
-  text-decoration: underline;
-}
-
-.headerActions {
-  display: flex;
-  gap: 8px;
-}
-
-.field {
+.propFieldValue {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  font-size: 13px;
+  align-items: stretch;
 }
 
-.field > span {
-  color: var(--color-use--text-secondary);
-  font-size: 12px;
+.fieldControl {
+  /* Full-width outlined small triggers (Status / Priority / boolean). */
+  width: 100%;
+  justify-content: space-between;
 }
 
 /* Jira-like linked issues (blocked by / blocks): rows first, Add below. */
@@ -88,6 +77,7 @@
   gap: var(--space--4);
   align-items: flex-start;
   min-width: 0;
+  width: 100%;
 }
 
 .depLinkList {
@@ -191,7 +181,7 @@
 .fieldLabel {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space--4);
   color: var(--color-use--text-secondary);
   font-size: 12px;
 }
@@ -214,33 +204,31 @@
 
 .readonlyValue {
   font: inherit;
-  padding: 0.35rem 0.5rem;
+  padding: var(--space--4) 0;
   color: var(--color-use--text-prime);
   font-family: ui-monospace, monospace;
   font-size: 12px;
-}
-
-.row2 {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mdFields {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space--12);
 }
 
 .mdFields h3 {
-  margin: 8px 0 0;
+  margin: var(--space--8) 0 0;
   font-size: 13px;
 }
 
 .violation {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space--8);
 }
 
 .violationTitle {
@@ -250,20 +238,20 @@
 
 .violationList {
   margin: 0;
-  padding-left: 18px;
+  padding-left: var(--space--16);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space--4);
   font-size: 12px;
 }
 
 .violationList code {
   font-family: ui-monospace, monospace;
-  margin-right: 6px;
+  margin-right: var(--space--4);
 }
 
 .violationActions {
   display: flex;
-  gap: 8px;
+  gap: var(--space--8);
   flex-wrap: wrap;
 }

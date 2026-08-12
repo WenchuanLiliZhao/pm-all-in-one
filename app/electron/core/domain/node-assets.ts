@@ -10,6 +10,9 @@ import { handoffDirPath } from "./handoffs.js";
 import { issueDirPath, projectDirPath } from "./store.js";
 import { wikiNodeDirPath } from "./wiki.js";
 
+/** Reserved sibling directory name under a node (not an issue / wiki id). */
+export const NODE_ASSETS_DIRNAME = "assets";
+
 export type NodeRef =
   | { kind: "workspace" }
   | { kind: "project"; projectId: string }
@@ -61,7 +64,7 @@ export function resolveNodeDir(workspaceRoot: string, ref: NodeRef): string {
 }
 
 export function nodeAssetsDir(nodeDir: string): string {
-  return path.join(nodeDir, "assets");
+  return path.join(nodeDir, NODE_ASSETS_DIRNAME);
 }
 
 /** Absolute `assets/` path when the directory exists; otherwise null. */
@@ -115,6 +118,37 @@ export function copyFilesIntoNodeAssets(
     const base = sanitizeAssetBasename(path.basename(src));
     const destName = uniqueAssetName(assetsDir, base);
     fs.copyFileSync(src, path.join(assetsDir, destName));
+    written.push(destName);
+  }
+  return written;
+}
+
+export type NodeAssetBufferInput = {
+  /** Suggested basename (sanitized + de-duped on write). */
+  name: string;
+  bytes: Uint8Array;
+};
+
+/**
+ * Write in-memory buffers into the node's `assets/` (clipboard paste / no path).
+ * Returns final basenames written.
+ */
+export function writeBuffersIntoNodeAssets(
+  workspaceRoot: string,
+  ref: NodeRef,
+  items: NodeAssetBufferInput[],
+): string[] {
+  if (items.length === 0) {
+    return [];
+  }
+  const assetsDir = nodeAssetsDir(resolveNodeDir(workspaceRoot, ref));
+  fs.mkdirSync(assetsDir, { recursive: true });
+
+  const written: string[] = [];
+  for (const item of items) {
+    const base = sanitizeAssetBasename(item.name);
+    const destName = uniqueAssetName(assetsDir, base);
+    fs.writeFileSync(path.join(assetsDir, destName), item.bytes);
     written.push(destName);
   }
   return written;

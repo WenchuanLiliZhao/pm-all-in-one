@@ -1,0 +1,12 @@
+/**
+ * ↔ doc-edit-overflow-menu.tsx — Delete danger row
+ */
+
+.dangerItem {
+  color: var(--color-use--danger);
+
+  /* ItemButton icon sets its own color; force inherit so trash + label match. */
+  > * {
+    color: inherit;
+  }
+}

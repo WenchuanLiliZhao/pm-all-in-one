@@ -226,6 +226,27 @@ export function createHttpPmApi(): PmApi {
       return window.confirm(`${opts.title}\n\n${opts.message}${detail}`);
     },
 
+    // ↔ src/lib/bridge/pm-api.ts — confirmUnsavedLeave (web stub)
+    // ↔ electron/main.ts — native three-button twin
+    confirmUnsavedLeave: async (opts) => {
+      const detail = opts.detail ? `\n\n${opts.detail}` : "";
+      const body = `${opts.title}\n\n${opts.message}${detail}`;
+      // Web is unproven: two-step confirm approximates Save / Discard / Cancel.
+      if (
+        window.confirm(
+          `${body}\n\nOK = Save and leave. Cancel = see other options.`,
+        )
+      ) {
+        return "save";
+      }
+      if (
+        window.confirm(`${body}\n\nOK = Discard and leave. Cancel = stay.`)
+      ) {
+        return "discard";
+      }
+      return "cancel";
+    },
+
     moveIssue: (input: MoveIssueInput) =>
       request<Issue>("POST", "/issues/move", input),
 
@@ -261,6 +282,7 @@ export function createHttpPmApi(): PmApi {
     adoptStray: (strayPath) =>
       request<AdoptResult>("POST", "/doctor/adopt", { strayPath }),
     revealPath: async () => false,
+    openPath: async () => false,
 
     // ↔ electron/preload.cts — desktop git sync; web does not pretend
     getGitSyncStatus: async (): Promise<GitSyncStatus> => ({
@@ -286,6 +308,8 @@ export function createHttpPmApi(): PmApi {
 
     listNodeAssets: async () => [],
     addNodeAssets: async () => unsupported("addNodeAssets"),
+    importNodeAssetPaths: async () => unsupported("importNodeAssetPaths"),
+    writeNodeAssetBuffers: async () => unsupported("writeNodeAssetBuffers"),
     getNodeAssetsDir: async () => null,
 
     getWiki: () => request<WikiSnapshot>("GET", "/wiki"),

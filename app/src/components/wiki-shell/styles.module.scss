@@ -46,6 +46,9 @@
   overflow: auto;
   display: flex;
   flex-direction: column;
+  /* DocEditShell chrome breaks out to this width via 100cqw. */
+  container-type: inline-size;
+  container-name: doc-edit-view;
 }
 
 /* Child owns vertical scroll when `contentWidth="full"` (All pages).

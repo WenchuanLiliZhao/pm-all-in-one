@@ -111,7 +111,8 @@
   font-weight: 500;
 }
 
-/* Card appearance — shared with select trigger (ui/Button outlined medium) */
+/* Card appearance — shared with select trigger (ui/Button outlined; size from data-size) */
+/* ↔ components/ui/button — small|medium min-height; detail props use small */
 
 .card {
   /* default: shrink to content; select sets cardFullWidth */

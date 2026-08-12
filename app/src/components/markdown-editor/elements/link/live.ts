@@ -1,5 +1,6 @@
 // ↔ ./index.ts — createLinkLiveExtensions re-exported for element registry
 // ↔ ./preview.tsx — Reading View twin (a)
+// ↔ ../../local-media.ts — assets/ links → attachment cards
 // ↔ ../../extensions/live-ownership.ts — LinkMark/URL under Link|Autolink owned here
 // ↔ ../../extensions/live-preview.ts — skips Link/Autolink/URL constructs
 // ↔ AGENTS.md — Live links checklist (hide [](); caret reveals)
@@ -10,10 +11,16 @@ import {
   Decoration,
   EditorView,
   ViewPlugin,
+  WidgetType,
   type DecorationSet,
   type ViewUpdate,
 } from "@codemirror/view";
 import type { SyntaxNode } from "@lezer/common";
+import {
+  createAttachmentCardEl,
+  isNodeAssetRelUrl,
+  mediaThemeSpec,
+} from "../../local-media";
 
 const hide = Decoration.replace({});
 const linkStyle = Decoration.mark({ class: "cm-md-link" });
@@ -29,6 +36,62 @@ function selectionOverlaps(
   return selFrom <= to && selTo >= from;
 }
 
+class AssetLinkCardWidget extends WidgetType {
+  constructor(
+    readonly src: string,
+    readonly label: string,
+  ) {
+    super();
+  }
+
+  eq(other: AssetLinkCardWidget) {
+    return other.src === this.src && other.label === this.label;
+  }
+
+  toDOM() {
+    return createAttachmentCardEl(this.src, this.label);
+  }
+
+  ignoreEvent() {
+    return false;
+  }
+}
+
+function linkLabelAndHref(
+  link: SyntaxNode,
+  doc: { sliceString: (from: number, to: number) => string },
+): { label: string; href: string } {
+  let href = "";
+  let label = "";
+  let pos = link.from;
+  for (let child = link.firstChild; child; child = child.nextSibling) {
+    if (child.name === "URL") {
+      href = doc.sliceString(child.from, child.to);
+      if (child.from > pos) {
+        const gap = doc.sliceString(pos, child.from);
+        if (!/^[[\]()!]*$/.test(gap)) label += gap;
+      }
+      pos = child.to;
+      continue;
+    }
+    if (child.name === "LinkMark") {
+      if (child.from > pos) {
+        const gap = doc.sliceString(pos, child.from);
+        if (!/^[[\]()!]*$/.test(gap)) label += gap;
+      }
+      pos = child.to;
+      continue;
+    }
+    if (child.from > pos) {
+      const gap = doc.sliceString(pos, child.from);
+      if (!/^[[\]()!]*$/.test(gap)) label += gap;
+    }
+    label += doc.sliceString(child.from, child.to);
+    pos = child.to;
+  }
+  return { label: label.trim(), href };
+}
+
 function hideLinkChrome(
   specs: DecSpec[],
   link: SyntaxNode,
@@ -39,7 +102,6 @@ function hideLinkChrome(
   for (let child = link.firstChild; child; child = child.nextSibling) {
     if (child.from > pos) {
       const gap = doc.sliceString(pos, child.from);
-      // Drop delimiter glue between label and URL (`](`) and similar.
       if (/^[[\]()!]*$/.test(gap)) {
         specs.push({ from: pos, to: child.from, deco: hide });
       } else {
@@ -55,7 +117,6 @@ function hideLinkChrome(
         specs.push({ from: child.from, to: child.to, deco: hide });
       }
     } else {
-      // Label content (may nest strong/em — leave for orchestrator marks).
       specs.push({ from: child.from, to: child.to, deco: linkStyle });
     }
     pos = child.to;
@@ -86,12 +147,25 @@ function buildLinkDecorations(view: EditorView): DecorationSet {
         if (node.name === "Link" || node.name === "Autolink") {
           const active = selectionOverlaps(node.from, node.to, selFrom, selTo);
           if (active) return;
-          // Autolink has no separate label — keep the URL visible, hide `<>`.
+
+          if (node.name === "Link") {
+            const { label, href } = linkLabelAndHref(node.node, doc);
+            if (isNodeAssetRelUrl(href)) {
+              specs.push({
+                from: node.from,
+                to: node.to,
+                deco: Decoration.replace({
+                  widget: new AssetLinkCardWidget(href, label),
+                }),
+              });
+              return false;
+            }
+          }
+
           hideLinkChrome(specs, node.node, doc, node.name === "Autolink");
           return false;
         }
 
-        // Bare URL (not already handled as Link/Autolink/Image child).
         if (node.name === "URL") {
           const parent = node.node.parent;
           if (
@@ -120,6 +194,7 @@ function buildLinkDecorations(view: EditorView): DecorationSet {
 
 const linkTheme = EditorView.baseTheme({
   ".cm-md-link": { color: "var(--color-use--accent-text)" },
+  ...mediaThemeSpec(),
 });
 
 /** Live link chrome: hide []() / <> when inactive; style label / bare URL. */

@@ -1,5 +1,7 @@
 // ↔ ./index.ts — createImageLiveExtensions
 // ↔ ./preview.tsx — Reading View twin
+// ↔ ../../local-media.ts — figure / card / facet
+// ↔ ../../inline-fragment.ts — caption HTML (shared seam)
 // ↔ ../../extensions/live-ownership.ts — Image LinkMark/URL owned here
 // ↔ AGENTS.md — Live image checklist
 
@@ -13,6 +15,13 @@ import {
   type DecorationSet,
   type ViewUpdate,
 } from "@codemirror/view";
+import {
+  createAttachmentCardEl,
+  createFigureEl,
+  isEmbeddableImageUrl,
+  localMediaFacet,
+  mediaThemeSpec,
+} from "../../local-media";
 
 type DecSpec = { from: number; to: number; deco: Decoration };
 
@@ -25,36 +34,30 @@ function selectionOverlaps(
   return selFrom <= to && selTo >= from;
 }
 
-class ImageWidget extends WidgetType {
+class MediaWidget extends WidgetType {
   constructor(
-    readonly src: string,
-    readonly alt: string,
+    readonly sotSrc: string,
+    readonly resolvedSrc: string,
+    readonly caption: string,
+    readonly mode: "figure" | "card",
   ) {
     super();
   }
 
-  eq(other: ImageWidget) {
-    return other.src === this.src && other.alt === this.alt;
+  eq(other: MediaWidget) {
+    return (
+      other.sotSrc === this.sotSrc &&
+      other.resolvedSrc === this.resolvedSrc &&
+      other.caption === this.caption &&
+      other.mode === this.mode
+    );
   }
 
   toDOM() {
-    const wrap = document.createElement("span");
-    wrap.className = "cm-md-image";
-    const img = document.createElement("img");
-    img.className = "cm-md-image-el";
-    img.src = this.src;
-    img.alt = this.alt;
-    img.loading = "lazy";
-    img.addEventListener("error", () => {
-      wrap.classList.add("cm-md-image-broken");
-      img.remove();
-      const stub = document.createElement("span");
-      stub.className = "cm-md-image-stub";
-      stub.textContent = this.alt || "broken image";
-      wrap.appendChild(stub);
-    });
-    wrap.appendChild(img);
-    return wrap;
+    if (this.mode === "card") {
+      return createAttachmentCardEl(this.sotSrc, this.caption);
+    }
+    return createFigureEl(this.resolvedSrc, this.sotSrc, this.caption);
   }
 
   ignoreEvent() {
@@ -64,14 +67,29 @@ class ImageWidget extends WidgetType {
 
 function imageAltAndSrc(
   view: EditorView,
-  node: { node: { firstChild: { name: string; from: number; to: number; nextSibling: unknown } | null }; from: number; to: number },
+  node: {
+    node: {
+      firstChild: {
+        name: string;
+        from: number;
+        to: number;
+        nextSibling: unknown;
+      } | null;
+    };
+    from: number;
+    to: number;
+  },
 ): { alt: string; src: string } {
   let src = "";
   let alt = "";
   let pos = node.from;
   for (
-    let c: { name: string; from: number; to: number; nextSibling: unknown } | null =
-      node.node.firstChild;
+    let c: {
+      name: string;
+      from: number;
+      to: number;
+      nextSibling: unknown;
+    } | null = node.node.firstChild;
     c;
     c = c.nextSibling as typeof c
   ) {
@@ -89,7 +107,6 @@ function imageAltAndSrc(
     }
     pos = c.to;
   }
-  // Strip leading `!` glue if present in alt.
   alt = alt.replace(/^!/, "").trim();
   return { alt, src };
 }
@@ -100,6 +117,7 @@ function buildImageDecorations(view: EditorView): DecorationSet {
   const sel = view.state.selection.main;
   const selFrom = focused ? sel.from : -1;
   const selTo = focused ? sel.to : -1;
+  const media = view.state.facet(localMediaFacet);
 
   for (const { from, to } of view.visibleRanges) {
     syntaxTree(view.state).iterate({
@@ -110,11 +128,16 @@ function buildImageDecorations(view: EditorView): DecorationSet {
         const active = selectionOverlaps(node.from, node.to, selFrom, selTo);
         if (active) return;
         const { alt, src } = imageAltAndSrc(view, node);
+        if (!src) return;
+        const resolved = media.resolveMediaUrl?.(src) ?? src;
+        const finalMode: "figure" | "card" = isEmbeddableImageUrl(src)
+          ? "figure"
+          : "card";
         specs.push({
           from: node.from,
           to: node.to,
           deco: Decoration.replace({
-            widget: new ImageWidget(src, alt || "image"),
+            widget: new MediaWidget(src, resolved, alt, finalMode),
           }),
         });
         return false;
@@ -129,30 +152,7 @@ function buildImageDecorations(view: EditorView): DecorationSet {
   );
 }
 
-const imageTheme = EditorView.baseTheme({
-  ".cm-md-image": {
-    display: "inline-block",
-    maxWidth: "100%",
-    verticalAlign: "middle",
-  },
-  ".cm-md-image-el": {
-    display: "block",
-    maxWidth: "100%",
-    maxHeight: "240px",
-    objectFit: "contain",
-    borderRadius: "4px",
-  },
-  ".cm-md-image-stub": {
-    display: "inline-block",
-    padding: "4px 8px",
-    backgroundColor: "var(--color-use--bg-darken)",
-    color: "var(--color-use--text-secondary)",
-    borderRadius: "4px",
-    fontSize: "0.9em",
-  },
-});
-
-/** Live image: idle widget / broken stub; caret reveals ![alt](url). */
+/** Live image: idle figure or attachment card; caret reveals ![alt](url). */
 export function createImageLiveExtensions(): Extension[] {
   return [
     ViewPlugin.fromClass(
@@ -177,6 +177,6 @@ export function createImageLiveExtensions(): Extension[] {
       },
       { decorations: (v) => v.decorations },
     ),
-    imageTheme,
+    EditorView.baseTheme(mediaThemeSpec()),
   ];
 }

@@ -41,6 +41,8 @@ export class WorkspaceWatcher {
     const wiki = path.join(workspaceRoot, "wiki");
     const members = path.join(workspaceRoot, "members");
     const handoffs = path.join(workspaceRoot, "handoffs");
+    // Workspace-root assets/ (optional; may not exist yet — chokidar picks it up).
+    const workspaceAssets = path.join(workspaceRoot, "assets");
     const pmDir = path.join(workspaceRoot, ".pm");
     const sep = path.sep;
 
@@ -50,6 +52,7 @@ export class WorkspaceWatcher {
         wiki,
         members,
         handoffs,
+        workspaceAssets,
         workspacePropsPath(workspaceRoot),
         workspaceReadmePath(workspaceRoot),
       ],

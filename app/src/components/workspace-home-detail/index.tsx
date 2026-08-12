@@ -1,9 +1,14 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import {
   MarkdownEditor,
   type MarkdownEditorHandle,
 } from "@/components/markdown-editor";
-import { BorderlessTitle, DocEditShell } from "@/components/doc-edit-shell";
+import {
+  BorderlessTitle,
+  DocEditChannelTitle,
+  DocEditNav,
+  DocEditShell,
+} from "@/components/doc-edit-shell";
 import type {
   WikiNodeMeta,
   Issue,
@@ -18,7 +23,9 @@ import { useActiveSaveHost } from "@/lib/workspace/use-active-save-host";
 import { DetailConflictBanner } from "@/components/detail-conflict-banner";
 import { NodeAssetsSection } from "@/components/node-assets-section";
 import { Button } from "@/components/ui/button";
+import { Lucide } from "@/components/ui/lucide";
 import { usePmMentions } from "@/lib/markdown/use-pm-mentions";
+import { useNodeLocalMedia } from "@/lib/markdown/node-local-media";
 import styles from "./styles.module.scss";
 
 interface WorkspaceHomeDetailProps {
@@ -27,7 +34,6 @@ interface WorkspaceHomeDetailProps {
   conflictPaths?: string[];
   onChange: (patch: WorkspacePatch) => void;
   onSave: () => boolean | Promise<boolean>;
-  onFlush?: () => void;
   onConflictReload?: () => void;
   onConflictKeep?: () => void;
   onNavigateIssue: (sel: Selection) => void;
@@ -36,53 +42,12 @@ interface WorkspaceHomeDetailProps {
   wikiNodes?: WikiNodeMeta[];
 }
 
-function SaveStatusLabel({
-  status,
-  onSave,
-}: {
-  status: DetailSaveStatus;
-  onSave: () => void;
-}) {
-  if (status === "dirty") {
-    return (
-      <span className={`${styles.saveStatus} ${styles.saveStatusDirty}`}>
-        Unsaved
-      </span>
-    );
-  }
-  if (status === "saving") {
-    return <span className={styles.saveStatus}>Saving…</span>;
-  }
-  if (status === "saved") {
-    return (
-      <span className={`${styles.saveStatus} ${styles.saveStatusOk}`}>Saved</span>
-    );
-  }
-  if (status === "error") {
-    return (
-      <Button
-        type="button"
-        variant="ghost"
-        className={`${styles.saveStatus} ${styles.saveStatusError}`}
-        onClick={onSave}
-      >
-        Save failed · Retry
-      </Button>
-    );
-  }
-  if (status === "conflict") {
-    return <span className={styles.saveStatus}>Conflict</span>;
-  }
-  return null;
-}
-
 export function WorkspaceHomeDetail({
   meta,
   saveStatus,
   conflictPaths = [],
   onChange,
   onSave,
-  onFlush,
   onConflictReload,
   onConflictKeep,
   onNavigateIssue,
@@ -116,6 +81,12 @@ export function WorkspaceHomeDetail({
     knownIssueKeys: knownKeys,
     onNavigateIssue: navigateIssue,
   });
+  const workspaceNodeRef = useMemo(
+    () => ({ kind: "workspace" as const }),
+    [],
+  );
+  const { localMedia, filenames: assetFilenames, ingestAssetFiles } =
+    useNodeLocalMedia(workspaceNodeRef);
   const canSave =
     saveStatus === "dirty" ||
     saveStatus === "error" ||
@@ -144,29 +115,23 @@ export function WorkspaceHomeDetail({
     <DocEditShell
       className={styles.root}
       header={
-        <div className={styles.header}>
-          <div className={styles.headerMeta}>
-            <span className={styles.level}>Workspace</span>
-            <SaveStatusLabel
-              status={saveStatus}
-              onSave={() => {
-                void onSave();
-              }}
-            />
-          </div>
-          <div className={styles.headerActions}>
+        <DocEditNav
+          left={<DocEditChannelTitle>Overview</DocEditChannelTitle>}
+          actions={
             <Button
               type="button"
-              variant={canSave ? "fill-inverse" : "fill"}
+              variant={canSave ? "fill-inverse" : "ghost"}
+              size="small"
               disabled={!canSave || saveStatus === "saving"}
+              startIcon={<Lucide.Save aria-hidden />}
+              aria-label={saveStatus === "saving" ? "Saving" : "Save"}
+              title={saveStatus === "saving" ? "Saving…" : "Save"}
               onClick={() => {
                 void onSave();
               }}
-            >
-              {saveStatus === "saving" ? "Saving…" : "Save"}
-            </Button>
-          </div>
-        </div>
+            />
+          }
+        />
       }
       conflictBanner={
         onConflictReload && onConflictKeep ? (
@@ -183,7 +148,6 @@ export function WorkspaceHomeDetail({
           value={meta.title}
           onChange={(title) => onChange({ title })}
           onEnter={onTitleEnter}
-          onBlur={onFlush}
           size="page"
         />
       }
@@ -201,13 +165,15 @@ export function WorkspaceHomeDetail({
           onChange={(description) => onChange({ description })}
           plugins={plugins}
           mentionAutocomplete={mentionAutocomplete}
+          localMedia={localMedia}
+          assetFilenames={assetFilenames}
+          ingestAssetFiles={ingestAssetFiles}
           placeholder="Markdown… type @ to link issue / wiki / member / handoff"
           rows={16}
           onNavigateOutAtStart={focusTitle}
-          onBlur={onFlush}
         />
       }
-      footer={<NodeAssetsSection nodeRef={{ kind: "workspace" }} />}
+      footer={<NodeAssetsSection nodeRef={workspaceNodeRef} />}
     />
   );
 }

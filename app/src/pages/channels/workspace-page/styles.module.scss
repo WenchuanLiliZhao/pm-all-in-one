@@ -160,17 +160,9 @@
   overflow: visible;
   background: var(--color-use--bg-secondary-hex);
   min-width: 0;
-}
-
-.detailHeader {
-  display: flex;
-  justify-content: flex-end;
-  padding: var(--space--8) var(--space--12) 0;
-  flex-shrink: 0;
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background: var(--color-use--bg-secondary-hex);
+  /* DocEditShell chrome breaks out to this width via 100cqw. */
+  container-type: inline-size;
+  container-name: doc-edit-view;
 }
 
 .terminal {

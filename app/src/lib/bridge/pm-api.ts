@@ -118,6 +118,16 @@ export interface PmApi {
     message: string;
     detail?: string;
   }) => Promise<boolean>;
+  /**
+   * Leave while dirty: Save & leave / Discard / Cancel.
+   * ↔ electron/preload.cts + electron/main.ts — native three-button dialog
+   * ↔ src/lib/workspace/unsaved-leave.ts — resolveUnsavedLeave
+   */
+  confirmUnsavedLeave: (opts: {
+    title: string;
+    message: string;
+    detail?: string;
+  }) => Promise<"save" | "discard" | "cancel">;
   moveIssue: (input: MoveIssueInput) => Promise<Issue>;
   getCustomProps: (projectId: EntityId) => Promise<CustomPropsSchema>;
   updateCustomProps: (
@@ -141,6 +151,8 @@ export interface PmApi {
   doctor: () => Promise<DoctorReport>;
   adoptStray: (strayPath: string) => Promise<AdoptResult>;
   revealPath: (targetPath: string) => Promise<boolean>;
+  /** Desktop-only: open a file/dir with the OS default app. Web stub → false. */
+  openPath: (targetPath: string) => Promise<boolean>;
 
   /**
    * Desktop-only: fetch + ahead/behind vs upstream.
@@ -166,6 +178,19 @@ export interface PmApi {
    * Returns written basenames (after conflict rename). Cancel → [].
    */
   addNodeAssets: (ref: NodeRef) => Promise<string[]>;
+  /**
+   * Copy absolute filesystem paths into the node's `assets/`.
+   * Desktop-only; web stub throws unsupported.
+   */
+  importNodeAssetPaths: (ref: NodeRef, paths: string[]) => Promise<string[]>;
+  /**
+   * Write in-memory buffers into the node's `assets/` (clipboard screenshots).
+   * Desktop-only; web stub throws unsupported.
+   */
+  writeNodeAssetBuffers: (
+    ref: NodeRef,
+    items: { name: string; data: Uint8Array }[],
+  ) => Promise<string[]>;
   /** Absolute `assets/` path when the directory exists; otherwise null. */
   getNodeAssetsDir: (ref: NodeRef) => Promise<string | null>;
 

@@ -18,6 +18,7 @@ import {
   CircleOff,
   Copy,
   Equal,
+  Ellipsis,
   FileText,
   Folder,
   FolderOpen,
@@ -28,9 +29,13 @@ import {
   Music,
   Plus,
   RefreshCw,
+  Save,
   Scissors,
+  Settings,
   Star,
+  Trash2,
   Users,
+  X,
   type LucideProps,
 } from "lucide-react";
 import type { ComponentType, ReactElement } from "react";
@@ -63,6 +68,7 @@ export const Lucide = {
   CircleOff: withIconDefaults(CircleOff, "CircleOff"),
   Copy: withIconDefaults(Copy, "Copy"),
   Equal: withIconDefaults(Equal, "Equal"),
+  Ellipsis: withIconDefaults(Ellipsis, "Ellipsis"),
   FileText: withIconDefaults(FileText, "FileText"),
   Folder: withIconDefaults(Folder, "Folder"),
   FolderOpen: withIconDefaults(FolderOpen, "FolderOpen"),
@@ -73,9 +79,13 @@ export const Lucide = {
   Music: withIconDefaults(Music, "Music"),
   Plus: withIconDefaults(Plus, "Plus"),
   RefreshCw: withIconDefaults(RefreshCw, "RefreshCw"),
+  Save: withIconDefaults(Save, "Save"),
   Scissors: withIconDefaults(Scissors, "Scissors"),
+  Settings: withIconDefaults(Settings, "Settings"),
   Star: withIconDefaults(Star, "Star"),
+  Trash2: withIconDefaults(Trash2, "Trash2"),
   Users: withIconDefaults(Users, "Users"),
+  X: withIconDefaults(X, "X"),
 } as const;
 
 export type { LucideProps };

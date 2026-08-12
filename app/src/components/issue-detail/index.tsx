@@ -1,16 +1,17 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   MarkdownEditor,
   type MarkdownEditorHandle,
 } from "@/components/markdown-editor";
-import { BorderlessTitle, DocEditShell } from "@/components/doc-edit-shell";
+import { BorderlessTitle, DocEditNav, DocEditOverflowMenu, DocEditShell, LocatorCopyText } from "@/components/doc-edit-shell";
 import type {
   CustomPropDef,
   Issue,
   IssuePatch,
+  MetaFieldType,
 } from "@/lib/types";
 import { BUILTIN_ISSUE_STATUSES } from "@/lib/issue-status";
-import { BUILTIN_ISSUE_PRIORITIES, issuePriorityLabel } from "@/lib/issue-priority";
+import { BUILTIN_ISSUE_PRIORITIES } from "@/lib/issue-priority";
 import type {
   DetailSaveStatus,
   Selection,
@@ -29,9 +30,19 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Lucide } from "@/components/ui/lucide";
-import { issueStatusLabel } from "@/components/ui/issue-status";
-import { CopyAiLocatorButton } from "@/components/copy-ai-locator-button";
+// Status/Priority look SoT — compose ui chrome; do not invent local glyphs/tones.
+import {
+  issueStatusIcon,
+  issueStatusLabel,
+  issueStatusToneStyles,
+} from "@/components/ui/issue-status";
+import {
+  issuePriorityIcon,
+  issuePriorityLabel,
+  issuePriorityToneStyles,
+} from "@/components/ui/issue-priority";
 import { usePmMentions } from "@/lib/markdown/use-pm-mentions";
+import { useNodeLocalMedia } from "@/lib/markdown/node-local-media";
 import type { WikiNodeMeta } from "@/lib/types";
 import styles from "./styles.module.scss";
 
@@ -42,12 +53,12 @@ interface IssueDetailProps {
   onChange: (patch: IssuePatch) => void;
   /** Persist detail; returns false when save failed / cancelled. */
   onSave: () => boolean | Promise<boolean>;
-  /** Flush pending autosave (title/body blur). */
-  onFlush?: () => void;
   onConflictReload?: () => void;
   onConflictKeep?: () => void;
   onDelete: () => void;
   onAddChild?: () => void;
+  /** Close the detail panel (icon in DocEditNav). */
+  onClose?: () => void;
   /** Reparent to resolve a ladder violation; the store re-derives levels. */
   onRepairPlacement: (newParentIssueId: string | null) => void;
   onNavigateIssue: (sel: Selection) => void;
@@ -63,9 +74,32 @@ const CHILD_LABEL: Record<Issue["level"], string | null> = {
   subtask: null,
 };
 
-type DepCandidate = { id: string; label: string };
+/** Key/value orientation inside one prop. Props themselves always stack. */
+type PropFieldLayout = "inline" | "stack";
 
-/** Jira-like dep list: issue rows, then Add (dropdown). Shared by blocked-by + blocks. */
+/** Custom MetaFieldType → layout. markdown is tall → stack; scalars → inline. */
+function propLayoutForCustomType(type: MetaFieldType): PropFieldLayout {
+  return type === "markdown" ? "stack" : "inline";
+}
+
+function PropField({
+  layout,
+  label,
+  children,
+}: {
+  layout: PropFieldLayout;
+  label: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className={styles.propField} data-layout={layout}>
+      <span className={styles.propFieldKey}>{label}</span>
+      <div className={styles.propFieldValue}>{children}</div>
+    </div>
+  );
+}
+
+type DepCandidate = { id: string; label: string };
 function IssueDepLinksField({
   label,
   listAriaLabel,
@@ -94,8 +128,7 @@ function IssueDepLinksField({
   onRemove: (issueId: string) => void;
 }) {
   return (
-    <div className={styles.field}>
-      <span>{label}</span>
+    <PropField layout="stack" label={label}>
       <div className={styles.depLinkStack}>
         {ids.length > 0 ? (
           <ul className={styles.depLinkList} aria-label={listAriaLabel}>
@@ -175,46 +208,8 @@ function IssueDepLinksField({
           </DropdownMenu.Content>
         </DropdownMenu>
       </div>
-    </div>
+    </PropField>
   );
-}
-
-function SaveStatusLabel({
-  status,
-  onSave,
-}: {
-  status: DetailSaveStatus;
-  onSave: () => void;
-}) {
-  if (status === "dirty") {
-    return (
-      <span className={`${styles.saveStatus} ${styles.saveStatusDirty}`}>
-        Unsaved
-      </span>
-    );
-  }
-  if (status === "saving") {
-    return <span className={styles.saveStatus}>Saving…</span>;
-  }
-  if (status === "saved") {
-    return <span className={`${styles.saveStatus} ${styles.saveStatusOk}`}>Saved</span>;
-  }
-  if (status === "error") {
-    return (
-      <Button
-        type="button"
-        variant="ghost"
-        className={`${styles.saveStatus} ${styles.saveStatusError}`}
-        onClick={onSave}
-      >
-        Save failed · Retry
-      </Button>
-    );
-  }
-  if (status === "conflict") {
-    return <span className={styles.saveStatus}>Conflict</span>;
-  }
-  return null;
 }
 
 export function IssueDetail({
@@ -223,11 +218,11 @@ export function IssueDetail({
   conflictPaths = [],
   onChange,
   onSave,
-  onFlush,
   onConflictReload,
   onConflictKeep,
   onDelete,
   onAddChild,
+  onClose,
   onRepairPlacement,
   onNavigateIssue,
   knownKeys,
@@ -253,7 +248,6 @@ export function IssueDetail({
     save: saveHostSave,
     hasUnsaved: saveHostHasUnsaved,
   });
-  const refLabel = `${issue.projectId}::${issue.id}`;
   const childLabel = CHILD_LABEL[issue.level];
   const expectedLevel =
     issue.violations.find(
@@ -270,6 +264,17 @@ export function IssueDetail({
     knownIssueKeys: knownKeys,
     onNavigateIssue: navigateIssue,
   });
+  const issueNodeRef = useMemo(
+    () =>
+      ({
+        kind: "issue" as const,
+        projectId: issue.projectId,
+        issueId: issue.id,
+      }),
+    [issue.projectId, issue.id],
+  );
+  const { localMedia, filenames: assetFilenames, ingestAssetFiles } =
+    useNodeLocalMedia(issueNodeRef);
 
   const assigneeOptions = useMemo(() => {
     const nodes = members?.nodes ?? [];
@@ -422,48 +427,52 @@ export function IssueDetail({
   return (
     <DocEditShell
       className={styles.root}
+      contentClassName={styles.bodyPad}
       header={
-        <div className={styles.header}>
-          <div className={styles.headerMeta}>
-            <span className={styles.level}>{issue.level}</span>
-            <span className={styles.ref}>{refLabel}</span>
-            <SaveStatusLabel status={saveStatus} onSave={() => void onSave()} />
-          </div>
-          <div className={styles.headerActions}>
-            <CopyAiLocatorButton
+        <DocEditNav
+          left={
+            <LocatorCopyText
               locator={{
                 kind: "issue",
                 projectId: issue.projectId,
                 issueId: issue.id,
               }}
             />
-            <Button
-              type="button"
-              variant={canSave ? "fill-inverse" : "fill"}
-              disabled={!canSave || saveStatus === "saving"}
-              onClick={() => void onSave()}
-            >
-              {saveStatus === "saving" ? "Saving…" : "Save"}
-            </Button>
-            {childLabel && onAddChild ? (
-              <Button type="button" variant="outlined" onClick={onAddChild}>
-                {childLabel}
-              </Button>
-            ) : null}
-            <Button
-              type="button"
-              variant="outlined"
-              colors={{
-                fg: "var(--color-use--danger)",
-                border: "var(--color-use--danger-border)",
-                hoverBg: "var(--color-use--danger-soft)",
-              }}
-              onClick={onDelete}
-            >
-              Delete
-            </Button>
-          </div>
-        </div>
+          }
+          actions={
+            <>
+              <Button
+                type="button"
+                variant={canSave ? "fill-inverse" : "ghost"}
+                size="small"
+                disabled={!canSave || saveStatus === "saving"}
+                startIcon={<Lucide.Save aria-hidden />}
+                aria-label={saveStatus === "saving" ? "Saving" : "Save"}
+                title={saveStatus === "saving" ? "Saving…" : "Save"}
+                onClick={() => void onSave()}
+              />
+              <DocEditOverflowMenu
+                addChild={
+                  childLabel && onAddChild
+                    ? { label: childLabel, onSelect: onAddChild }
+                    : undefined
+                }
+                onDelete={onDelete}
+              />
+              {onClose ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="small"
+                  startIcon={<Lucide.X aria-hidden />}
+                  aria-label="Close"
+                  title="Close"
+                  onClick={onClose}
+                />
+              ) : null}
+            </>
+          }
+        />
       }
       conflictBanner={
         <>
@@ -516,25 +525,30 @@ export function IssueDetail({
           value={issue.title}
           onChange={(title) => onChange({ title })}
           onEnter={onTitleEnter}
-          onBlur={onFlush}
           size="sidebar"
         />
       }
       propsSlot={
         <>
-          <label className={styles.field}>
-            <span>Status</span>
+          <PropField layout="inline" label="Status">
             <DropdownMenu>
               <DropdownMenu.Trigger asChild>
                 <Button
                   type="button"
                   variant="outlined"
                   size="small"
+                  startIcon={issueStatusIcon(issue.status)}
                   endIcon={<Lucide.ChevronDown />}
                   disabled={saveStatus === "saving"}
                   aria-label="Status"
+                  className={styles.fieldControl}
                 >
-                  {issueStatusLabel(issue.status)}
+                  <span
+                    className={issueStatusToneStyles.tone}
+                    data-status={issue.status}
+                  >
+                    {issueStatusLabel(issue.status)}
+                  </span>
                 </Button>
               </DropdownMenu.Trigger>
               <DropdownMenu.Content align="start" side="bottom">
@@ -542,6 +556,7 @@ export function IssueDetail({
                   <DropdownMenu.ItemButton
                     key={s.id}
                     label={s.label}
+                    icon={issueStatusIcon(s.id)}
                     active={issue.status === s.id}
                     onSelect={() => {
                       onChange({ status: s.id });
@@ -550,21 +565,27 @@ export function IssueDetail({
                 ))}
               </DropdownMenu.Content>
             </DropdownMenu>
-          </label>
+          </PropField>
 
-          <label className={styles.field}>
-            <span>Priority</span>
+          <PropField layout="inline" label="Priority">
             <DropdownMenu>
               <DropdownMenu.Trigger asChild>
                 <Button
                   type="button"
                   variant="outlined"
                   size="small"
+                  startIcon={issuePriorityIcon(issue.priority)}
                   endIcon={<Lucide.ChevronDown />}
                   disabled={saveStatus === "saving"}
                   aria-label="Priority"
+                  className={styles.fieldControl}
                 >
-                  {issuePriorityLabel(issue.priority)}
+                  <span
+                    className={issuePriorityToneStyles.tone}
+                    data-priority={issue.priority}
+                  >
+                    {issuePriorityLabel(issue.priority)}
+                  </span>
                 </Button>
               </DropdownMenu.Trigger>
               <DropdownMenu.Content align="start" side="bottom">
@@ -572,18 +593,19 @@ export function IssueDetail({
                   <DropdownMenu.ItemButton
                     key={p.id}
                     label={p.label}
+                    icon={issuePriorityIcon(p.id)}
                     active={issue.priority === p.id}
                     onSelect={() => onChange({ priority: p.id })}
                   />
                 ))}
               </DropdownMenu.Content>
             </DropdownMenu>
-          </label>
+          </PropField>
 
-          <label className={styles.field}>
-            <span>Assignee</span>
+          <PropField layout="inline" label="Assignee">
             <MemberPersonSelect
               aria-label="Assignee"
+              controlSize="small"
               value={issue.assignee ?? null}
               options={assigneeOptions.involved}
               extraOption={
@@ -599,7 +621,7 @@ export function IssueDetail({
               }
               onChange={(memberId) => onChange({ assignee: memberId })}
             />
-          </label>
+          </PropField>
 
           <IssueDepLinksField
             label="Blocked by"
@@ -654,8 +676,7 @@ export function IssueDetail({
             onRemove={onRemoveBlocks}
           />
 
-          <label className={styles.field}>
-            <span>Created by</span>
+          <PropField layout="inline" label="Created by">
             <MemberPerson
               memberId={issue.createdBy}
               appearance="card"
@@ -663,37 +684,35 @@ export function IssueDetail({
               showName
               emptyLabel="—"
             />
-          </label>
+          </PropField>
 
-          <div className={styles.row2}>
-            <label className={styles.field}>
-              <span>Created</span>
-              <span className={styles.readonlyValue}>{issue.created}</span>
-            </label>
-            <label className={styles.field}>
-              <span>Updated</span>
-              <span className={styles.readonlyValue}>{issue.updated}</span>
-            </label>
-          </div>
+          <PropField layout="inline" label="Created">
+            <span className={styles.readonlyValue}>{issue.created}</span>
+          </PropField>
 
-          <div className={styles.row2}>
-            <label className={styles.field}>
-              <span>Start</span>
-              <Input
-                type="date"
-                value={issue.startDate ?? ""}
-                onChange={(e) => onChange({ startDate: e.target.value || null })}
-              />
-            </label>
-            <label className={styles.field}>
-              <span>End</span>
-              <Input
-                type="date"
-                value={issue.endDate ?? ""}
-                onChange={(e) => onChange({ endDate: e.target.value || null })}
-              />
-            </label>
-          </div>
+          <PropField layout="inline" label="Updated">
+            <span className={styles.readonlyValue}>{issue.updated}</span>
+          </PropField>
+
+          <PropField layout="inline" label="Start">
+            <Input
+              type="date"
+              size="small"
+              value={issue.startDate ?? ""}
+              onChange={(e) =>
+                onChange({ startDate: e.target.value || null })
+              }
+            />
+          </PropField>
+
+          <PropField layout="inline" label="End">
+            <Input
+              type="date"
+              size="small"
+              value={issue.endDate ?? ""}
+              onChange={(e) => onChange({ endDate: e.target.value || null })}
+            />
+          </PropField>
         </>
       }
       body={
@@ -704,42 +723,41 @@ export function IssueDetail({
           onChange={(description) => onChange({ description })}
           plugins={plugins}
           mentionAutocomplete={mentionAutocomplete}
+          localMedia={localMedia}
+          assetFilenames={assetFilenames}
+          ingestAssetFiles={ingestAssetFiles}
           placeholder="Markdown… type @ to link an issue"
           rows={10}
           onNavigateOutAtStart={focusTitle}
-          onBlur={onFlush}
         />
       }
       footer={
         <>
-          <NodeAssetsSection
-            nodeRef={{
-              kind: "issue",
-              projectId: issue.projectId,
-              issueId: issue.id,
-            }}
-          />
+          <NodeAssetsSection nodeRef={issueNodeRef} />
 
           {propDefs.length > 0 ? (
             <div className={styles.mdFields}>
               <h3>Custom fields</h3>
               {propDefs.map((def) => {
+                const layout = propLayoutForCustomType(def.type);
+                const label = fieldLabel(def);
+
                 if (def.type === "markdown") {
                   return (
-                    <MarkdownEditor
-                      key={def.key}
-                      label={fieldLabel(def)}
-                      value={issue.markdownFields[def.key] ?? ""}
-                      onChange={(next) =>
-                        onChange({
-                          markdownFields: { [def.key]: next },
-                        })
-                      }
-                      plugins={plugins}
-                      mentionAutocomplete={mentionAutocomplete}
-                      placeholder="Markdown… type @ to link an issue"
-                      rows={6}
-                    />
+                    <PropField key={def.key} layout={layout} label={label}>
+                      <MarkdownEditor
+                        value={issue.markdownFields[def.key] ?? ""}
+                        onChange={(next) =>
+                          onChange({
+                            markdownFields: { [def.key]: next },
+                          })
+                        }
+                        plugins={plugins}
+                        mentionAutocomplete={mentionAutocomplete}
+                        placeholder="Markdown… type @ to link an issue"
+                        rows={6}
+                      />
+                    </PropField>
                   );
                 }
 
@@ -748,10 +766,13 @@ export function IssueDetail({
                   const value =
                     raw === true ? "true" : raw === false ? "false" : "";
                   const boolLabel =
-                    value === "true" ? "true" : value === "false" ? "false" : "—";
+                    value === "true"
+                      ? "true"
+                      : value === "false"
+                        ? "false"
+                        : "—";
                   return (
-                    <label key={def.key} className={styles.field}>
-                      {fieldLabel(def)}
+                    <PropField key={def.key} layout={layout} label={label}>
                       <DropdownMenu>
                         <DropdownMenu.Trigger asChild>
                           <Button
@@ -760,6 +781,7 @@ export function IssueDetail({
                             size="small"
                             endIcon={<Lucide.ChevronDown />}
                             aria-label={def.label?.trim() || def.key}
+                            className={styles.fieldControl}
                           >
                             {boolLabel}
                           </Button>
@@ -792,7 +814,7 @@ export function IssueDetail({
                           ))}
                         </DropdownMenu.Content>
                       </DropdownMenu>
-                    </label>
+                    </PropField>
                   );
                 }
 
@@ -805,22 +827,21 @@ export function IssueDetail({
                         ? ""
                         : String(raw);
                   return (
-                    <label key={def.key} className={styles.field}>
-                      {fieldLabel(def)}
+                    <PropField key={def.key} layout={layout} label={label}>
                       <Input
                         type="number"
+                        size="small"
                         value={value}
                         onChange={(e) => {
                           const t = e.target.value;
                           onChange({
                             fields: {
-                              [def.key]:
-                                t === "" ? null : Number(t),
+                              [def.key]: t === "" ? null : Number(t),
                             },
                           });
                         }}
                       />
-                    </label>
+                    </PropField>
                   );
                 }
 
@@ -828,10 +849,10 @@ export function IssueDetail({
                   const raw = issue.fields[def.key];
                   const value = typeof raw === "string" ? raw : "";
                   return (
-                    <label key={def.key} className={styles.field}>
-                      {fieldLabel(def)}
+                    <PropField key={def.key} layout={layout} label={label}>
                       <Input
                         type="date"
+                        size="small"
                         value={value}
                         onChange={(e) =>
                           onChange({
@@ -841,7 +862,7 @@ export function IssueDetail({
                           })
                         }
                       />
-                    </label>
+                    </PropField>
                   );
                 }
 
@@ -850,9 +871,9 @@ export function IssueDetail({
                 const value =
                   raw === null || raw === undefined ? "" : String(raw);
                 return (
-                  <label key={def.key} className={styles.field}>
-                    {fieldLabel(def)}
+                  <PropField key={def.key} layout={layout} label={label}>
                     <Input
+                      size="small"
                       value={value}
                       onChange={(e) =>
                         onChange({
@@ -862,7 +883,7 @@ export function IssueDetail({
                         })
                       }
                     />
-                  </label>
+                  </PropField>
                 );
               })}
             </div>

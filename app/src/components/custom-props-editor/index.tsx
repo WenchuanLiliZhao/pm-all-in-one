@@ -13,7 +13,7 @@ import { Lucide } from "@/components/ui/lucide";
 import { getPm } from "@/lib/bridge";
 import { useWorkspace } from "@/lib/workspace/workspace-context";
 import { useActiveSaveHost } from "@/lib/workspace/use-active-save-host";
-import { useDiscardLeaveGuard } from "@/lib/workspace/use-discard-leave-guard";
+import { useUnsavedLeaveGuard } from "@/lib/workspace/use-unsaved-leave-guard";
 import { countFieldUsage } from "./field-usage";
 import { RemoveFieldDialog } from "./remove-field-dialog";
 import styles from "./styles.module.scss";
@@ -120,13 +120,16 @@ export function CustomPropsEditor({
     hasUnsaved: saveHostHasUnsaved,
     promptBeforeUnload: true,
   });
-  useDiscardLeaveGuard({
+  useUnsavedLeaveGuard({
     when: dirty,
+    hasUnsaved: () => dirty || saving,
+    save: handleSave,
     onDiscard: () => {
       setDirty(false);
     },
-    title: "Discard unsaved custom props?",
-    message: "You have unsaved custom field changes. Leave and discard them?",
+    title: "Unsaved custom props",
+    message:
+      "You have unsaved custom field changes. Save before leaving, discard them, or cancel?",
   });
 
   function patchLevel(

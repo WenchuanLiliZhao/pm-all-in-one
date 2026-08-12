@@ -4,7 +4,12 @@
  * `button__icon-container` — omit `size` on Lucide icons in startIcon / endIcon.
  * `data-selected` raises `--button-fg` to text-prime (skip fill-inverse).
  *
+ * Size small (22) is the detail-panel props strip rhythm — Input size=small and
+ * MemberPerson card/select `controlSize="small"` twin these tokens.
+ *
  * ↔ components/member-person — card appearance / select trigger reuse these classes
+ * ↔ components/ui/input — size=small geometry twin
+ * ↔ src/global-styles/seams.md — `detail-prop-controls`
  * ↔ lab/pages/button — selected matrix
  */
 .button {

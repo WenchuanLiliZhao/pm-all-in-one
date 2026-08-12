@@ -23,6 +23,9 @@ export function MarkdownEditor({
   label,
   autoPair = true,
   mentionAutocomplete,
+  localMedia,
+  assetFilenames,
+  ingestAssetFiles,
 }: MarkdownEditorProps) {
   // Mode props stay on the public contract; UI is temporarily locked to Live.
   void defaultMode;
@@ -37,6 +40,9 @@ export function MarkdownEditor({
     () => ({
       focus: (opts) => {
         cmRef.current?.focus(opts);
+      },
+      insertAtCursor: (text) => {
+        cmRef.current?.insertAtCursor(text);
       },
     }),
     [],
@@ -77,6 +83,9 @@ export function MarkdownEditor({
         live
         autoPair={autoPair}
         mentionAutocomplete={mentionAutocomplete}
+        localMedia={localMedia}
+        assetFilenames={assetFilenames}
+        ingestAssetFiles={ingestAssetFiles}
         minHeightPx={minHeightPx}
         borderless={borderless}
         onNavigateOutAtStart={onNavigateOutAtStart}

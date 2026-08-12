@@ -12,7 +12,7 @@ export type BorderlessTitleProps = {
   onChange: (next: string) => void;
   /** Enter → focus body (host decides; no save). Soft-wrap only — no hard newlines. */
   onEnter: () => void;
-  /** Blur → host flush (autosave). */
+  /** Optional blur of the title field (no longer a save trigger). */
   onBlur?: () => void;
   placeholder?: string;
   disabled?: boolean;

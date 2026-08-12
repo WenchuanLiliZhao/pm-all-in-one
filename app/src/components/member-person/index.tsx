@@ -3,12 +3,17 @@
  *
  * Appearances (MemberPerson):
  * - `link` — text-like avatar+name; underline on hover; navigates when linkable
- * - `card` — outlined Button chrome (height / padding / hover). Created-by fields use this.
+ * - `card` — outlined Button chrome. `size="sm"` → Button small; md/lg → medium.
  *
- * Select (MemberPersonSelect): same `card` chrome as Trigger asChild + chevron + menu.
+ * Select (MemberPersonSelect): same `card` chrome; `controlSize` picks Button size
+ * (detail panel props use `small` to match Status/Priority/date Inputs).
  *
- * ↔ components/ui/button/styles.module.scss — card chrome reuses outlined medium tokens
+ * ↔ components/ui/button/styles.module.scss — card chrome reuses outlined size tokens
+ * ↔ components/ui/input — detail props pair Input size=small with controlSize=small
+ * ↔ components/issue-detail — props strip SoT for small control rhythm
+ * ↔ components/issue-detail/styles.module.scss — `detail-prop-controls` twin
  * ↔ components/ui/dropdown-menu — Select uses Trigger asChild + Item rows
+ * ↔ src/global-styles/seams.md — `detail-prop-controls`
  */
 import {
   forwardRef,
@@ -65,6 +70,11 @@ export type MemberPersonSelectProps = {
   clearLabel?: string;
   disabled?: boolean;
   className?: string;
+  /**
+   * Trigger Button size. Detail panel props use `small` so Assignee matches
+   * Status / Priority / date Inputs (`detail-prop-controls` seam).
+   */
+  controlSize?: "small" | "medium";
   /** aria-label on the trigger */
   "aria-label"?: string;
 };
@@ -227,11 +237,14 @@ type CardChromeProps = Omit<
   /** Stretch to parent width (select trigger). */
   fullWidth?: boolean;
   muted?: boolean;
+  /** Matches ui/Button `size` — detail props use `small`. */
+  buttonSize?: "small" | "medium";
 };
 
 /**
- * Shared outlined-medium Button shell for `appearance="card"` and select trigger.
+ * Shared outlined Button shell for `appearance="card"` and select trigger.
  * forwardRef required for DropdownMenu.Trigger asChild.
+ * ↔ components/ui/button — data-size small|medium tokens
  */
 const MemberPersonCardChrome = forwardRef<HTMLButtonElement, CardChromeProps>(
   function MemberPersonCardChrome(
@@ -240,6 +253,7 @@ const MemberPersonCardChrome = forwardRef<HTMLButtonElement, CardChromeProps>(
       endIcon,
       fullWidth = false,
       muted = false,
+      buttonSize = "medium",
       disabled,
       className,
       type = "button",
@@ -260,7 +274,7 @@ const MemberPersonCardChrome = forwardRef<HTMLButtonElement, CardChromeProps>(
           .filter(Boolean)
           .join(" ")}
         data-variant="outlined"
-        data-size="medium"
+        data-size={buttonSize}
         disabled={disabled}
         {...rest}
       >
@@ -359,6 +373,8 @@ export function MemberPerson({
     link !== false && Boolean(memberId) && membership !== "missing";
   const tooltip = memberId ? title + nameSuffix : emptyLabel ?? "—";
 
+  const cardButtonSize = size === "sm" ? "small" : "medium";
+
   if (!memberId) {
     if (!emptyLabel && appearance === "link") {
       return null;
@@ -369,6 +385,7 @@ export function MemberPerson({
           className={className}
           muted
           disabled
+          buttonSize={cardButtonSize}
           aria-label={emptyLabel ?? "—"}
           title={tooltip}
         >
@@ -426,6 +443,7 @@ export function MemberPerson({
       <MemberPersonCardChrome
         className={className}
         muted={muted}
+        buttonSize={cardButtonSize}
         title={tooltip}
         aria-label={tooltip}
         onClick={
@@ -483,6 +501,7 @@ export function MemberPersonSelect({
   clearLabel = "—",
   disabled = false,
   className,
+  controlSize = "medium",
   "aria-label": ariaLabel = "Select member",
 }: MemberPersonSelectProps) {
   const { members } = useMember();
@@ -528,6 +547,7 @@ export function MemberPersonSelect({
             fullWidth
             disabled={disabled}
             muted={muted}
+            buttonSize={controlSize}
             aria-label={ariaLabel}
             endIcon={
               <Lucide.ChevronDown

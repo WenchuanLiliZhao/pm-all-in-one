@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
-  NavLink,
   Navigate,
   Outlet,
   useLocation,
@@ -153,7 +152,6 @@ export function WorkspaceLayout() {
     updateIssueDraft,
     updateProjectDraft,
     saveDetail,
-    flushDetail,
     resolveConflictReload,
     resolveConflictKeep,
     conflictPaths,
@@ -237,7 +235,7 @@ export function WorkspaceLayout() {
       void (async () => {
         const ok = await select(fromUrl);
         if (!ok) {
-          // Revert URL when flush-before-leave blocked (conflict / blank title).
+          // Revert URL when leave confirm blocked (Cancel / failed Save).
           const next = new URLSearchParams();
           if (selection?.kind === "project") {
             next.set("project", String(selection.projectId));
@@ -572,15 +570,6 @@ export function WorkspaceLayout() {
 
             {detailOpen ? (
               <aside className={styles.detail}>
-                <div className={styles.detailHeader}>
-                  <button
-                    type="button"
-                    className={styles.chromeBtn}
-                    onClick={closeDetail}
-                  >
-                    Close
-                  </button>
-                </div>
                 {selectedIssue ? (
                   <IssueDetail
                     issue={selectedIssue}
@@ -588,9 +577,6 @@ export function WorkspaceLayout() {
                     conflictPaths={conflictPaths}
                     onChange={updateIssueDraft}
                     onSave={() => saveDetail()}
-                    onFlush={() => {
-                      void flushDetail();
-                    }}
                     onConflictReload={() => void resolveConflictReload()}
                     onConflictKeep={resolveConflictKeep}
                     onDelete={() => void onDeleteCurrent()}
@@ -599,6 +585,7 @@ export function WorkspaceLayout() {
                         ? undefined
                         : () => void addChildUnderSelection()
                     }
+                    onClose={closeDetail}
                     onRepairPlacement={(newParentIssueId) =>
                       void moveIssueTo(
                         selectedIssue.projectId,
@@ -618,13 +605,11 @@ export function WorkspaceLayout() {
                     conflictPaths={conflictPaths}
                     onChange={updateProjectDraft}
                     onSave={() => saveDetail()}
-                    onFlush={() => {
-                      void flushDetail();
-                    }}
                     onConflictReload={() => void resolveConflictReload()}
                     onConflictKeep={resolveConflictKeep}
                     onDelete={() => void onDeleteCurrent()}
                     onAddEpic={() => void addChildUnderSelection()}
+                    onClose={closeDetail}
                     onNavigateIssue={(sel) => openSelection(sel)}
                     knownKeys={knownKeys}
                     issues={issues}
@@ -669,7 +654,6 @@ export function HomeView() {
     conflictPaths,
     updateWorkspaceDraft,
     saveDetail,
-    flushDetail,
     resolveConflictReload,
     resolveConflictKeep,
   } = useWorkspace();
@@ -681,33 +665,25 @@ export function HomeView() {
 
   return (
     <WikiShell>
-      <div className={styles.placeholder}>
-        <h1>Overview</h1>
-        <p className={styles.settingsHint}>
-          Browse Contents for the wiki tree, or open{" "}
-          <NavLink to="/w/wiki">All pages</NavLink> for the flat inventory.
-        </p>
-        {meta ? (
-          <WorkspaceHomeDetail
-            meta={meta}
-            saveStatus={saveStatus}
-            conflictPaths={conflictPaths}
-            onChange={updateWorkspaceDraft}
-            onSave={() => saveDetail()}
-            onFlush={() => {
-              void flushDetail();
-            }}
-            onConflictReload={() => void resolveConflictReload()}
-            onConflictKeep={resolveConflictKeep}
-            onNavigateIssue={openSelection}
-            knownKeys={knownKeys}
-            issues={issues}
-            wikiNodes={wikiNodes}
-          />
-        ) : (
+      {meta ? (
+        <WorkspaceHomeDetail
+          meta={meta}
+          saveStatus={saveStatus}
+          conflictPaths={conflictPaths}
+          onChange={updateWorkspaceDraft}
+          onSave={() => saveDetail()}
+          onConflictReload={() => void resolveConflictReload()}
+          onConflictKeep={resolveConflictKeep}
+          onNavigateIssue={openSelection}
+          knownKeys={knownKeys}
+          issues={issues}
+          wikiNodes={wikiNodes}
+        />
+      ) : (
+        <div className={styles.placeholder}>
           <p>Loading workspace…</p>
-        )}
-      </div>
+        </div>
+      )}
     </WikiShell>
   );
 }

@@ -1,9 +1,10 @@
 /**
- * Handoff detail editor — AutosaveDoc via local DetailSaveController.
+ * Handoff detail editor — ExplicitDoc via local DetailSaveController.
  *
  * ↔ pages/channels/workspace-page/route.tsx — `HandoffDetailView`
  * ↔ lib/workspace/detail-save.ts — controller + handoff target
- * ↔ dogfood @wiki-n8_7zg25NlxwdV6nIBVcD — AutosaveDoc
+ * ↔ lib/workspace/use-unsaved-leave-guard.ts — Save/Discard/Cancel leave
+ * ↔ dogfood @wiki-n8_7zg25NlxwdV6nIBVcD — ExplicitDoc
  * ↔ electron/core/domain/handoffs.ts — updateHandoff OCC
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -14,10 +15,13 @@ import {
 } from "@/components/markdown-editor";
 import {
   BorderlessTitle,
+  DocEditNav,
   DocEditShell,
-  SaveStatusIndicator,
+  LocatorCopyText,
 } from "@/components/doc-edit-shell";
 import { DetailConflictBanner } from "@/components/detail-conflict-banner";
+import { Button } from "@/components/ui/button";
+import { Lucide } from "@/components/ui/lucide";
 import { MemberPerson, MemberPersonSelect } from "@/components/member-person";
 import { getPm } from "@/lib/bridge";
 import { usePmMentions } from "@/lib/markdown/use-pm-mentions";
@@ -28,7 +32,7 @@ import {
   type Selection,
 } from "@/lib/workspace/workspace-context";
 import { useActiveSaveHost } from "@/lib/workspace/use-active-save-host";
-import { useAutosaveLeaveFlush } from "@/lib/workspace/use-autosave-leave-flush";
+import { useUnsavedLeaveGuard } from "@/lib/workspace/use-unsaved-leave-guard";
 import {
   DetailSaveController,
   type DetailSaveStatus,
@@ -143,7 +147,6 @@ export function HandoffEditor({ handoffId }: Props) {
 
   if (ctrlRef.current === null) {
     ctrlRef.current = new DetailSaveController({
-      getTitleIsBlank: () => !draftRef.current.title.trim(),
       onStatus: (next, errorMessage, paths) => {
         setStatus(next);
         setConflictPaths(paths);
@@ -254,7 +257,6 @@ export function HandoffEditor({ handoffId }: Props) {
     })();
     return () => {
       cancelled = true;
-      void ctrl.flush();
     };
   }, [handoffId, ctrl]);
 
@@ -308,20 +310,35 @@ export function HandoffEditor({ handoffId }: Props) {
     return ctrl.save();
   }, [ctrl]);
 
-  const flush = useCallback(async (): Promise<boolean> => {
-    return ctrl.flush();
-  }, [ctrl]);
-
   const hasUnsaved = useCallback(() => ctrl.hasUnsavedWork(), [ctrl]);
 
+  const discardDraft = useCallback(() => {
+    const base = baselineRef.current;
+    if (base) {
+      setTitleDraft(base.title);
+      setDescriptionDraft(base.description);
+      setRelatedProjectDraft(base.relatedProject);
+      setOpenDraft(base.open);
+      setBodyDraft(base.body);
+      setFromDraft(base.from);
+      setToDraft(base.to);
+      draftRef.current = { ...base };
+    }
+    ctrl.resetClean();
+    setConflictPaths([]);
+    setError(null);
+  }, [ctrl]);
+
   useActiveSaveHost({ save, hasUnsaved });
-  useAutosaveLeaveFlush({
+  useUnsavedLeaveGuard({
     when:
       status === "dirty" ||
       status === "saving" ||
       status === "conflict" ||
       status === "error",
-    flush,
+    hasUnsaved,
+    save,
+    onDiscard: discardDraft,
   });
 
   const resolveConflictReload = async () => {
@@ -388,15 +405,38 @@ export function HandoffEditor({ handoffId }: Props) {
     <DocEditShell
       className={styles.root}
       header={
-        <div className={styles.header}>
-          <div className={styles.headerLeft}>
-            <span className={styles.slug}>handoffs/{handoff.id}/</span>
-            <SaveStatusIndicator
-              status={status}
-              onRetry={() => void save()}
+        <DocEditNav
+          left={
+            <LocatorCopyText
+              locator={{ kind: "handoff", handoffId: handoff.id }}
             />
-          </div>
-        </div>
+          }
+          actions={
+            <Button
+              type="button"
+              variant={
+                status === "dirty" ||
+                status === "conflict" ||
+                status === "error"
+                  ? "fill-inverse"
+                  : "ghost"
+              }
+              size="small"
+              disabled={
+                status === "saving" ||
+                !(
+                  status === "dirty" ||
+                  status === "conflict" ||
+                  status === "error"
+                )
+              }
+              startIcon={<Lucide.Save aria-hidden />}
+              aria-label={status === "saving" ? "Saving" : "Save"}
+              title={status === "saving" ? "Saving…" : "Save"}
+              onClick={() => void save()}
+            />
+          }
+        />
       }
       conflictBanner={
         conflictPaths.length > 0 ? (
@@ -416,9 +456,6 @@ export function HandoffEditor({ handoffId }: Props) {
             const draft = { ...draftRef.current, title: next };
             draftRef.current = draft;
             markDirty(draft);
-          }}
-          onBlur={() => {
-            void flush();
           }}
           onEnter={() => {
             bodyEditorRef.current?.focus({ at: "start" });
@@ -442,9 +479,6 @@ export function HandoffEditor({ handoffId }: Props) {
                 draftRef.current = draft;
                 markDirty(draft);
               }}
-              onBlur={() => {
-                void flush();
-              }}
             />
           </label>
           <div className={styles.fields}>
@@ -460,7 +494,6 @@ export function HandoffEditor({ handoffId }: Props) {
                   const draft = { ...draftRef.current, relatedProject: id };
                   draftRef.current = draft;
                   markDirty(draft);
-                  void flush();
                 }}
               >
                 {projects.length === 0 ? (
@@ -493,7 +526,6 @@ export function HandoffEditor({ handoffId }: Props) {
                   const draft = { ...draftRef.current, open };
                   draftRef.current = draft;
                   markDirty(draft);
-                  void flush();
                 }}
               >
                 <option value="open">Open</option>
@@ -512,7 +544,6 @@ export function HandoffEditor({ handoffId }: Props) {
                   const draft = { ...draftRef.current, from: id };
                   draftRef.current = draft;
                   markDirty(draft);
-                  void flush();
                 }}
                 options={involved}
                 aria-label="Handoff from"
@@ -530,7 +561,6 @@ export function HandoffEditor({ handoffId }: Props) {
                   const draft = { ...draftRef.current, to: id };
                   draftRef.current = draft;
                   markDirty(draft);
-                  void flush();
                 }}
                 options={involved}
                 aria-label="Handoff to"
@@ -558,9 +588,6 @@ export function HandoffEditor({ handoffId }: Props) {
             const draft = { ...draftRef.current, body };
             draftRef.current = draft;
             markDirty(draft);
-          }}
-          onBlur={() => {
-            void flush();
           }}
           plugins={plugins}
           mentionAutocomplete={mentionAutocomplete}

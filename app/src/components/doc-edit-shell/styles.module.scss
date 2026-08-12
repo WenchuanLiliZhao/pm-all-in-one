@@ -1,12 +1,55 @@
+/**
+ * ↔ doc-edit-shell.tsx — layout
+ * ↔ wiki-shell/styles.module.scss — `.main` container `doc-edit-view`
+ * ↔ pages/channels/workspace-page/styles.module.scss — `.detail` container; `.topbar` pad-x
+ * ↔ src/global-styles/seams.md — `topbar↔doc-edit-chrome`
+ */
+
 .root {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+  /*
+   * Span the nearest `doc-edit-view` (WikiShell `.main` / detail aside), not the
+   * reading-width PageWidth box. Breakout lives on this non-sticky root so the
+   * sticky chrome below can be plain `width: 100%` (no horizontal margin jump).
+   *
+   * Pull up by page-pad-y so chrome rests at the scrollport top — otherwise sticky
+   * `top: 0` snaps the bar up by that pad on first scroll.
+   * Panels set `--doc-edit-pull-top: 0px`.
+   */
+  width: 100cqw;
+  max-width: none;
+  margin-left: calc(50% - 50cqw);
+  margin-top: calc(-1 * var(--doc-edit-pull-top, var(--layout--page-pad-y)));
+}
+
+.chrome {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  box-sizing: border-box;
+  width: 100%;
+  /* Match workspace topbar (universal nav), not page reading pad. */
+  padding-inline: var(--doc-edit-chrome-pad-x, var(--layout--topbar-pad-x));
+  padding-block: 0.5rem;
+  background: var(--doc-edit-chrome-bg, var(--color-use--bg-prime-hex));
+  border-bottom: 1px solid var(--color-use--border-prime-hex);
+}
+
+.content {
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-width: 0;
-}
-
-.header {
-  min-width: 0;
+  box-sizing: border-box;
+  width: 100%;
+  /* Re-apply reading column inside the full-view root (panels set max to none). */
+  max-width: var(--doc-edit-content-max, var(--layout--content-max));
+  margin-inline: auto;
+  padding-top: 12px;
+  padding-inline: var(--doc-edit-content-pad-x, var(--layout--page-pad-x));
 }
 
 .title {

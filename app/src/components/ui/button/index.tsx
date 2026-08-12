@@ -5,6 +5,8 @@
  * Icon glyphs in `startIcon` / `endIcon` inherit `--button-icon-size` — omit `size` on Lucide icons.
  *
  * ↔ components/member-person — card chrome imports button styles.module.scss directly
+ * ↔ components/ui/input — size=small twin for detail props
+ * ↔ src/global-styles/seams.md — `detail-prop-controls`
  * ↔ lab/pages/button — variant × size × selected matrix
  */
 import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from "react";

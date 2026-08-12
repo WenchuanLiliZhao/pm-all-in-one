@@ -13,6 +13,6 @@ Desktop / packaging concerns that must not enter the HTTP server or CLI publish 
 | `local-pm-shim.ts` | `userData/bin/pm-all-in-one` shim (`ELECTRON_RUN_AS_NODE`) |
 | `cli-install.ts` | Symlink shim into PATH |
 | `git-sync.ts` | Status / FF pull via git shell-out |
-| `git-changes.ts` | Unsynced paths aggregated by node (local only; ignores props timestamp-only noise) |
+| `git-changes.ts` | Unsynced paths aggregated by node (local only; same dirty path set as `git status` / Cursor SCM) |
 | `git-config.ts` | Best-effort `user.name` / `user.email` |
 | `esbuild-binary.ts` | `ESBUILD_BINARY_PATH` for asar.unpacked |

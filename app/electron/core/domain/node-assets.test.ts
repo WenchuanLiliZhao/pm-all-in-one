@@ -10,6 +10,7 @@ import {
   listNodeAssets,
   sanitizeAssetBasename,
   uniqueAssetName,
+  writeBuffersIntoNodeAssets,
 } from "./node-assets.js";
 import { scaffoldWorkspace } from "../workspace/scaffold-workspace.js";
 import { createIssue, createProject } from "./store.js";
@@ -175,6 +176,31 @@ test("copy conflict renames on second add of same basename", async () => {
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
       fs.rmSync(staging, { recursive: true, force: true });
+    }
+  });
+});
+
+test("writeBuffersIntoNodeAssets writes clipboard-style bytes", async () => {
+  await withEnvUserData(async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "local-pm-assets5-"));
+    try {
+      scaffoldWorkspace(root, { title: "Assets buffer" });
+      const project = await createProject(root, { title: "P" });
+      const written = writeBuffersIntoNodeAssets(
+        root,
+        { kind: "project", projectId: project.id },
+        [
+          { name: "paste.png", bytes: new Uint8Array([1, 2, 3]) },
+          { name: "paste.png", bytes: new Uint8Array([4, 5]) },
+        ],
+      );
+      assert.deepEqual(written, ["paste.png", "paste-2.png"]);
+      assert.deepEqual(
+        listNodeAssets(root, { kind: "project", projectId: project.id }),
+        ["paste-2.png", "paste.png"],
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
     }
   });
 });

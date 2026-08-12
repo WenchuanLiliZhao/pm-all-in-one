@@ -20,6 +20,8 @@ import {
   type ViewUpdate,
 } from "@codemirror/view";
 import { createElementLiveExtensions } from "../elements";
+import type { LocalMediaOptions } from "../local-media";
+import { localMediaFacet } from "../local-media";
 import {
   isConstructOwnedByElement,
   isMarkOwnedByElement,
@@ -91,6 +93,8 @@ export type LivePreviewOptions = {
    * Omit to disable Live mention activation.
    */
   onMentionActivate?: (token: string) => void;
+  /** Resolve / activate local `assets/…` media (product wires file:// + openPath). */
+  localMedia?: LocalMediaOptions;
   /**
    * When false, skip per-element live hosts (e.g. nested table editor must not
    * re-enter `createElementLiveExtensions` or it would nest forever).
@@ -461,6 +465,9 @@ export function createLivePreviewExtensions(
     ),
     livePreviewTheme,
   ];
+  if (options.localMedia) {
+    exts.push(localMediaFacet.of(options.localMedia));
+  }
   if (options.onMentionActivate) {
     exts.push(mentionActivateTheme);
   }

@@ -7,11 +7,13 @@
  * level, dangling parent, cycles — are not shape problems and live in
  * `ladder.ts`, reported per issue.
  * ↔ agent-md.ts — agent-md-modified / agent-md-outdated warnings
+ * ↔ ../domain/node-assets.ts — skip reserved `assets/` under projects
  */
 import fs from "node:fs";
 import path from "node:path";
 
 import { isBareNumericDir, isValidEntityId, parseId, type EntityId } from "../identity/dir-id.js";
+import { NODE_ASSETS_DIRNAME } from "../domain/node-assets.js";
 import {
   collectSidebarWikiNodeIds,
   wikiNodeDirPath,
@@ -156,6 +158,10 @@ export function scanStrays(workspaceRoot: string): DoctorReport {
       }
 
       for (const childName of listDirs(projectDir)) {
+        // Per-node attachment bag — not an issue id (see node-assets.ts).
+        if (childName === NODE_ASSETS_DIRNAME) {
+          continue;
+        }
         const dir = path.join(projectDir, childName);
         const childRel = path.relative(workspaceRoot, dir);
         if (isBareNumericDir(childName)) {

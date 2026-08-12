@@ -1,12 +1,12 @@
 /**
- * Member detail editor — AutosaveDoc via local DetailSaveController.
+ * Member detail editor — ExplicitDoc via local DetailSaveController.
  *
  * ↔ pages/channels/workspace-page/route.tsx — `MemberDetailView`
  * ↔ lib/workspace/member-context.tsx — snapshot refresh
  * ↔ lib/workspace/detail-save.ts — controller + member target
  * ↔ lib/workspace/active-save-host.ts — Cmd+S
- * ↔ lib/workspace/use-autosave-leave-flush.ts — flush-then-leave
- * ↔ dogfood @wiki-n8_7zg25NlxwdV6nIBVcD — AutosaveDoc
+ * ↔ lib/workspace/use-unsaved-leave-guard.ts — Save/Discard/Cancel leave
+ * ↔ dogfood @wiki-n8_7zg25NlxwdV6nIBVcD — ExplicitDoc
  * ↔ electron/core/domain/members.ts — updateMember OCC
  */
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -17,8 +17,9 @@ import {
 } from "@/components/markdown-editor";
 import {
   BorderlessTitle,
+  DocEditNav,
   DocEditShell,
-  SaveStatusIndicator,
+  LocatorCopyText,
 } from "@/components/doc-edit-shell";
 import { DetailConflictBanner } from "@/components/detail-conflict-banner";
 import {
@@ -37,7 +38,7 @@ import {
 } from "@/lib/workspace/workspace-context";
 import { useMember } from "@/lib/workspace/member-context";
 import { useActiveSaveHost } from "@/lib/workspace/use-active-save-host";
-import { useAutosaveLeaveFlush } from "@/lib/workspace/use-autosave-leave-flush";
+import { useUnsavedLeaveGuard } from "@/lib/workspace/use-unsaved-leave-guard";
 import {
   DetailSaveController,
   type DetailSaveStatus,
@@ -114,7 +115,6 @@ export function MemberEditor({ memberId }: Props) {
 
   if (ctrlRef.current === null) {
     ctrlRef.current = new DetailSaveController({
-      getTitleIsBlank: () => !draftRef.current.title.trim(),
       onStatus: (next, errorMessage, paths) => {
         setStatus(next);
         setConflictPaths(paths);
@@ -188,7 +188,6 @@ export function MemberEditor({ memberId }: Props) {
     })();
     return () => {
       cancelled = true;
-      void ctrl.flush();
     };
   }, [memberId, ctrl]);
 
@@ -248,23 +247,38 @@ export function MemberEditor({ memberId }: Props) {
     return ctrl.save();
   }, [ctrl]);
 
-  const flush = useCallback(async (): Promise<boolean> => {
-    return ctrl.flush();
-  }, [ctrl]);
-
   const hasUnsaved = useCallback(() => ctrl.hasUnsavedWork(), [ctrl]);
+
+  const discardDraft = useCallback(() => {
+    const base = baselineRef.current;
+    if (base) {
+      setTitleDraft(base.title);
+      setBodyDraft(base.body);
+      setMembershipDraft(base.membership as Membership);
+      draftRef.current = {
+        title: base.title,
+        body: base.body,
+        membership: base.membership as Membership,
+      };
+    }
+    ctrl.resetClean();
+    setConflictPaths([]);
+    setError(null);
+  }, [ctrl]);
 
   useActiveSaveHost({
     save,
     hasUnsaved,
   });
-  useAutosaveLeaveFlush({
+  useUnsavedLeaveGuard({
     when:
       status === "dirty" ||
       status === "saving" ||
       status === "conflict" ||
       status === "error",
-    flush,
+    hasUnsaved,
+    save,
+    onDiscard: discardDraft,
   });
 
   const resolveConflictReload = async () => {
@@ -323,15 +337,38 @@ export function MemberEditor({ memberId }: Props) {
     <DocEditShell
       className={styles.root}
       header={
-        <div className={styles.header}>
-          <div className={styles.headerLeft}>
-            <span className={styles.slug}>members/{member.id}/</span>
-            <SaveStatusIndicator
-              status={status}
-              onRetry={() => void save()}
+        <DocEditNav
+          left={
+            <LocatorCopyText
+              locator={{ kind: "member", memberId: member.id }}
             />
-          </div>
-        </div>
+          }
+          actions={
+            <Button
+              type="button"
+              variant={
+                status === "dirty" ||
+                status === "conflict" ||
+                status === "error"
+                  ? "fill-inverse"
+                  : "ghost"
+              }
+              size="small"
+              disabled={
+                status === "saving" ||
+                !(
+                  status === "dirty" ||
+                  status === "conflict" ||
+                  status === "error"
+                )
+              }
+              startIcon={<Lucide.Save aria-hidden />}
+              aria-label={status === "saving" ? "Saving" : "Save"}
+              title={status === "saving" ? "Saving…" : "Save"}
+              onClick={() => void save()}
+            />
+          }
+        />
       }
       conflictBanner={
         conflictPaths.length > 0 ? (
@@ -354,9 +391,6 @@ export function MemberEditor({ memberId }: Props) {
               membership: membershipDraft,
             };
             markDirty(next, bodyDraft, membershipDraft);
-          }}
-          onBlur={() => {
-            void flush();
           }}
           onEnter={() => {
             bodyEditorRef.current?.focus({ at: "start" });
@@ -435,9 +469,6 @@ export function MemberEditor({ memberId }: Props) {
               membership: membershipDraft,
             };
             markDirty(titleDraft, body, membershipDraft);
-          }}
-          onBlur={() => {
-            void flush();
           }}
           plugins={plugins}
           mentionAutocomplete={mentionAutocomplete}

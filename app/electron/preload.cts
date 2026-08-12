@@ -55,6 +55,16 @@ const pm = {
     message: string;
     detail?: string;
   }) => ipcRenderer.invoke("pm:confirmDangerous", opts) as Promise<boolean>,
+  // ↔ src/lib/bridge/pm-api.ts — confirmUnsavedLeave
+  // ↔ electron/main.ts — pm:confirmUnsavedLeave
+  confirmUnsavedLeave: (opts: {
+    title: string;
+    message: string;
+    detail?: string;
+  }) =>
+    ipcRenderer.invoke("pm:confirmUnsavedLeave", opts) as Promise<
+      "save" | "discard" | "cancel"
+    >,
   moveIssue: (input: Record<string, unknown>) =>
     ipcRenderer.invoke("pm:moveIssue", input),
   getCustomProps: (projectId: string) =>
@@ -79,6 +89,8 @@ const pm = {
     ipcRenderer.invoke("pm:adoptStray", strayPath),
   revealPath: (targetPath: string) =>
     ipcRenderer.invoke("pm:revealPath", targetPath),
+  openPath: (targetPath: string) =>
+    ipcRenderer.invoke("pm:openPath", targetPath),
   // ↔ src/lib/bridge/pm-api.ts — getGitSyncStatus / getUnsyncedChanges / pullWorkspace
   // ↔ electron/main.ts — pm:getGitSyncStatus / pm:getUnsyncedChanges / pm:pullWorkspace
   // ↔ src/lib/bridge/http-pm.ts — web stubs
@@ -90,6 +102,12 @@ const pm = {
     ipcRenderer.invoke("pm:listNodeAssets", ref),
   addNodeAssets: (ref: Record<string, unknown>) =>
     ipcRenderer.invoke("pm:addNodeAssets", ref),
+  importNodeAssetPaths: (ref: Record<string, unknown>, paths: string[]) =>
+    ipcRenderer.invoke("pm:importNodeAssetPaths", ref, paths),
+  writeNodeAssetBuffers: (
+    ref: Record<string, unknown>,
+    items: { name: string; data: Uint8Array }[],
+  ) => ipcRenderer.invoke("pm:writeNodeAssetBuffers", ref, items),
   getNodeAssetsDir: (ref: Record<string, unknown>) =>
     ipcRenderer.invoke("pm:getNodeAssetsDir", ref),
   getWiki: () => ipcRenderer.invoke("pm:getWiki"),

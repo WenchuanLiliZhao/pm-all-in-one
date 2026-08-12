@@ -18,6 +18,9 @@ export type AiLocatorInput =
  * Clipboard plaintext for “Copy for AI”: a single inline mention / id noun.
  * Never absolute paths. Project has no `@project-…` mention in product law —
  * copy the opaque projectId alone.
+ *
+ * ↔ src/lib/ai-locator.ts — thin re-export via @pm-core/identity/ai-locator
+ * ↔ src/components/doc-edit-shell/locator-copy-text.tsx — click-to-copy nav chrome
  */
 export function formatAiLocator(input: AiLocatorInput): string {
   if (input.kind === "wiki") {

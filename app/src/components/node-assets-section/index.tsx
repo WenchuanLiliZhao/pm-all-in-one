@@ -23,14 +23,15 @@ export function NodeAssetsSection({ nodeRef }: NodeAssetsSectionProps) {
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
-  }, [nodeRef]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
+  }, [refKey]);
 
   useEffect(() => {
     if (isWebPm()) {
       return;
     }
     let cancelled = false;
-    void (async () => {
+    const run = async () => {
       try {
         const next = await getPm().listNodeAssets(nodeRef);
         if (!cancelled) {
@@ -42,11 +43,15 @@ export function NodeAssetsSection({ nodeRef }: NodeAssetsSectionProps) {
           setError(e instanceof Error ? e.message : String(e));
         }
       }
-    })();
+    };
+    void run();
+    const unsub = getPm().onChanged(() => {
+      void run();
+    });
     return () => {
       cancelled = true;
+      unsub();
     };
-    // refKey tracks selection identity; inline nodeRef objects change each render.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
   }, [refKey]);
 
@@ -106,8 +111,10 @@ export function NodeAssetsSection({ nodeRef }: NodeAssetsSectionProps) {
         </div>
       </div>
       <p className={styles.hint}>
-        Files live in this node&apos;s <code>assets/</code> folder. Inserting into
-        Markdown comes later.
+        Files live in this node&apos;s <code>assets/</code> folder. Paste or
+        drop into the body to add and cite automatically. Or type{" "}
+        <code>![](assets/</code> / <code>[](assets/</code> to pick a file
+        (same menu as <code>@</code>).
       </p>
       {error ? (
         <Banner tone="error" className={styles.error}>

@@ -332,6 +332,30 @@ test("a stray directory is adopted as an epic under its project", async () => {
   });
 });
 
+test("project assets/ is not reported as an unadopted issue", async () => {
+  await withWorkspace(async (root, projectId) => {
+    const assetsDir = path.join(
+      root,
+      "issue-hierarchy",
+      projectId,
+      "assets",
+    );
+    fs.mkdirSync(assetsDir, { recursive: true });
+    fs.writeFileSync(path.join(assetsDir, "note.txt"), "x", "utf8");
+    assert.equal(
+      scanStrays(root).strays.filter((s) => s.relPath.includes("/assets"))
+        .length,
+      0,
+    );
+    // Real strays still report.
+    const strayDir = path.join(root, "issue-hierarchy", projectId, "hand-made");
+    fs.mkdirSync(strayDir, { recursive: true });
+    assert.ok(
+      scanStrays(root).strays.some((s) => s.kind === "invalid-name"),
+    );
+  });
+});
+
 test("rebuilding writes the derived map and the generated types", async () => {
   await withWorkspace(async (root, projectId) => {
     const { subtask } = await seedLadder(root, projectId);

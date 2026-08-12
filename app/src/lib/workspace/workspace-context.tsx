@@ -1,9 +1,10 @@
 /**
  * Zone 8 shell hub — workspace React context (state, selection, PmApi glue).
  * Orchestrates detail dirty/save/conflict via DetailSaveController + @pm-core/sync/detail-diff;
- * do not sink more logic here (algorithms live in detail-save / detail-diff).
+ * do not sink more logic here (algorithms live in detail-save / detail-diff / unsaved-leave).
  * Known hub — do not keep piling logic.
  * ↔ DEVELOPMENT.md — Vibe zones / Electron vs web
+ * ↔ dogfood @wiki-n8_7zg25NlxwdV6nIBVcD — ExplicitDoc leave
  */
 import {
   createContext,
@@ -55,6 +56,8 @@ import {
   type DetailSaveStatus,
   type DetailSaveTarget,
 } from "@/lib/workspace/detail-save";
+import { resolveUnsavedLeave } from "@/lib/workspace/unsaved-leave";
+import { useUnsavedLeaveGuard } from "@/lib/workspace/use-unsaved-leave-guard";
 
 export function workspaceNameFromPath(root: string): string {
   const parts = root.replace(/[/\\]+$/, "").split(/[/\\]/);
@@ -138,14 +141,8 @@ interface WorkspaceContextValue {
     issueId: string,
     priority: Issue["priority"],
   ) => Promise<void>;
-  /** Explicit detail save (Save button / Cmd+S / Retry). */
+  /** Explicit detail save (Save button / Cmd+S / Retry / leave-Save). */
   saveDetail: () => Promise<boolean>;
-  /** Flush pending autosave (blur / navigation). Holds on conflict / blank title. */
-  flushDetail: () => Promise<boolean>;
-  /** @deprecated Alias of saveDetail. */
-  flushDetailSave: () => Promise<boolean>;
-  /** @deprecated Alias of saveDetail. */
-  saveCurrent: () => Promise<boolean>;
   /** Conflict banner: discard draft and take disk. */
   resolveConflictReload: () => Promise<void>;
   /** Conflict banner: keep draft; baseline := disk so Save overwrites. */
@@ -204,28 +201,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const detailSaveRef = useRef<DetailSaveController | null>(null);
   if (detailSaveRef.current === null) {
     detailSaveRef.current = new DetailSaveController({
-      getTitleIsBlank: () => {
-        const target = detailSaveRef.current?.getTarget();
-        if (!target) {
-          return false;
-        }
-        if (target.kind === "workspace") {
-          return !(metaRef.current?.title.trim());
-        }
-        if (target.kind === "project") {
-          const p = projectsRef.current.find((x) => x.id === target.projectId);
-          return !(p?.title.trim());
-        }
-        if (target.kind === "issue") {
-          const issue = issuesRef.current.find(
-            (i) =>
-              i.projectId === target.projectId && i.id === target.issueId,
-          );
-          return !(issue?.title.trim());
-        }
-        // Wiki / member use their own DetailSaveController instances.
-        return false;
-      },
       onStatus: (status, errorMessage, paths) => {
         setSaveStatus(status);
         setSaveError(errorMessage);
@@ -368,14 +343,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, [tree]);
 
   useEffect(() => {
-    const onBeforeUnload = (): void => {
+    const onBeforeUnload = (event: BeforeUnloadEvent): void => {
       const ctrl = detailSaveRef.current;
       if (!(ctrl?.hasUnsavedWork() ?? dirtyRef.current)) {
         return;
       }
-      // Decision 8: flush-then-leave, no browser discard prompt.
-      // Best-effort — the page may still unload mid-write.
-      void ctrl?.flush();
+      // Tab close cannot show Save/Discard/Cancel — browser generic prompt only.
+      event.preventDefault();
+      event.returnValue = "";
     };
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => {
@@ -834,25 +809,71 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const flushDetail = useCallback(async (): Promise<boolean> => {
+  const discardDetailDraft = useCallback(() => {
+    const ctrl = detailSaveRef.current;
+    const target = ctrl?.getTarget();
+    if (target?.kind === "issue") {
+      const base = issueBaselineRef.current;
+      if (base) {
+        setIssues((prev) => {
+          const next = prev.map((i) =>
+            i.projectId === target.projectId && i.id === target.issueId
+              ? applyIssueEditable(i, base)
+              : i,
+          );
+          issuesRef.current = next;
+          return next;
+        });
+      }
+    } else if (target?.kind === "project") {
+      const base = projectBaselineRef.current;
+      if (base) {
+        setProjects((prev) => {
+          const next = prev.map((p) =>
+            p.id === target.projectId
+              ? { ...p, title: base.title, description: base.description }
+              : p,
+          );
+          projectsRef.current = next;
+          return next;
+        });
+      }
+    } else if (target?.kind === "workspace") {
+      const base = workspaceBaselineRef.current;
+      if (base && metaRef.current) {
+        const next = {
+          ...metaRef.current,
+          title: base.title,
+          description: base.description,
+        };
+        metaRef.current = next;
+        setMeta(next);
+      }
+    }
+    ctrl?.resetClean();
+  }, []);
+
+  /**
+   * Leave while dirty: Save / Discard / Cancel (shared with RR guard).
+   * ↔ unsaved-leave.ts — resolveUnsavedLeave
+   */
+  const confirmBeforeLeave = useCallback(async (): Promise<boolean> => {
     const ctrl = detailSaveRef.current;
     if (!ctrl || !ctrl.hasUnsavedWork()) {
       return true;
     }
-    setError(null);
-    try {
-      return await ctrl.flush();
-    } catch (e) {
-      if (isStaleWriteError(e)) {
-        detailSaveRef.current?.markConflict(
-          e.conflictPaths ?? [],
-          e.message,
-        );
-        return false;
-      }
-      throw e;
-    }
-  }, []);
+    return resolveUnsavedLeave({
+      save: saveDetail,
+      onDiscard: discardDetailDraft,
+    });
+  }, [saveDetail, discardDetailDraft]);
+
+  useUnsavedLeaveGuard({
+    when: dirty,
+    hasUnsaved: () => detailSaveRef.current?.hasUnsavedWork() ?? false,
+    save: saveDetail,
+    onDiscard: discardDetailDraft,
+  });
 
   const reloadDetailTarget = useCallback(
     async (target: DetailSaveTarget): Promise<void> => {
@@ -979,24 +1000,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, []);
 
   /**
-   * Flush pending detail edits before leaving the current host.
-   * No discard dialog — autosave hosts flush instead.
-   * Returns false when conflict / blank title / persist error blocks leave.
+   * Leave while dirty: Save / Discard / Cancel.
+   * Returns false on Cancel or failed Save.
    */
   const flushBeforeLeave = useCallback(async (): Promise<boolean> => {
-    const ctrl = detailSaveRef.current;
-    if (!ctrl || !ctrl.hasUnsavedWork()) {
-      return true;
-    }
-    if (ctrl.getConflictPaths().length > 0 || ctrl.getStatus() === "conflict") {
-      return false;
-    }
-    const ok = await ctrl.flush();
-    if (!ok && ctrl.hasUnsavedWork()) {
-      return false;
-    }
-    return true;
-  }, []);
+    return confirmBeforeLeave();
+  }, [confirmBeforeLeave]);
 
   const persistIssueDates = useCallback(
     async (
@@ -1015,7 +1024,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         const flushed = await flushBeforeLeave();
         if (!flushed) {
           throw new Error(
-            "Cannot apply — resolve conflict or fill title first.",
+            "Cannot apply — save or discard unsaved edits on this issue first.",
           );
         }
       }
@@ -1079,7 +1088,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         const flushed = await flushBeforeLeave();
         if (!flushed) {
           throw new Error(
-            "Cannot apply — resolve conflict or fill title first.",
+            "Cannot apply — save or discard unsaved edits on this issue first.",
           );
         }
       }
@@ -1143,7 +1152,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         const flushed = await flushBeforeLeave();
         if (!flushed) {
           throw new Error(
-            "Cannot apply — resolve conflict or fill title first.",
+            "Cannot apply — save or discard unsaved edits on this issue first.",
           );
         }
       }
@@ -1189,9 +1198,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     },
     [flushBeforeLeave],
   );
-
-  const flushDetailSave = saveDetail;
-  const saveCurrent = saveDetail;
 
   const select = useCallback(
     async (sel: Selection): Promise<boolean> => {
@@ -1507,9 +1513,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       persistIssueBlockedBy,
       persistIssuePriority,
       saveDetail,
-      flushDetail,
-      flushDetailSave,
-      saveCurrent,
       resolveConflictReload,
       resolveConflictKeep,
       select,
@@ -1555,9 +1558,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       persistIssueBlockedBy,
       persistIssuePriority,
       saveDetail,
-      flushDetail,
-      flushDetailSave,
-      saveCurrent,
       resolveConflictReload,
       resolveConflictKeep,
       select,

@@ -1,13 +1,13 @@
 /**
- * Wiki node editor — AutosaveDoc via local DetailSaveController.
+ * Wiki node editor — ExplicitDoc via local DetailSaveController.
  *
  * ↔ lib/workspace/detail-save.ts — controller + wiki target
  * ↔ lib/workspace/active-save-host.ts — Cmd+S
- * ↔ lib/workspace/use-autosave-leave-flush.ts — flush-then-leave
- * ↔ dogfood @wiki-n8_7zg25NlxwdV6nIBVcD — AutosaveDoc
+ * ↔ lib/workspace/use-unsaved-leave-guard.ts — Save/Discard/Cancel leave
+ * ↔ dogfood @wiki-n8_7zg25NlxwdV6nIBVcD — ExplicitDoc
  * ↔ electron/core/domain/wiki.ts — updateWikiNode OCC
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DetailConflictBanner } from "@/components/detail-conflict-banner";
 import {
@@ -16,21 +16,24 @@ import {
 } from "@/components/markdown-editor";
 import {
   BorderlessTitle,
+  DocEditNav,
+  DocEditOverflowMenu,
   DocEditShell,
-  SaveStatusIndicator,
+  LocatorCopyText,
 } from "@/components/doc-edit-shell";
-import { CopyAiLocatorButton } from "@/components/copy-ai-locator-button";
 import { MemberPerson } from "@/components/member-person";
 import { NodeAssetsSection } from "@/components/node-assets-section";
 import { TypeConfirmDialog } from "@/components/type-confirm-dialog";
 import { Button } from "@/components/ui/button";
+import { Lucide } from "@/components/ui/lucide";
 import { getPm } from "@/lib/bridge";
 import type { WikiNode, WikiNodeMeta, Issue } from "@/lib/types";
 import { usePmMentions } from "@/lib/markdown/use-pm-mentions";
+import { useNodeLocalMedia } from "@/lib/markdown/node-local-media";
 import type { Selection } from "@/lib/workspace/workspace-context";
 import { useWiki } from "@/lib/workspace/wiki-context";
 import { useActiveSaveHost } from "@/lib/workspace/use-active-save-host";
-import { useAutosaveLeaveFlush } from "@/lib/workspace/use-autosave-leave-flush";
+import { useUnsavedLeaveGuard } from "@/lib/workspace/use-unsaved-leave-guard";
 import {
   DetailSaveController,
   type DetailSaveStatus,
@@ -94,7 +97,6 @@ export function WikiNodeEditor({
 
   if (ctrlRef.current === null) {
     ctrlRef.current = new DetailSaveController({
-      getTitleIsBlank: () => !draftRef.current.title.trim(),
       onStatus: (next, errorMessage, paths) => {
         setStatus(next);
         setConflictPaths(paths);
@@ -163,7 +165,6 @@ export function WikiNodeEditor({
     })();
     return () => {
       cancelled = true;
-      void ctrl.flush();
     };
   }, [wikiNodeId, ctrl]);
 
@@ -222,19 +223,38 @@ export function WikiNodeEditor({
     return ctrl.save();
   }, [ctrl]);
 
-  const flush = useCallback(async (): Promise<boolean> => {
-    return ctrl.flush();
-  }, [ctrl]);
-
   const hasUnsaved = useCallback(() => ctrl.hasUnsavedWork(), [ctrl]);
+
+  const discardDraft = useCallback(() => {
+    const base = baselineRef.current;
+    if (base) {
+      setTitleDraft(base.title);
+      setDescriptionDraft(base.description);
+      setDraft(base.body);
+      draftRef.current = {
+        title: base.title,
+        description: base.description,
+        body: base.body,
+      };
+    }
+    ctrl.resetClean();
+    setConflictPaths([]);
+    setError(null);
+  }, [ctrl]);
 
   useActiveSaveHost({
     save,
     hasUnsaved,
   });
-  useAutosaveLeaveFlush({
-    when: status === "dirty" || status === "saving" || status === "conflict" || status === "error",
-    flush,
+  useUnsavedLeaveGuard({
+    when:
+      status === "dirty" ||
+      status === "saving" ||
+      status === "conflict" ||
+      status === "error",
+    hasUnsaved,
+    save,
+    onDiscard: discardDraft,
   });
 
   const navigateIssue = useCallback(
@@ -247,6 +267,12 @@ export function WikiNodeEditor({
     wikiNodes,
     onNavigateIssue: navigateIssue,
   });
+  const wikiNodeRef = useMemo(
+    () => ({ kind: "wiki" as const, wikiNodeId }),
+    [wikiNodeId],
+  );
+  const { localMedia, filenames: assetFilenames, ingestAssetFiles } =
+    useNodeLocalMedia(wikiNodeRef);
 
   const resolveConflictReload = async () => {
     try {
@@ -332,35 +358,41 @@ export function WikiNodeEditor({
     <DocEditShell
       className={styles.root}
       header={
-        <div className={styles.header}>
-          <div className={styles.headerLeft}>
-            <span className={styles.slug}>wiki/{page.id}/</span>
-            <SaveStatusIndicator
-              status={status}
-              onRetry={() => void save()}
+        <DocEditNav
+          left={
+            <LocatorCopyText
+              locator={{ kind: "wiki", wikiNodeId: page.id }}
             />
-          </div>
-          <div className={styles.headerActions}>
-            <CopyAiLocatorButton
-              locator={{
-                kind: "wiki",
-                wikiNodeId: page.id,
-              }}
-            />
-            <Button
-              type="button"
-              variant="outlined"
-              colors={{
-                fg: "var(--color-use--danger)",
-                border: "var(--color-use--danger-border)",
-                hoverBg: "var(--color-use--danger-soft)",
-              }}
-              onClick={onDelete}
-            >
-              Delete
-            </Button>
-          </div>
-        </div>
+          }
+          actions={
+            <>
+              <Button
+                type="button"
+                variant={
+                  status === "dirty" ||
+                  status === "conflict" ||
+                  status === "error"
+                    ? "fill-inverse"
+                    : "ghost"
+                }
+                size="small"
+                disabled={
+                  status === "saving" ||
+                  !(
+                    status === "dirty" ||
+                    status === "conflict" ||
+                    status === "error"
+                  )
+                }
+                startIcon={<Lucide.Save aria-hidden />}
+                aria-label={status === "saving" ? "Saving" : "Save"}
+                title={status === "saving" ? "Saving…" : "Save"}
+                onClick={() => void save()}
+              />
+              <DocEditOverflowMenu onDelete={onDelete} />
+            </>
+          }
+        />
       }
       conflictBanner={
         <DetailConflictBanner
@@ -377,9 +409,6 @@ export function WikiNodeEditor({
             setTitleDraft(next);
             draftRef.current = { title: next, description: descriptionDraft, body: draft };
             markDirty(next, descriptionDraft, draft);
-          }}
-          onBlur={() => {
-            void flush();
           }}
           onEnter={() => {
             bodyEditorRef.current?.focus({ at: "start" });
@@ -406,9 +435,6 @@ export function WikiNodeEditor({
                 body: draft,
               };
               markDirty(titleDraft, next, draft);
-            }}
-            onBlur={() => {
-              void flush();
             }}
           />
         </label>
@@ -438,11 +464,11 @@ export function WikiNodeEditor({
             draftRef.current = { title: titleDraft, description: descriptionDraft, body };
             markDirty(titleDraft, descriptionDraft, body);
           }}
-          onBlur={() => {
-            void flush();
-          }}
           plugins={plugins}
           mentionAutocomplete={mentionAutocomplete}
+          localMedia={localMedia}
+          assetFilenames={assetFilenames}
+          ingestAssetFiles={ingestAssetFiles}
           placeholder="Markdown… type @ to link an issue or wiki-node"
           rows={16}
           onNavigateOutAtStart={() => {
@@ -457,9 +483,7 @@ export function WikiNodeEditor({
         />
       }
       footer={
-        <NodeAssetsSection
-          nodeRef={{ kind: "wiki", wikiNodeId: page.id }}
-        />
+        <NodeAssetsSection nodeRef={wikiNodeRef} />
       }
     />
     <TypeConfirmDialog

@@ -186,7 +186,7 @@ DEV-only: `#/lab/markdown-editor` (`src/lab/pages/markdown-editor.tsx`). Mock wi
 **Review checklist**
 
 - `MarkdownEditor` baseline: Live only (mode props accepted, ignored), label, placeholder, controlled value
-- `MarkdownEditor` **borderless**: no mode header; no Live↔Source toggle; Focus start button lands caret (programmatic focus gate bypass); autosave / blur flush / title↔body handoff still work
+- `MarkdownEditor` **borderless**: no mode header; no Live↔Source toggle; Focus start button lands caret (programmatic focus gate bypass); title↔body handoff still works (save is host Save / Cmd+S only)
 - Auto-pair: `[]` / `*` / `**` / `()` — **not** backticks
 - Live: markers hide off-cursor; headings/emphasis styled; `@…` mentions show resolved title when inactive; mentions inside `` `inline` `` / fenced code stay literal (no chip); ⌘/Ctrl-click a mention (chip or raw, outside code) calls `mentionAutocomplete.onActivate` with the SoT token (product navigates)
 - Preview (standalone `MarkdownPreview`): same — `@…` inside code is not rewritten to chips (`replaceOutsideCode`)
@@ -194,7 +194,7 @@ DEV-only: `#/lab/markdown-editor` (`src/lab/pages/markdown-editor.tsx`). Mock wi
 - Live **links**: inactive `Link` / `Autolink` hide `[]()` / `<>` and URL chrome; label (or URL for autolink) styled with accent; caret in construct reveals source
 - Live **blockquote**: hide `>` when inactive; left-border muted line chrome
 - Live **hr**: inactive `---` / `***` → soft rule widget; caret on line reveals source
-- Live **images**: inactive `![alt](url)` → `<img>` widget or broken stub; caret reveals source
+- Live **images**: inactive `![alt](url)` → `<figure>` (+ figcaption from alt via `renderInlineMarkdownFragment`) or attachment card for non-images; caret reveals source
 - Live **code blocks**: fenced blocks get block chrome; fences collapse off-cursor (lang badge); body uses nested language highlighting (`codeLanguages`). At the first/last nav edge, ↑/← and ↓/→ leave the whole fence (idle skips lang header + collapsed footer)
 - Preview: fenced code highlighted via rehype-highlight (token colors from `--color-use--*`)
 - Live **tables** (idle projection + parent-CM pipe editing):

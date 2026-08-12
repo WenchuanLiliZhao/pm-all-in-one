@@ -6,14 +6,11 @@
  * ↔ src/lib/bridge/pm-api.ts — PmApi contract
  */
 import { execFile } from "node:child_process";
-import fs from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
 
 import { parseId } from "../identity/dir-id.js";
 import type { NodeRef } from "../domain/node-assets.js";
-import { evaluatePropsExport } from "../infra/props-load.js";
-import { stripTimestampKeys } from "../infra/timestamps.js";
 
 const execFileAsync = promisify(execFile);
 const QUICK_TIMEOUT_MS = 5_000;
@@ -368,86 +365,9 @@ function toState(agg: Agg): UnsyncedNodeState {
   return "unpushed";
 }
 
-function stableStringify(value: unknown): string {
-  if (value === null || typeof value !== "object") {
-    return JSON.stringify(value);
-  }
-  if (Array.isArray(value)) {
-    return `[${value.map((v) => stableStringify(v)).join(",")}]`;
-  }
-  const obj = value as Record<string, unknown>;
-  const keys = Object.keys(obj).sort();
-  return `{${keys
-    .map((k) => `${JSON.stringify(k)}:${stableStringify(obj[k])}`)
-    .join(",")}}`;
-}
-
-/**
- * True when worktree props/project.ts matches HEAD after stripping
- * system `created` / `updated` (stampOnWrite noise after undo).
- */
-export async function isTimestampOnlyPropsDiff(
-  workspaceRoot: string,
-  relPath: string,
-): Promise<boolean> {
-  const rel = normalizeRel(relPath);
-  const base = path.posix.basename(rel);
-  if (base !== "props.ts" && base !== "project.ts") {
-    return false;
-  }
-
-  const head = await runGit(workspaceRoot, ["show", `HEAD:${rel}`]);
-  if (!head.ok) {
-    return false;
-  }
-
-  let disk: string;
-  try {
-    disk = fs.readFileSync(path.join(workspaceRoot, ...rel.split("/")), "utf8");
-  } catch {
-    return false;
-  }
-
-  try {
-    const headRaw = await evaluatePropsExport(head.stdout);
-    const diskRaw = await evaluatePropsExport(disk);
-    if (
-      !headRaw ||
-      typeof headRaw !== "object" ||
-      Array.isArray(headRaw) ||
-      !diskRaw ||
-      typeof diskRaw !== "object" ||
-      Array.isArray(diskRaw)
-    ) {
-      return false;
-    }
-    const headSlice = stripTimestampKeys({
-      ...(headRaw as Record<string, unknown>),
-    });
-    const diskSlice = stripTimestampKeys({
-      ...(diskRaw as Record<string, unknown>),
-    });
-    return stableStringify(headSlice) === stableStringify(diskSlice);
-  } catch {
-    return false;
-  }
-}
-
-async function filterTimestampOnlyPropsNoise(
-  workspaceRoot: string,
-  paths: string[],
-): Promise<string[]> {
-  const kept: string[] = [];
-  for (const p of paths) {
-    if (!(await isTimestampOnlyPropsDiff(workspaceRoot, p))) {
-      kept.push(p);
-    }
-  }
-  return kept;
-}
-
 /**
  * Local-only aggregation of uncommitted + unpushed paths by node.
+ * Matches `git status` / Cursor SCM path set (no timestamp-only filtering).
  * Never throws; never runs `git fetch`.
  */
 export async function getUnsyncedChanges(
@@ -492,11 +412,7 @@ export async function getUnsyncedChanges(
     statusResult.stdout,
     "status",
   );
-  const meaningfulUncommitted = await filterTimestampOnlyPropsNoise(
-    workspaceRoot,
-    uncommittedPaths,
-  );
-  applyPaths(map, otherFiles, meaningfulUncommitted, "uncommitted");
+  applyPaths(map, otherFiles, uncommittedPaths, "uncommitted");
 
   if (hasUp) {
     const diffResult = await runGit(workspaceRoot, [

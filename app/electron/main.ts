@@ -4,12 +4,14 @@ import {
   dialog,
   ipcMain,
   Menu,
+  net,
+  protocol,
   shell,
   type MenuItemConstructorOptions,
   type WebPreferences,
 } from "electron";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { adoptStray, scanStrays } from "./core/workspace/doctor.js";
 import {
@@ -21,6 +23,7 @@ import {
   copyFilesIntoNodeAssets,
   getNodeAssetsDir,
   listNodeAssets,
+  writeBuffersIntoNodeAssets,
   type NodeRef,
 } from "./core/domain/node-assets.js";
 import {
@@ -129,6 +132,21 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
 
+/** Serve workspace files to the renderer (Vite http origin cannot load file://). */
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: "pm-asset",
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      bypassCSP: true,
+      stream: true,
+      corsEnabled: true,
+    },
+  },
+]);
+
 const MIN_WIDTH = 960;
 const MIN_HEIGHT = 640;
 
@@ -146,6 +164,36 @@ let workspaceRoot: string | null = null;
 let localPmShimPath: string | null = null;
 const watcher = new WorkspaceWatcher();
 const ptyManager = new PtyManager();
+
+function isPathInsideRoot(filePath: string, root: string): boolean {
+  const resolved = path.resolve(filePath);
+  const resolvedRoot = path.resolve(root);
+  const rel = path.relative(resolvedRoot, resolved);
+  return rel !== "" && !rel.startsWith("..") && !path.isAbsolute(rel);
+}
+
+/** `pm-asset://local/?p=<absPath>` → file under the open workspace only. */
+function registerPmAssetProtocol(): void {
+  protocol.handle("pm-asset", async (request) => {
+    try {
+      if (!workspaceRoot) {
+        return new Response("No workspace", { status: 404 });
+      }
+      const u = new URL(request.url);
+      const abs = u.searchParams.get("p");
+      if (!abs) {
+        return new Response("Missing path", { status: 400 });
+      }
+      const resolved = path.resolve(abs);
+      if (!isPathInsideRoot(resolved, workspaceRoot)) {
+        return new Response("Forbidden", { status: 403 });
+      }
+      return net.fetch(pathToFileURL(resolved).href);
+    } catch {
+      return new Response("Error", { status: 500 });
+    }
+  });
+}
 
 type WorkspaceSnapshot = Awaited<ReturnType<typeof openWorkspaceAt>>;
 
@@ -684,6 +732,37 @@ function registerIpc(): void {
       return result.response === 1;
     },
   );
+  // ↔ electron/preload.cts — confirmUnsavedLeave
+  // ↔ src/lib/bridge/pm-api.ts — PmApi.confirmUnsavedLeave
+  ipcMain.handle(
+    "pm:confirmUnsavedLeave",
+    async (
+      _event,
+      opts: { title: string; message: string; detail?: string },
+    ): Promise<"save" | "discard" | "cancel"> => {
+      const win = BrowserWindow.getFocusedWindow() ?? mainWindow;
+      const box = {
+        type: "warning" as const,
+        title: opts.title,
+        message: opts.message,
+        detail: opts.detail,
+        buttons: ["Cancel", "Discard", "Save"],
+        defaultId: 2,
+        cancelId: 0,
+        noLink: true,
+      };
+      const result = win
+        ? await dialog.showMessageBox(win, box)
+        : await dialog.showMessageBox(box);
+      if (result.response === 2) {
+        return "save";
+      }
+      if (result.response === 1) {
+        return "discard";
+      }
+      return "cancel";
+    },
+  );
   ipcMain.handle("pm:moveIssue", (_event, input: MoveIssueInput) =>
     moveIssue(requireWorkspace(), input),
   );
@@ -735,6 +814,10 @@ function registerIpc(): void {
     shell.showItemInFolder(path.resolve(targetPath));
     return true;
   });
+  ipcMain.handle("pm:openPath", async (_event, targetPath: string) => {
+    const err = await shell.openPath(path.resolve(targetPath));
+    return err === "";
+  });
   // ↔ electron/preload.cts — getGitSyncStatus / getUnsyncedChanges / pullWorkspace
   // ↔ src/lib/bridge/pm-api.ts — PmApi contract
   // ↔ src/lib/bridge/http-pm.ts — web stubs
@@ -772,6 +855,27 @@ function registerIpc(): void {
       result.filePaths,
     );
   });
+  ipcMain.handle(
+    "pm:importNodeAssetPaths",
+    (_event, ref: NodeRef, paths: string[]) =>
+      copyFilesIntoNodeAssets(requireWorkspace(), ref, paths ?? []),
+  );
+  ipcMain.handle(
+    "pm:writeNodeAssetBuffers",
+    (
+      _event,
+      ref: NodeRef,
+      items: { name: string; data: Uint8Array }[],
+    ) =>
+      writeBuffersIntoNodeAssets(
+        requireWorkspace(),
+        ref,
+        (items ?? []).map((it) => ({
+          name: it.name,
+          bytes: it.data instanceof Uint8Array ? it.data : new Uint8Array(it.data),
+        })),
+      ),
+  );
 
   ipcMain.handle("pm:getWiki", () => getWikiSnapshot(requireWorkspace()));
   ipcMain.handle("pm:getWikiNode", (_event, id: string) =>
@@ -939,6 +1043,7 @@ function registerIpc(): void {
 }
 
 app.whenReady().then(() => {
+  registerPmAssetProtocol();
   const shim = ensureLocalPmShim(app.getPath("userData"));
   localPmShimPath = shim.shimPath;
   ptyManager.setBinDir(shim.binDir);

@@ -29,10 +29,26 @@ import {
   placeholder as cmPlaceholder,
 } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
+import {
+  autocompletion,
+  completionKeymap,
+} from "@codemirror/autocomplete";
 import { createAutoPairExtensions } from "./extensions/auto-pair";
 import { createLivePreviewExtensions } from "./extensions/live-preview";
-import { createMentionAutocompleteExtensions } from "./autocomplete/mention";
+import {
+  mentionCompletions,
+  mentionAutocompleteFacet,
+} from "./autocomplete/mention";
+import {
+  assetCompletions,
+  assetFilenamesFacet,
+} from "./autocomplete/asset";
+import {
+  assetIngestFacet,
+  createAssetIngestExtensions,
+} from "./extensions/asset-ingest";
 import type { MentionAutocompleteProps } from "./types";
+import type { LocalMediaOptions } from "./local-media";
 
 /** Markdown chrome + nested fenced-code token colors (host `--color-use--*`). */
 const mdHighlight = HighlightStyle.define([
@@ -101,6 +117,8 @@ const mdHighlight = HighlightStyle.define([
 
 export type MarkdownCmViewHandle = {
   focus: (opts?: { at?: "start" | "end" }) => void;
+  /** Insert text at the current selection (replaces selection). */
+  insertAtCursor: (text: string) => void;
 };
 
 export type MarkdownCmViewProps = {
@@ -111,6 +129,11 @@ export type MarkdownCmViewProps = {
   live: boolean;
   autoPair?: boolean;
   mentionAutocomplete?: MentionAutocompleteProps;
+  localMedia?: LocalMediaOptions;
+  /** Basenames under this node's assets/ for `assets/` autocomplete. */
+  assetFilenames?: string[];
+  /** Paste/drop → product ingest → Markdown cites. */
+  ingestAssetFiles?: (files: File[]) => Promise<string[]>;
   minHeightPx: number;
   className?: string;
   /** Thinner scroller padding; used by borderless shell. */
@@ -121,13 +144,37 @@ export type MarkdownCmViewProps = {
   onNavigateOutAtStart?: () => void;
 };
 
-function mentionExtensions(mention: MentionAutocompleteProps | undefined) {
-  return mention ? createMentionAutocompleteExtensions(mention) : [];
+function mentionExtensions(
+  mention: MentionAutocompleteProps | undefined,
+  assetFilenames: string[] | undefined,
+) {
+  const sources = [];
+  const facets: Extension[] = [];
+  if (mention) {
+    facets.push(mentionAutocompleteFacet.of(mention));
+    sources.push(mentionCompletions);
+  }
+  // Always register when product passes the list (may be empty → "No assets").
+  if (assetFilenames !== undefined) {
+    facets.push(assetFilenamesFacet.of(assetFilenames));
+    sources.push(assetCompletions);
+  }
+  if (sources.length === 0) return [];
+  return [
+    ...facets,
+    autocompletion({
+      override: sources,
+      activateOnTyping: true,
+      defaultKeymap: true,
+    }),
+    keymap.of(completionKeymap),
+  ];
 }
 
 function liveExtensions(
   live: boolean,
   mention: MentionAutocompleteProps | undefined,
+  localMedia: LocalMediaOptions | undefined,
 ) {
   if (!live) return [];
   const byToken = new Map(
@@ -136,6 +183,7 @@ function liveExtensions(
   return createLivePreviewExtensions({
     resolveMentionLabel: (token) => byToken.get(token),
     onMentionActivate: mention?.onActivate,
+    localMedia,
   });
 }
 
@@ -279,6 +327,9 @@ export function MarkdownCmView({
   live,
   autoPair = true,
   mentionAutocomplete,
+  localMedia,
+  assetFilenames,
+  ingestAssetFiles,
   minHeightPx,
   className,
   borderless = false,
@@ -293,10 +344,13 @@ export function MarkdownCmView({
   const allowProgrammaticFocusRef = useRef(false);
   const onNavigateOutRef = useRef(onNavigateOutAtStart);
   onNavigateOutRef.current = onNavigateOutAtStart;
+  const ingestRef = useRef(ingestAssetFiles);
+  ingestRef.current = ingestAssetFiles;
 
   const liveComp = useMemo(() => new Compartment(), []);
   const pairComp = useMemo(() => new Compartment(), []);
   const mentionComp = useMemo(() => new Compartment(), []);
+  const ingestComp = useMemo(() => new Compartment(), []);
   const phComp = useMemo(() => new Compartment(), []);
   const themeComp = useMemo(() => new Compartment(), []);
   const edgeComp = useMemo(() => new Compartment(), []);
@@ -318,6 +372,16 @@ export function MarkdownCmView({
         });
         view.focus();
         // Keep gate open briefly so focusin from focus() is accepted.
+        queueMicrotask(() => {
+          allowProgrammaticFocusRef.current = false;
+        });
+      },
+      insertAtCursor: (text) => {
+        const view = viewRef.current;
+        if (!view || !text) return;
+        allowProgrammaticFocusRef.current = true;
+        view.dispatch(view.state.replaceSelection(text));
+        view.focus();
         queueMicrotask(() => {
           allowProgrammaticFocusRef.current = false;
         });
@@ -352,8 +416,20 @@ export function MarkdownCmView({
         themeComp.of(createChromeTheme(minHeightPx, borderless)),
         phComp.of(placeholder ? cmPlaceholder(placeholder) : []),
         pairComp.of(autoPair ? createAutoPairExtensions() : []),
-        liveComp.of(liveExtensions(live, mentionAutocomplete)),
-        mentionComp.of(mentionExtensions(mentionAutocomplete)),
+        liveComp.of(liveExtensions(live, mentionAutocomplete, localMedia)),
+        mentionComp.of(mentionExtensions(mentionAutocomplete, assetFilenames)),
+        ingestComp.of(
+          ingestAssetFiles
+            ? [
+                assetIngestFacet.of((files) => {
+                  const fn = ingestRef.current;
+                  if (!fn) return Promise.resolve([]);
+                  return fn(files);
+                }),
+                ...createAssetIngestExtensions(),
+              ]
+            : [],
+        ),
         edgeComp.of(
           edgeNavigateKeymap(() => onNavigateOutRef.current?.()),
         ),
@@ -423,9 +499,11 @@ export function MarkdownCmView({
 
   useEffect(() => {
     viewRef.current?.dispatch({
-      effects: liveComp.reconfigure(liveExtensions(live, mentionAutocomplete)),
+      effects: liveComp.reconfigure(
+        liveExtensions(live, mentionAutocomplete, localMedia),
+      ),
     });
-  }, [live, liveComp, mentionAutocomplete]);
+  }, [live, liveComp, mentionAutocomplete, localMedia]);
 
   useEffect(() => {
     viewRef.current?.dispatch({
@@ -437,9 +515,28 @@ export function MarkdownCmView({
 
   useEffect(() => {
     viewRef.current?.dispatch({
-      effects: mentionComp.reconfigure(mentionExtensions(mentionAutocomplete)),
+      effects: mentionComp.reconfigure(
+        mentionExtensions(mentionAutocomplete, assetFilenames),
+      ),
     });
-  }, [mentionAutocomplete, mentionComp]);
+  }, [mentionAutocomplete, assetFilenames, mentionComp]);
+
+  useEffect(() => {
+    viewRef.current?.dispatch({
+      effects: ingestComp.reconfigure(
+        ingestAssetFiles
+          ? [
+              assetIngestFacet.of((files) => {
+                const fn = ingestRef.current;
+                if (!fn) return Promise.resolve([]);
+                return fn(files);
+              }),
+              ...createAssetIngestExtensions(),
+            ]
+          : [],
+      ),
+    });
+  }, [ingestAssetFiles, ingestComp]);
 
   useEffect(() => {
     viewRef.current?.dispatch({

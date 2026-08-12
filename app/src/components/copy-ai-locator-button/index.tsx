@@ -1,3 +1,9 @@
+/**
+ * Labeled “Copy for AI” control (legacy). Prefer LocatorCopyText in DocEditNav.
+ *
+ * ↔ doc-edit-shell/locator-copy-text.tsx — nav click-to-copy chrome
+ * ↔ @pm-core/identity/ai-locator — formatAiLocator
+ */
 import {
   formatAiLocator,
   type AiLocatorInput,

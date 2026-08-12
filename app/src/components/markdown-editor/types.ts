@@ -20,6 +20,8 @@ export type MarkdownEditorVariant = "chrome" | "borderless";
 /** Imperative handle for title→body handoff (and Lab focus demos). */
 export type MarkdownEditorHandle = {
   focus: (opts?: { at?: "start" | "end" }) => void;
+  /** Insert text at the current selection (replaces selection). */
+  insertAtCursor: (text: string) => void;
 };
 
 export type MarkdownPlugin = {
@@ -86,7 +88,7 @@ export type MarkdownEditorProps = {
    * call this instead of moving within the editor (title handoff).
    */
   onNavigateOutAtStart?: () => void;
-  /** Blur of the editor shell (autosave flush). */
+  /** Optional blur of the editor shell (no longer a save trigger). */
   onBlur?: () => void;
   plugins?: MarkdownPlugin[];
   className?: string;
@@ -98,6 +100,19 @@ export type MarkdownEditorProps = {
   autoPair?: boolean;
   /** Generic `@` autocomplete; omit to disable. */
   mentionAutocomplete?: MentionAutocompleteProps;
+  /**
+   * Local `assets/…` URL resolve. Product fills this; core stays bridge-free.
+   */
+  localMedia?: {
+    resolveMediaUrl?: (src: string) => string;
+  };
+  /** Basenames for `assets/` autocomplete. */
+  assetFilenames?: string[];
+  /**
+   * Paste/drop files into the editor: product copies into node `assets/` and
+   * returns written basenames; core inserts Markdown cites. Omit to disable.
+   */
+  ingestAssetFiles?: (files: File[]) => Promise<string[]>;
 };
 
 export type MarkdownPreviewProps = {

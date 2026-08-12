@@ -1,21 +1,14 @@
 /**
- * Dirty/save controller for AutosaveDoc hosts (Issue / Project / Workspace;
- * Wiki / Member when on this controller).
- * Not for ExplicitForm (custom props) / roadmap dates / view-order.
+ * Dirty/save controller for explicit-save doc hosts (Home / Issue / Project /
+ * Wiki / Member / Handoff). Not for custom-props form / roadmap dates / view-order.
  *
  * Dirty is content-based (draft ≠ baseline), not a sticky onChange flag.
- * Debounced autosave via @pm-core/sync/autosave-policy; explicit flush for blur /
- * Cmd+S / navigation / beforeunload.
+ * Persist only via save() — Save button, Cmd+S, or leave-Save. No autosave.
  *
- * ↔ dogfood @wiki-n8_7zg25NlxwdV6nIBVcD — AutosaveDoc vs ExplicitForm
+ * ↔ dogfood @wiki-n8_7zg25NlxwdV6nIBVcD — ExplicitDoc
  * ↔ app/src/lib/workspace/active-save-host.ts — Cmd+S dispatch
+ * ↔ app/src/lib/workspace/unsaved-leave.ts — leave Save path
  */
-
-import {
-  AUTOSAVE_IDLE_MS,
-  AUTOSAVE_MAX_WAIT_MS,
-  decideAutosave,
-} from "@pm-core/sync/autosave-policy";
 
 export type DetailSaveStatus =
   | "clean"
@@ -44,12 +37,9 @@ export type StatusListener = (
   conflictPaths: string[],
 ) => void;
 
-export type TitleBlankFn = () => boolean;
-
 export class DetailSaveController {
   private readonly persist: PersistFn;
   private readonly onStatus: StatusListener;
-  private readonly getTitleIsBlank: TitleBlankFn;
   private generation = 0;
   private target: DetailSaveTarget | null = null;
   private status: DetailSaveStatus = "clean";
@@ -58,18 +48,13 @@ export class DetailSaveController {
   /** True when draft editable slice differs from baseline. */
   private contentDirty = false;
   private chain: Promise<boolean> = Promise.resolve(true);
-  private timer: ReturnType<typeof setTimeout> | null = null;
-  private lastEditAt = 0;
-  private firstDirtyAt: number | null = null;
 
   constructor(opts: {
     persist: PersistFn;
     onStatus: StatusListener;
-    getTitleIsBlank: TitleBlankFn;
   }) {
     this.persist = opts.persist;
     this.onStatus = opts.onStatus;
-    this.getTitleIsBlank = opts.getTitleIsBlank;
   }
 
   getStatus(): DetailSaveStatus {
@@ -109,30 +94,19 @@ export class DetailSaveController {
   /**
    * Recompute status from whether draft differs from baseline.
    * Bumps generation (cancels in-flight save) — for user edits.
-   * Schedules debounced autosave when dirty.
+   * Does not schedule persist (explicit save only).
    */
   setContentDirty(target: DetailSaveTarget, dirty: boolean): void {
     this.target = target;
     this.generation += 1;
     this.contentDirty = dirty;
-    const now = Date.now();
-    this.lastEditAt = now;
-    if (dirty) {
-      if (this.firstDirtyAt === null) {
-        this.firstDirtyAt = now;
-      }
-    } else {
-      this.firstDirtyAt = null;
-    }
     if (this.conflictPaths.length > 0) {
       this.errorMessage = null;
       this.setStatus("conflict");
-      this.clearTimer();
       return;
     }
     this.errorMessage = null;
     this.setStatus(dirty ? "dirty" : "clean");
-    this.reschedule();
   }
 
   /**
@@ -146,15 +120,6 @@ export class DetailSaveController {
     this.target = target;
     this.contentDirty = dirty;
     this.conflictPaths = [...conflicts];
-    if (dirty) {
-      const now = Date.now();
-      this.lastEditAt = now;
-      if (this.firstDirtyAt === null) {
-        this.firstDirtyAt = now;
-      }
-    } else {
-      this.firstDirtyAt = null;
-    }
     if (this.status === "saving") {
       // Let runPersist finish; it will re-read contentDirty after return.
       return;
@@ -162,16 +127,9 @@ export class DetailSaveController {
     this.errorMessage = null;
     if (conflicts.length > 0) {
       this.setStatus("conflict");
-      this.clearTimer();
     } else {
       this.setStatus(dirty ? "dirty" : "clean");
-      this.reschedule();
     }
-  }
-
-  /** @deprecated Prefer setContentDirty — kept for transitional call sites. */
-  markDirty(target: DetailSaveTarget): void {
-    this.setContentDirty(target, true);
   }
 
   setConflicts(paths: string[]): void {
@@ -179,13 +137,10 @@ export class DetailSaveController {
     if (paths.length > 0) {
       this.errorMessage = null;
       this.setStatus("conflict");
-      this.clearTimer();
     } else if (this.contentDirty) {
       this.setStatus("dirty");
-      this.reschedule();
     } else if (this.status === "conflict") {
       this.setStatus("clean");
-      this.clearTimer();
     }
   }
 
@@ -194,29 +149,10 @@ export class DetailSaveController {
   }
 
   /**
-   * Persist now for navigation / blur / beforeunload.
-   * Holds (returns false, no write) on conflict or blank title.
-   */
-  flush(): Promise<boolean> {
-    this.clearTimer();
-    if (this.conflictPaths.length > 0 || this.status === "conflict") {
-      return Promise.resolve(false);
-    }
-    if (this.getTitleIsBlank()) {
-      return Promise.resolve(false);
-    }
-    if (!this.hasUnsavedWork()) {
-      return Promise.resolve(true);
-    }
-    return this.enqueuePersist({ allowConflict: false });
-  }
-
-  /**
-   * Explicit Save / Cmd+S / Retry — may overwrite conflict (human decision).
-   * Blank title still fails inside persist with a thrown error → status error.
+   * Explicit Save / Cmd+S / Retry / leave-Save — may overwrite conflict
+   * (human decision). Blank title fails inside persist → status error.
    */
   save(): Promise<boolean> {
-    this.clearTimer();
     if (!this.hasUnsavedWork() && this.conflictPaths.length === 0) {
       return Promise.resolve(true);
     }
@@ -230,8 +166,6 @@ export class DetailSaveController {
     this.contentDirty = false;
     this.conflictPaths = [];
     this.errorMessage = null;
-    this.firstDirtyAt = null;
-    this.clearTimer();
     this.setStatus("saved");
   }
 
@@ -245,8 +179,6 @@ export class DetailSaveController {
     this.contentDirty = false;
     this.conflictPaths = [];
     this.errorMessage = null;
-    this.firstDirtyAt = null;
-    this.clearTimer();
     this.setStatus("clean");
   }
 
@@ -256,40 +188,7 @@ export class DetailSaveController {
   markConflict(paths: string[], message?: string): void {
     this.conflictPaths = [...paths];
     this.errorMessage = message ?? null;
-    this.clearTimer();
     this.setStatus("conflict");
-  }
-
-  private clearTimer(): void {
-    if (this.timer !== null) {
-      clearTimeout(this.timer);
-      this.timer = null;
-    }
-  }
-
-  private reschedule(): void {
-    this.clearTimer();
-    const decision = decideAutosave({
-      status: this.status,
-      contentDirty: this.contentDirty,
-      hasConflict: this.conflictPaths.length > 0,
-      titleIsBlank: this.getTitleIsBlank(),
-      now: Date.now(),
-      lastEditAt: this.lastEditAt,
-      firstDirtyAt: this.firstDirtyAt,
-      idleMs: AUTOSAVE_IDLE_MS,
-      maxWaitMs: AUTOSAVE_MAX_WAIT_MS,
-    });
-    if (decision.kind === "wait") {
-      this.timer = setTimeout(() => {
-        this.timer = null;
-        this.reschedule();
-      }, decision.afterMs);
-      return;
-    }
-    if (decision.kind === "save") {
-      void this.enqueuePersist({ allowConflict: false });
-    }
   }
 
   private enqueuePersist(opts: {
@@ -321,33 +220,23 @@ export class DetailSaveController {
     ) {
       return false;
     }
-    if (this.getTitleIsBlank()) {
-      // Autosave / flush hold; explicit save still reaches persist and throws.
-      if (!opts.allowConflict) {
-        return false;
-      }
-    }
 
     const myGen = this.generation;
     const myTarget = this.target;
-    this.clearTimer();
     this.setStatus("saving");
 
     try {
       await this.persist(myTarget, myGen);
       if (myGen !== this.generation) {
-        this.reschedule();
         return true;
       }
       this.contentDirty = false;
       this.conflictPaths = [];
       this.errorMessage = null;
-      this.firstDirtyAt = null;
       this.setStatus("saved");
       return true;
     } catch (e) {
       if (myGen !== this.generation) {
-        this.reschedule();
         return false;
       }
       // Prefer structured stale-write (IPC-encoded or native).
@@ -410,9 +299,6 @@ export class DetailSaveController {
     this.onStatus(status, this.errorMessage, this.conflictPaths);
   }
 }
-
-/** @deprecated Use DetailSaveController. */
-export const DetailAutosaveController = DetailSaveController;
 
 export function targetsEqual(
   a: DetailSaveTarget | null,

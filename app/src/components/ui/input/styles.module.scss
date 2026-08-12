@@ -1,6 +1,14 @@
+/**
+ * Text field — default medium; `size="small"` matches ui/Button small (detail props).
+ *
+ * ↔ components/ui/button/styles.module.scss — small: 22px / 11px / 18px line
+ * ↔ components/issue-detail — props strip uses size=small
+ * ↔ src/global-styles/seams.md — `detail-prop-controls`
+ */
 .field {
   display: block;
   width: 100%;
+  box-sizing: border-box;
   margin: 0;
   padding: 6px 8px;
   border: 1px solid var(--color-use--border-emphasis-hex);
@@ -9,6 +17,14 @@
   color: var(--color-use--text-prime);
   font: inherit;
   line-height: 1.4;
+}
+
+.field[data-size="small"] {
+  min-height: 22px;
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-size: 11px;
+  line-height: 18px;
 }
 
 .field:disabled {

@@ -1,24 +1,20 @@
 /**
  * Single active save host for Cmd/Ctrl+S dispatch.
  *
- * AutosaveDoc hosts register DetailSaveController save; ExplicitForm hosts
- * register their local save. Only one host is current (last register wins;
- * unregister restores previous if stacked, or clears).
+ * ExplicitDoc / ExplicitForm hosts register their save(). Only one host is
+ * current (last register wins; unregister restores previous if stacked, or clears).
  *
- * ↔ dogfood @wiki-n8_7zg25NlxwdV6nIBVcD — AutosaveDoc vs ExplicitForm
- * ↔ app/src/lib/workspace/detail-save.ts — AutosaveDoc controller
+ * ↔ dogfood @wiki-n8_7zg25NlxwdV6nIBVcD — ExplicitDoc
+ * ↔ app/src/lib/workspace/detail-save.ts — ExplicitDoc controller
  * ↔ app/src/pages/channels/workspace-page/route.tsx — Cmd+S listener
  */
 
 export type ActiveSaveHost = {
-  /** Explicit save / flush (Save button / Cmd+S). */
+  /** Explicit save (Save button / Cmd+S / leave-Save). */
   save: () => boolean | Promise<boolean>;
   /** True when local edits are not confirmed on disk. */
   hasUnsaved: () => boolean;
-  /**
-   * ExplicitForm / interim manual docs: prompt on tab close.
-   * AutosaveDoc uses workspace-context flush beforeunload instead.
-   */
+  /** When true, hosts may also arm tab-close prompts (see leave guard). */
   promptBeforeUnload?: boolean;
 };
 

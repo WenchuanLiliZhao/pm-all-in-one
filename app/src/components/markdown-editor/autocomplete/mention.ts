@@ -43,7 +43,7 @@ function defaultFilter(
   );
 }
 
-function mentionCompletions(
+export function mentionCompletions(
   context: CompletionContext,
 ): CompletionResult | null {
   const config = context.state.facet(mentionAutocompleteFacet);
@@ -95,3 +95,5 @@ export function createMentionAutocompleteExtensions(
     keymap.of(completionKeymap),
   ];
 }
+
+export { mentionAutocompleteFacet };

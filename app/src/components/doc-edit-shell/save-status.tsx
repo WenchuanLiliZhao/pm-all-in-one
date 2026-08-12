@@ -1,8 +1,8 @@
 /**
- * Shared AutosaveDoc save status indicator (no primary Save button).
- * Retry / Conflict remain actionable where needed.
+ * Shared ExplicitDoc save status indicator.
+ * Hosts also show a primary Save button; Retry remains on error.
  *
- * ↔ dogfood @wiki-n8_7zg25NlxwdV6nIBVcD — AutosaveDoc status UX
+ * ↔ dogfood @wiki-n8_7zg25NlxwdV6nIBVcD — ExplicitDoc status UX
  * ↔ app/src/lib/workspace/detail-save.ts — DetailSaveStatus
  */
 import type { DetailSaveStatus } from "@/lib/workspace/detail-save";
@@ -11,7 +11,7 @@ import styles from "./save-status.module.scss";
 
 type Props = {
   status: DetailSaveStatus;
-  /** Retry after error / explicit flush. */
+  /** Retry after error / explicit save. */
   onRetry?: () => void;
 };
 

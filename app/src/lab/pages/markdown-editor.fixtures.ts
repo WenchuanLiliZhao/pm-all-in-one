@@ -139,15 +139,25 @@ Below the rule
   },
   images: {
     label: "Images",
-    source: `Good (placeholder):
+    source: `Figure with inline caption:
 
-![Demo](https://placehold.co/120x48/png)
+![**Demo** with \`code\`](https://placehold.co/120x48/png)
 
-Broken URL:
+Broken URL (falls back to card):
 
 ![Missing](https://example.invalid/no-such-image.png)
+
+Attachment card via image syntax:
+
+![Spec PDF](assets/spec.pdf)
+
+Attachment card via link:
+
+[Meeting notes](assets/notes.pdf)
+
+Type \`![](assets/\` or \`[](assets/\` in a real node body to autocomplete filenames (same menu as @).
 `,
-    note: "Live idle: img widget or broken stub; caret reveals ![alt](url).",
+    note: "Live idle: figure+figcaption (inline MD); non-images → attachment card; caret reveals source.",
   },
   table: {
     label: "Table",

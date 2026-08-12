@@ -6,6 +6,13 @@
 export { MarkdownEditor } from "./markdown-editor";
 export { MarkdownPreview } from "./markdown-preview";
 export { replaceOutsideCode } from "./transform-outside-code";
+export { renderInlineMarkdownFragment } from "./inline-fragment";
+export {
+  isEmbeddableImageUrl,
+  isNodeAssetRelUrl,
+  assetBasename,
+  markdownCiteForAssetBasename,
+} from "./local-media";
 export type {
   MarkdownEditorHandle,
   MarkdownEditorMode,

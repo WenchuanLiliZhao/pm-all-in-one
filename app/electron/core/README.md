@@ -14,7 +14,7 @@ Filesystem source of truth for workspace data. Shared by Electron main, the loca
 | [`identity/`](identity/) | Ids, `@…` links, status/priority catalogs, ladder law, core types | Anyone (pure / SoT); renderer via `@pm-core/identity/*` |
 | [`domain/`](domain/) | Entity CRUD writers (projects, issues, wiki, members, handoffs, …) | Electron main, server, CLI — not the renderer |
 | [`workspace/`](workspace/) | Scaffold, templates, watch, doctor, settings, derived index | Electron main, server, CLI |
-| [`sync/`](sync/) | OCC / autosave policy / delete-cost | Dual bridge + renderer (`@pm-core/sync/*`) |
+| [`sync/`](sync/) | OCC / delete-cost | Dual bridge + renderer (`@pm-core/sync/*`) |
 | [`views/`](views/) | `.pm/views.json` + view-orders | Electron main, server; pure apply via `@pm-core/views/*` |
 | [`desktop/`](desktop/) | PTY, CLI shim, git sync, asar esbuild binary | **Electron only** — server must not import |
 | [`infra/`](infra/) | `props.ts` load/write, schema.d.ts, timestamps, esbuild runtime | Core internals + domain writers |

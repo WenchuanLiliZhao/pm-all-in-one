@@ -206,7 +206,7 @@ test("getUnsyncedChanges: props-only edit is propsChanged", async () => {
   }
 });
 
-test("getUnsyncedChanges: timestamp-only props diff is omitted", async () => {
+test("getUnsyncedChanges: timestamp-only props diff is listed (Cursor SCM parity)", async () => {
   const pair = setupRemotePair();
   try {
     writeFile(
@@ -242,14 +242,22 @@ test("getUnsyncedChanges: timestamp-only props diff is omitted", async () => {
 
     const result = await getUnsyncedChanges(pair.b);
     assert.equal(result.kind, "ok");
-    assert.equal(result.nodes.length, 0);
+    assert.equal(result.nodes.length, 1);
+    const node = result.nodes[0]!;
+    assert.equal(node.ref.kind, "issue");
+    if (node.ref.kind === "issue") {
+      assert.equal(node.ref.issueId, ISSUE_ID);
+    }
+    assert.equal(node.propsChanged, true);
+    assert.equal(node.bodyChanged, false);
+    assert.equal(node.state, "uncommitted");
     assert.deepEqual(result.otherFiles, []);
   } finally {
     cleanupPair(pair);
   }
 });
 
-test("getUnsyncedChanges: revert editable field but bumped updated is omitted", async () => {
+test("getUnsyncedChanges: revert editable field but bumped updated stays listed", async () => {
   const pair = setupRemotePair();
   try {
     writeFile(
@@ -299,7 +307,9 @@ test("getUnsyncedChanges: revert editable field but bumped updated is omitted", 
       ].join("\n"),
     );
     const after = await getUnsyncedChanges(pair.b);
-    assert.equal(after.nodes.length, 0);
+    assert.equal(after.nodes.length, 1);
+    assert.equal(after.nodes[0]!.propsChanged, true);
+    assert.equal(after.nodes[0]!.state, "uncommitted");
   } finally {
     cleanupPair(pair);
   }
