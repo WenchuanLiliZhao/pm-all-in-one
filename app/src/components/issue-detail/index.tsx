@@ -63,6 +63,122 @@ const CHILD_LABEL: Record<Issue["level"], string | null> = {
   subtask: null,
 };
 
+type DepCandidate = { id: string; label: string };
+
+/** Jira-like dep list: issue rows, then Add (dropdown). Shared by blocked-by + blocks. */
+function IssueDepLinksField({
+  label,
+  listAriaLabel,
+  addAriaLabel,
+  ids,
+  projectId,
+  issues,
+  candidates,
+  selectedIds,
+  disabled,
+  onOpen,
+  onToggle,
+  onRemove,
+}: {
+  label: string;
+  listAriaLabel: string;
+  addAriaLabel: string;
+  ids: readonly string[];
+  projectId: string;
+  issues: Issue[];
+  candidates: readonly DepCandidate[];
+  selectedIds: ReadonlySet<string>;
+  disabled: boolean;
+  onOpen: (issueId: string) => void;
+  onToggle: (issueId: string, selected: boolean) => void;
+  onRemove: (issueId: string) => void;
+}) {
+  return (
+    <div className={styles.field}>
+      <span>{label}</span>
+      <div className={styles.depLinkStack}>
+        {ids.length > 0 ? (
+          <ul className={styles.depLinkList} aria-label={listAriaLabel}>
+            {ids.map((id) => {
+              const hit = issues.find(
+                (i) => i.projectId === projectId && i.id === id,
+              );
+              const title = hit?.title?.trim() || id;
+              return (
+                <li key={id} className={styles.depLinkRow}>
+                  <button
+                    type="button"
+                    className={styles.depLinkRowLink}
+                    title={`Open ${title}`}
+                    disabled={!hit}
+                    onClick={() => {
+                      if (!hit) return;
+                      onOpen(id);
+                    }}
+                  >
+                    {hit ? (
+                      <>
+                        <span className={styles.depLinkLevel}>{hit.level}</span>
+                        <span className={styles.depLinkTitle}>{title}</span>
+                      </>
+                    ) : (
+                      <span className={styles.depLinkTitle}>{title}</span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.depLinkRowRemove}
+                    aria-label={`Remove ${title}`}
+                    disabled={disabled}
+                    onClick={() => onRemove(id)}
+                  >
+                    ×
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
+        <DropdownMenu
+          filter={{ placeholder: "Search issues…" }}
+          disabled={disabled}
+        >
+          <DropdownMenu.Trigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="small"
+              startIcon={<Lucide.Plus />}
+              disabled={disabled}
+              aria-label={addAriaLabel}
+              className={styles.depLinkAdd}
+            >
+              Add
+            </Button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content align="start" side="bottom">
+            {candidates.length === 0 ? (
+              <DropdownMenu.Label>No other issues in project</DropdownMenu.Label>
+            ) : (
+              candidates.map((c) => {
+                const selected = selectedIds.has(c.id);
+                return (
+                  <DropdownMenu.ItemButton
+                    key={c.id}
+                    label={c.label}
+                    active={selected}
+                    onSelect={() => onToggle(c.id, selected)}
+                  />
+                );
+              })
+            )}
+          </DropdownMenu.Content>
+        </DropdownMenu>
+      </div>
+    </div>
+  );
+}
+
 function SaveStatusLabel({
   status,
   onSave,
@@ -118,9 +234,10 @@ export function IssueDetail({
   issues,
   wikiNodes = [],
 }: IssueDetailProps) {
-  const { refreshCustomProps } = useWorkspace();
+  const { refreshCustomProps, persistIssueBlockedBy, setError } = useWorkspace();
   const { members } = useMember();
   const [propDefs, setPropDefs] = useState<CustomPropDef[]>([]);
+  const [blocksBusy, setBlocksBusy] = useState(false);
   const bodyRef = useRef<MarkdownEditorHandle>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const saveHostSave = useCallback(() => onSave(), [onSave]);
@@ -173,7 +290,7 @@ export function IssueDetail({
     return { involved, leftSelected, missingSelected };
   }, [members?.nodes, issue.assignee]);
 
-  const blockerCandidates = useMemo(() => {
+  const depCandidates = useMemo(() => {
     return issues
       .filter(
         (i) => i.projectId === issue.projectId && i.id !== issue.id,
@@ -186,23 +303,67 @@ export function IssueDetail({
       }));
   }, [issues, issue.projectId, issue.id]);
 
-  const blockedBySummary = useMemo(() => {
-    const ids = issue.blockedBy ?? [];
-    if (ids.length === 0) {
-      return "None";
-    }
-    const titles = ids.map((id) => {
-      const hit = issues.find(
-        (i) => i.projectId === issue.projectId && i.id === id,
-      );
-      return hit?.title?.trim() || id;
-    });
-    if (titles.length <= 2) {
-      return titles.join(", ");
-    }
-    return `${titles[0]}, ${titles[1]} +${titles.length - 2}`;
-  }, [issue.blockedBy, issue.projectId, issues]);
+  /** Inverse of same-project `blockedBy` — not a stored prop. */
+  const blocksIds = useMemo(() => {
+    return issues
+      .filter(
+        (i) =>
+          i.projectId === issue.projectId &&
+          i.id !== issue.id &&
+          (i.blockedBy ?? []).includes(issue.id),
+      )
+      .slice()
+      .sort((a, b) => a.title.localeCompare(b.title))
+      .map((i) => i.id);
+  }, [issues, issue.projectId, issue.id]);
 
+  const blockedBySelected = useMemo(
+    () => new Set(issue.blockedBy ?? []),
+    [issue.blockedBy],
+  );
+  const blocksSelected = useMemo(() => new Set(blocksIds), [blocksIds]);
+
+  const persistBlocksEdge = useCallback(
+    async (targetId: string, nextBlockedBy: string[]) => {
+      setBlocksBusy(true);
+      setError(null);
+      try {
+        await persistIssueBlockedBy(issue.projectId, targetId, nextBlockedBy);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setBlocksBusy(false);
+      }
+    },
+    [issue.projectId, persistIssueBlockedBy, setError],
+  );
+
+  const onToggleBlocks = useCallback(
+    (targetId: string, selected: boolean) => {
+      const target = issues.find(
+        (i) => i.projectId === issue.projectId && i.id === targetId,
+      );
+      if (!target) return;
+      const cur = target.blockedBy ?? [];
+      const next = selected
+        ? cur.filter((id) => id !== issue.id)
+        : [...new Set([...cur, issue.id])];
+      void persistBlocksEdge(targetId, next);
+    },
+    [issues, issue.projectId, issue.id, persistBlocksEdge],
+  );
+
+  const onRemoveBlocks = useCallback(
+    (targetId: string) => {
+      const target = issues.find(
+        (i) => i.projectId === issue.projectId && i.id === targetId,
+      );
+      if (!target) return;
+      const next = (target.blockedBy ?? []).filter((id) => id !== issue.id);
+      void persistBlocksEdge(targetId, next);
+    },
+    [issues, issue.projectId, issue.id, persistBlocksEdge],
+  );
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -440,98 +601,58 @@ export function IssueDetail({
             />
           </label>
 
-          <label className={styles.field}>
-            <span>Blocked by</span>
-            <DropdownMenu
-              filter={{ placeholder: "Search issues…" }}
-              disabled={saveStatus === "saving"}
-            >
-              <DropdownMenu.Trigger asChild>
-                <Button
-                  type="button"
-                  variant="outlined"
-                  size="small"
-                  endIcon={<Lucide.ChevronDown />}
-                  disabled={saveStatus === "saving"}
-                  aria-label="Blocked by"
-                  className={styles.blockedByTrigger}
-                >
-                  <span className={styles.blockedByTriggerLabel}>
-                    {blockedBySummary}
-                  </span>
-                </Button>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content align="start" side="bottom">
-                {blockerCandidates.length === 0 ? (
-                  <DropdownMenu.Label>No other issues in project</DropdownMenu.Label>
-                ) : (
-                  blockerCandidates.map((c) => {
-                    const selected = (issue.blockedBy ?? []).includes(c.id);
-                    return (
-                      <DropdownMenu.ItemButton
-                        key={c.id}
-                        label={c.label}
-                        active={selected}
-                        onSelect={() => {
-                          const cur = issue.blockedBy ?? [];
-                          onChange({
-                            blockedBy: selected
-                              ? cur.filter((id) => id !== c.id)
-                              : [...cur, c.id],
-                          });
-                        }}
-                      />
-                    );
-                  })
-                )}
-              </DropdownMenu.Content>
-            </DropdownMenu>
-            {(issue.blockedBy ?? []).length > 0 ? (
-              <ul className={styles.blockedByChips} aria-label="Current blockers">
-                {(issue.blockedBy ?? []).map((id) => {
-                  const hit = issues.find(
-                    (i) => i.projectId === issue.projectId && i.id === id,
-                  );
-                  const title = hit?.title?.trim() || id;
-                  return (
-                    <li key={id} className={styles.blockedByChip}>
-                      <button
-                        type="button"
-                        className={styles.blockedByChipLabel}
-                        title={`Open ${title}`}
-                        disabled={!hit}
-                        onClick={() => {
-                          if (!hit) return;
-                          onNavigateIssue({
-                            kind: "issue",
-                            projectId: issue.projectId,
-                            issueId: id,
-                          });
-                        }}
-                      >
-                        {hit ? `${hit.level} · ${title}` : title}
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.blockedByChipRemove}
-                        aria-label={`Remove ${title}`}
-                        disabled={saveStatus === "saving"}
-                        onClick={() =>
-                          onChange({
-                            blockedBy: (issue.blockedBy ?? []).filter(
-                              (x) => x !== id,
-                            ),
-                          })
-                        }
-                      >
-                        ×
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : null}
-          </label>
+          <IssueDepLinksField
+            label="Blocked by"
+            listAriaLabel="Current blockers"
+            addAriaLabel="Add blocker"
+            ids={issue.blockedBy ?? []}
+            projectId={issue.projectId}
+            issues={issues}
+            candidates={depCandidates}
+            selectedIds={blockedBySelected}
+            disabled={saveStatus === "saving" || blocksBusy}
+            onOpen={(id) =>
+              onNavigateIssue({
+                kind: "issue",
+                projectId: issue.projectId,
+                issueId: id,
+              })
+            }
+            onToggle={(id, selected) => {
+              const cur = issue.blockedBy ?? [];
+              onChange({
+                blockedBy: selected
+                  ? cur.filter((x) => x !== id)
+                  : [...cur, id],
+              });
+            }}
+            onRemove={(id) =>
+              onChange({
+                blockedBy: (issue.blockedBy ?? []).filter((x) => x !== id),
+              })
+            }
+          />
+
+          <IssueDepLinksField
+            label="Blocks"
+            listAriaLabel="Issues this blocks"
+            addAriaLabel="Add blocked issue"
+            ids={blocksIds}
+            projectId={issue.projectId}
+            issues={issues}
+            candidates={depCandidates}
+            selectedIds={blocksSelected}
+            disabled={saveStatus === "saving" || blocksBusy}
+            onOpen={(id) =>
+              onNavigateIssue({
+                kind: "issue",
+                projectId: issue.projectId,
+                issueId: id,
+              })
+            }
+            onToggle={onToggleBlocks}
+            onRemove={onRemoveBlocks}
+          />
 
           <label className={styles.field}>
             <span>Created by</span>

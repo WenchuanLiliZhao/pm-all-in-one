@@ -73,7 +73,15 @@ export function MarkdownEditorPage() {
   );
 
   const mentionAutocomplete = useMemo(
-    () => ({ candidates: MOCK_MENTION_CANDIDATES }),
+    () => ({
+      candidates: MOCK_MENTION_CANDIDATES,
+      onActivate: (token: string) => {
+        const stamp = new Date().toLocaleTimeString();
+        setLogLines((prev) =>
+          [`[${stamp}] Live ⌘/Ctrl-click → ${token}`, ...prev].slice(0, 40),
+        );
+      },
+    }),
     [],
   );
 
@@ -151,7 +159,7 @@ export function MarkdownEditorPage() {
           </h2>
           <p className={styles.desc}>
             Preview chips via plugin (standalone Preview below). Type @ in Live
-            for mock candidates.
+            for mock candidates. ⌘/Ctrl-click a Live @mention to log navigate.
           </p>
           <MarkdownEditor
             label="With plugin"
@@ -215,11 +223,14 @@ export function MarkdownEditorPage() {
 
       <section className={pageStyles.block}>
         <h2 className={pageStyles.sectionTitle}>Event log</h2>
-        <p className={styles.desc}>Mock wiki chip clicks (newest first).</p>
+        <p className={styles.desc}>
+          Mock wiki Preview clicks + Live ⌘/Ctrl-click (newest first).
+        </p>
         <pre className={styles.log}>
           {logLines.length === 0 ? (
             <span className={styles.logEmpty}>
-              No events yet — click a wiki chip in MarkdownPreview below.
+              No events yet — click a Preview chip or ⌘/Ctrl-click a Live
+              @mention.
             </span>
           ) : (
             logLines.join("\n")

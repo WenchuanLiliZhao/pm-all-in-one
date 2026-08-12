@@ -135,6 +135,7 @@ function liveExtensions(
   );
   return createLivePreviewExtensions({
     resolveMentionLabel: (token) => byToken.get(token),
+    onMentionActivate: mention?.onActivate,
   });
 }
 

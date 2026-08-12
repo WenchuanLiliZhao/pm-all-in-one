@@ -57,6 +57,11 @@ export type MentionAutocompleteProps = {
   /** Max rows; default 50. */
   maxResults?: number;
   emptyMessage?: string;
+  /**
+   * Live: Cmd/Ctrl+click an `@…` mention (chip or raw token, outside code)
+   * calls this with the full SoT token. Product adapters navigate from here.
+   */
+  onActivate?: (token: string) => void;
 };
 
 export type MarkdownEditorProps = {

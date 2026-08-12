@@ -1,4 +1,5 @@
 // ↔ ../markdown-cm-view.tsx — mounts createLivePreviewExtensions when live
+// ↔ ../types.ts — MentionAutocompleteProps.onActivate → onMentionActivate
 // ↔ ../elements/index.ts — createElementLiveExtensions (table/codeblock/list/…)
 // ↔ ./live-ownership.ts — element-owned mark / construct skip registry
 // ↔ ../elements/codeblock/live.ts — owns FencedCode CodeMarks (skip via ownership)
@@ -6,6 +7,7 @@
 // ↔ ../elements/link/live.ts — owns Link / Autolink / bare URL
 // ↔ ../transform-outside-code.ts — Reading View counterpart (skip @ in code)
 // ↔ AGENTS.md — Live ≠ split-pane; SoT stays raw Markdown; @ in code stays literal
+// ↔ src/lib/markdown/use-pm-mentions.ts — product onActivate → navigate
 
 import { syntaxTree } from "@codemirror/language";
 import type { Extension } from "@codemirror/state";
@@ -50,19 +52,29 @@ class MentionLabelWidget extends WidgetType {
   constructor(
     readonly label: string,
     readonly token: string,
+    readonly activatable: boolean,
   ) {
     super();
   }
 
   eq(other: MentionLabelWidget) {
-    return other.label === this.label && other.token === this.token;
+    return (
+      other.label === this.label &&
+      other.token === this.token &&
+      other.activatable === this.activatable
+    );
   }
 
   toDOM() {
     const span = document.createElement("span");
-    span.className = "cm-md-mention";
+    span.className = this.activatable
+      ? "cm-md-mention cm-md-mention-activatable"
+      : "cm-md-mention";
     span.textContent = this.label;
-    span.title = this.token;
+    span.title = this.activatable
+      ? `${this.token} · ⌘/Ctrl-click to open`
+      : this.token;
+    span.dataset.mentionToken = this.token;
     return span;
   }
 
@@ -75,6 +87,11 @@ export type LivePreviewOptions = {
   /** When set, inactive @tokens render as this label (e.g. object title). */
   resolveMentionLabel?: (token: string) => string | undefined;
   /**
+   * Cmd/Ctrl+click an `@…` mention (outside code) → full SoT token.
+   * Omit to disable Live mention activation.
+   */
+  onMentionActivate?: (token: string) => void;
+  /**
    * When false, skip per-element live hosts (e.g. nested table editor must not
    * re-enter `createElementLiveExtensions` or it would nest forever).
    * Default true.
@@ -82,9 +99,97 @@ export type LivePreviewOptions = {
   elements?: boolean;
 };
 
+function codeRangesIn(view: EditorView): { from: number; to: number }[] {
+  const ranges: { from: number; to: number }[] = [];
+  syntaxTree(view.state).iterate({
+    enter: (node) => {
+      if (
+        node.name === "InlineCode" ||
+        node.name === "FencedCode" ||
+        node.name === "CodeBlock"
+      ) {
+        ranges.push({ from: node.from, to: node.to });
+        return false;
+      }
+    },
+  });
+  return ranges;
+}
+
+function inCodeRanges(
+  ranges: { from: number; to: number }[],
+  from: number,
+  to: number,
+): boolean {
+  return ranges.some((r) => r.from <= from && r.to >= to);
+}
+
+/** Full `@…` token covering `pos`, or null when inside code / no hit. */
+function mentionTokenAt(view: EditorView, pos: number): string | null {
+  const doc = view.state.doc.toString();
+  const codeRanges = codeRangesIn(view);
+  for (const m of doc.matchAll(MENTION_RE)) {
+    const from = m.index ?? 0;
+    const to = from + m[0].length;
+    if (pos < from || pos > to) continue;
+    if (inCodeRanges(codeRanges, from, to)) return null;
+    return m[0];
+  }
+  return null;
+}
+
+function isModKeyEvent(event: KeyboardEvent | MouseEvent): boolean {
+  return event.metaKey || event.ctrlKey;
+}
+
+function isModClick(event: MouseEvent): boolean {
+  return isModKeyEvent(event) && event.button === 0;
+}
+
+const MOD_HELD_CLASS = "cm-mod-held";
+
+/** Toggle editor-root class while ⌘/Ctrl is held (for hover underline affordance). */
+function bindModHeldClass(view: EditorView): () => void {
+  const sync = (held: boolean) => {
+    view.dom.classList.toggle(MOD_HELD_CLASS, held);
+  };
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (event.key === "Meta" || event.key === "Control" || isModKeyEvent(event)) {
+      sync(true);
+    }
+  };
+  const onKeyUp = (event: KeyboardEvent) => {
+    // Meta/Control keyup reports metaKey/ctrlKey as false for the released key.
+    if (event.key === "Meta" || event.key === "Control") {
+      sync(event.metaKey || event.ctrlKey);
+      return;
+    }
+    if (!isModKeyEvent(event)) sync(false);
+  };
+  const onBlur = () => sync(false);
+  const onMouseMove = (event: MouseEvent) => {
+    sync(isModKeyEvent(event));
+  };
+  // Capture phase — Cmd may be handled before the focused contentDOM sees it.
+  window.addEventListener("keydown", onKeyDown, true);
+  window.addEventListener("keyup", onKeyUp, true);
+  window.addEventListener("blur", onBlur);
+  view.dom.addEventListener("mousemove", onMouseMove);
+  view.dom.addEventListener("mouseenter", onMouseMove);
+  return () => {
+    window.removeEventListener("keydown", onKeyDown, true);
+    window.removeEventListener("keyup", onKeyUp, true);
+    window.removeEventListener("blur", onBlur);
+    view.dom.removeEventListener("mousemove", onMouseMove);
+    view.dom.removeEventListener("mouseenter", onMouseMove);
+    view.dom.classList.remove(MOD_HELD_CLASS);
+  };
+}
+
 function buildDecorations(
   view: EditorView,
   resolveMentionLabel?: (token: string) => string | undefined,
+  mentionActivatable = false,
 ): DecorationSet {
   const specs: DecSpec[] = [];
   // CM always has a selection (defaults to 0). Only reveal raw marks while
@@ -94,27 +199,13 @@ function buildDecorations(
   const selFrom = focused ? sel.from : -1;
   const selTo = focused ? sel.to : -1;
   const doc = view.state.doc.toString();
-  const codeRanges: { from: number; to: number }[] = [];
-  syntaxTree(view.state).iterate({
-    enter: (node) => {
-      if (
-        node.name === "InlineCode" ||
-        node.name === "FencedCode" ||
-        node.name === "CodeBlock"
-      ) {
-        codeRanges.push({ from: node.from, to: node.to });
-        return false;
-      }
-    },
-  });
-  const inCode = (from: number, to: number) =>
-    codeRanges.some((r) => r.from <= from && r.to >= to);
+  const codeRanges = codeRangesIn(view);
 
   const mentionHits: { from: number; to: number; text: string }[] = [];
   for (const m of doc.matchAll(MENTION_RE)) {
     const from = m.index ?? 0;
     const to = from + m[0].length;
-    if (inCode(from, to)) continue;
+    if (inCodeRanges(codeRanges, from, to)) continue;
     mentionHits.push({ from, to, text: m[0] });
   }
 
@@ -127,11 +218,21 @@ function buildDecorations(
         from: hit.from,
         to: hit.to,
         deco: Decoration.replace({
-          widget: new MentionLabelWidget(label, hit.text),
+          widget: new MentionLabelWidget(
+            label,
+            hit.text,
+            mentionActivatable,
+          ),
         }),
       });
     } else {
-      specs.push({ from: hit.from, to: hit.to, deco: mentionChip });
+      const deco = mentionActivatable
+        ? Decoration.mark({
+            class: "cm-md-mention cm-md-mention-activatable",
+            attributes: { "data-mention-token": hit.text },
+          })
+        : mentionChip;
+      specs.push({ from: hit.from, to: hit.to, deco });
     }
   }
 
@@ -229,13 +330,23 @@ function buildDecorations(
 
 function createLivePreviewPlugin(
   resolveMentionLabel?: (token: string) => string | undefined,
+  onMentionActivate?: (token: string) => void,
 ) {
+  const activatable = Boolean(onMentionActivate);
   return ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
+      private unbindModHeld: (() => void) | undefined;
 
       constructor(view: EditorView) {
-        this.decorations = buildDecorations(view, resolveMentionLabel);
+        this.decorations = buildDecorations(
+          view,
+          resolveMentionLabel,
+          activatable,
+        );
+        if (activatable) {
+          this.unbindModHeld = bindModHeldClass(view);
+        }
       }
 
       update(update: ViewUpdate) {
@@ -246,11 +357,48 @@ function createLivePreviewPlugin(
           update.focusChanged ||
           syntaxTree(update.state) !== syntaxTree(update.startState)
         ) {
-          this.decorations = buildDecorations(update.view, resolveMentionLabel);
+          this.decorations = buildDecorations(
+            update.view,
+            resolveMentionLabel,
+            activatable,
+          );
         }
       }
+
+      destroy() {
+        this.unbindModHeld?.();
+      }
     },
-    { decorations: (v) => v.decorations },
+    {
+      decorations: (v) => v.decorations,
+      eventHandlers: onMentionActivate
+        ? {
+            mousedown(event, view) {
+              if (!isModClick(event)) return false;
+              const target = event.target;
+              let token: string | null = null;
+              if (target instanceof HTMLElement) {
+                const chip = target.closest("[data-mention-token]");
+                if (chip instanceof HTMLElement) {
+                  token = chip.dataset.mentionToken ?? null;
+                }
+              }
+              if (!token) {
+                const pos = view.posAtCoords({
+                  x: event.clientX,
+                  y: event.clientY,
+                });
+                if (pos == null) return false;
+                token = mentionTokenAt(view, pos);
+              }
+              if (!token) return false;
+              event.preventDefault();
+              onMentionActivate(token);
+              return true;
+            },
+          }
+        : undefined,
+    },
   );
 }
 
@@ -287,14 +435,35 @@ const livePreviewTheme = EditorView.baseTheme({
   },
 });
 
+/**
+ * Higher priority than baseTheme so pointer/underline beat CM's content
+ * `cursor: text`. `cm-mod-held` lives on the editor root — use `&`.
+ */
+const mentionActivateTheme = EditorView.theme({
+  "&.cm-mod-held .cm-md-mention-activatable": {
+    cursor: "pointer",
+  },
+  "&.cm-mod-held .cm-md-mention-activatable:hover": {
+    cursor: "pointer",
+    textDecoration: "underline",
+    textUnderlineOffset: "2px",
+  },
+});
+
 /** Obsidian-style same-pane decorations (SoT stays raw Markdown). */
 export function createLivePreviewExtensions(
   options: LivePreviewOptions = {},
 ): Extension[] {
   const exts: Extension[] = [
-    createLivePreviewPlugin(options.resolveMentionLabel),
+    createLivePreviewPlugin(
+      options.resolveMentionLabel,
+      options.onMentionActivate,
+    ),
     livePreviewTheme,
   ];
+  if (options.onMentionActivate) {
+    exts.push(mentionActivateTheme);
+  }
   if (options.elements !== false) {
     exts.push(...createElementLiveExtensions());
   }

@@ -150,7 +150,7 @@ Raw embedded HTML is out of scope.
 | `MarkdownEditorHandle` / `editorRef` | Imperative `focus({ at })` for title→body handoff (bypasses accidental-focus gate) |
 | `MarkdownPreview` | Preview-only renderer (Reading View) — Lab / standalone; not mounted by `MarkdownEditor` while modes are paused |
 | `MarkdownPlugin` | `transformSource` + `components` + optional `allowedUrlSchemes` (Reading View) |
-| `MentionAutocompleteCandidate` / `MentionAutocompleteProps` | Generic `@` autocomplete shell (product fills `insertText`) |
+| `MentionAutocompleteCandidate` / `MentionAutocompleteProps` | Generic `@` autocomplete shell (product fills `insertText`); optional `onActivate` for Live ⌘/Ctrl-click |
 | `replaceOutsideCode` | Regex replace that skips fenced + inline code (for mention adapters) |
 | `linkChipStyles` | Optional CSS module class names for generic link chips (`ok` / `broken`) |
 
@@ -188,7 +188,7 @@ DEV-only: `#/lab/markdown-editor` (`src/lab/pages/markdown-editor.tsx`). Mock wi
 - `MarkdownEditor` baseline: Live only (mode props accepted, ignored), label, placeholder, controlled value
 - `MarkdownEditor` **borderless**: no mode header; no Live↔Source toggle; Focus start button lands caret (programmatic focus gate bypass); autosave / blur flush / title↔body handoff still work
 - Auto-pair: `[]` / `*` / `**` / `()` — **not** backticks
-- Live: markers hide off-cursor; headings/emphasis styled; `@…` mentions show resolved title when inactive; mentions inside `` `inline` `` / fenced code stay literal (no chip)
+- Live: markers hide off-cursor; headings/emphasis styled; `@…` mentions show resolved title when inactive; mentions inside `` `inline` `` / fenced code stay literal (no chip); ⌘/Ctrl-click a mention (chip or raw, outside code) calls `mentionAutocomplete.onActivate` with the SoT token (product navigates)
 - Preview (standalone `MarkdownPreview`): same — `@…` inside code is not rewritten to chips (`replaceOutsideCode`)
 - Live **lists**: inactive `ListItem` hides `-` / `*` / `+` / `1.` `ListMark` and shows bullet `•` or **sibling-index** ordinal widget (not raw SoT digits — so Enter→renumber then indent does not leave a nested `2` / outer `3`); indent/dedent (`Mod-]` / `Mod-[`) also rewrites touched OrderedList marks to `1..n`; GFM `- [ ]` / `- [x]` show checkboxes (click toggles SoT); caret anywhere in the item reveals raw marks; nested bullets / ordered under bullet stay indented
 - Live **links**: inactive `Link` / `Autolink` hide `[]()` / `<>` and URL chrome; label (or URL for autolink) styled with accent; caret in construct reveals source

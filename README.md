@@ -16,6 +16,25 @@ We run the product on itself: development of **pm all in one** is planned and tr
 
 The desktop UI is the **easy way in** — an intuitive path so people can accept this model. It is not the definition of the product. The workspace on disk is; the CLI and agent rules (`AGENTS.md` / `.pm/agent.md` / skills) are peers to the UI.
 
+## Who this is for / not for
+
+The dividing line is how work is produced, not company headcount: **is company state files on disk that agents can read and humans review in git?**
+
+**Likely a fit**
+
+- Solo developers or AI-native small teams who already share one workspace with agents
+- Agent fleets / automation studios that need a durable, diffable ledger of intent (not chat residue)
+- Knowledge or delivery work where the deliverable is already a repo of documents + code
+- A pod inside a larger org that keeps agent-driven work on disk, while enterprise tickets stay elsewhere
+
+**Not a fit**
+
+- Compliance-heavy ticket flows (procurement, legal, regulated ops) that need a remote SoT and approval matrix
+- Orgs whose primary users only use web forms — login, roles, SLA reports, and workflow engines as first-class
+- Anyone who wants hosted sync, in-app ACL, or a board that hides the files
+
+**Validation (honest):** There is **no large-team experiment** yet. Dogfood and active testing stay in the **3–5 person** range. Larger headcount may still adopt the model for an AI-native layer, but that scale is unproven here.
+
 ## Tradeoffs (read before you adopt)
 
 - **Git is the multiplayer layer.** There is no account, hosted sync, or in-app permission matrix. That is intentional for developer-shaped small teams; it is the wrong product if you need SaaS ACL.

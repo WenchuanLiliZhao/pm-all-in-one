@@ -85,31 +85,48 @@
   z-index: 1;
   min-width: 16rem;
   max-width: 28rem;
-  background: var(--color-use--bg-prime-hex);
+  width: 22rem;
+  overflow: hidden;
+  /* Opaque base — `--bg-darken` is rgba; a lone translucent fill lets
+     scrolled columns show through the sticky title rail. */
+  background-color: var(--color-use--bg-prime-hex);
+  background-image: none;
   white-space: normal;
+  box-shadow: 1px 0 0 var(--color-use--border-prime-hex);
 }
 
 th.titleCol {
   z-index: 3;
-  background: var(--color-use--bg-secondary-hex);
+  background-color: var(--color-use--bg-secondary-hex);
+  background-image: none;
 }
 
 .row {
   position: relative;
 }
 
-.row:nth-child(even) .titleCol,
 .row:nth-child(even) td {
   background: color-mix(in srgb, var(--color-use--bg-darken) 55%, var(--color-use--bg-prime-hex));
 }
 
 .row:nth-child(even) .titleCol {
-  background: color-mix(in srgb, var(--color-use--bg-darken) 55%, var(--color-use--bg-prime-hex));
+  background-color: var(--color-use--bg-prime-hex);
+  background-image: linear-gradient(
+    color-mix(in srgb, var(--color-use--bg-darken) 55%, transparent),
+    color-mix(in srgb, var(--color-use--bg-darken) 55%, transparent)
+  );
 }
 
-.rowSelected td,
-.rowSelected .titleCol {
+.rowSelected td {
   background: var(--color-use--bg-darken) !important;
+}
+
+.rowSelected .titleCol {
+  background-color: var(--color-use--bg-prime-hex) !important;
+  background-image: linear-gradient(
+    var(--color-use--bg-darken),
+    var(--color-use--bg-darken)
+  ) !important;
 }
 
 .rowDragging {

@@ -81,62 +81,84 @@
   font-size: 12px;
 }
 
-.blockedByTrigger {
-  justify-content: space-between;
-  width: 100%;
-  max-width: 100%;
-}
-
-.blockedByTriggerLabel {
-  flex: 1;
+/* Jira-like linked issues (blocked by / blocks): rows first, Add below. */
+.depLinkStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space--4);
+  align-items: flex-start;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-align: left;
 }
 
-.blockedByChips {
+.depLinkList {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space--4);
-}
-
-.blockedByChip {
-  display: inline-flex;
-  align-items: center;
+  flex-direction: column;
   gap: 2px;
-  max-width: 100%;
-  border: 1px solid var(--color-use--border-prime-hex);
-  border-radius: 4px;
-  background: var(--color-use--bg-prime-hex);
-  font-size: 12px;
-  line-height: 1.2;
+  width: 100%;
+  min-width: 0;
 }
 
-.blockedByChipLabel {
+.depLinkRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space--4);
+  min-width: 0;
+  width: 100%;
+  border-radius: 4px;
+}
+
+.depLinkRow:hover {
+  background: var(--color-use--hover-overlay-hover);
+}
+
+.depLinkRowLink {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space--8);
   border: none;
   background: transparent;
   padding: var(--space--4) var(--space--8);
   margin: 0;
   font: inherit;
+  font-size: 13px;
+  line-height: 1.3;
+  text-align: left;
   color: var(--color-use--text-prime);
   cursor: pointer;
-  max-width: 14rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.blockedByChipLabel:disabled {
+.depLinkRowLink:disabled {
   cursor: default;
   color: var(--color-use--text-secondary);
 }
 
-.blockedByChipRemove {
+.depLinkLevel {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--color-use--text-secondary);
+}
+
+.depLinkTitle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-use--accent-text);
+}
+
+.depLinkRowLink:hover:not(:disabled) .depLinkTitle {
+  text-decoration: underline;
+}
+
+.depLinkRowRemove {
+  flex-shrink: 0;
   border: none;
   background: transparent;
   padding: var(--space--4) var(--space--8);
@@ -145,15 +167,25 @@
   line-height: 1;
   color: var(--color-use--text-secondary);
   cursor: pointer;
+  opacity: 0;
 }
 
-.blockedByChipRemove:hover:not(:disabled) {
+.depLinkRow:hover .depLinkRowRemove,
+.depLinkRowRemove:focus-visible {
+  opacity: 1;
+}
+
+.depLinkRowRemove:hover:not(:disabled) {
   color: var(--color-use--danger);
 }
 
-.blockedByChipRemove:disabled {
+.depLinkRowRemove:disabled {
   cursor: default;
   opacity: 0.5;
+}
+
+.depLinkAdd {
+  align-self: flex-start;
 }
 
 .fieldLabel {

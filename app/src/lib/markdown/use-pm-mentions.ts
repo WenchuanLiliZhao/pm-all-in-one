@@ -1,7 +1,10 @@
 /**
- * Shared @ autocomplete + Reading View chip wiring for body editors.
+ * Shared @ autocomplete + Reading View chip + Live Cmd/Ctrl+click wiring.
  * Kind prefixes always required; candidate set is workspace-wide.
  */
+// ↔ ./activate-pm-mention.ts — Live mention → navigate
+// ↔ ./pm-link-plugin.tsx — Reading View chips
+// ↔ src/components/markdown-editor/types.ts — MentionAutocompleteProps.onActivate
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import type { MentionAutocompleteProps } from "@/components/markdown-editor";
@@ -10,6 +13,7 @@ import type { Issue, WikiNodeMeta } from "@/lib/types";
 import { issueRefKey } from "@/lib/types";
 import { useMember } from "@/lib/workspace/member-context";
 import { useHandoffMetas } from "@/lib/workspace/use-handoff-metas";
+import { activatePmMention } from "./activate-pm-mention";
 import { createPmLinkPlugin } from "./pm-link-plugin";
 import {
   toHandoffTitleMap,
@@ -99,15 +103,23 @@ export function usePmMentions({
   );
 
   const mentionAutocomplete = useMemo(
-    () => ({
+    (): MentionAutocompleteProps => ({
       candidates: toWorkspaceMentionCandidates({
         issues,
         wikiNodes,
         members: memberNodes,
         handoffs,
       }),
+      onActivate: (token) => {
+        activatePmMention(token, {
+          onNavigateIssue,
+          onNavigateWikiNode: (id) => navigate(`/w/wiki/${id}`),
+          onNavigateMember: (id) => navigate(`/w/members/${id}`),
+          onNavigateHandoff: (id) => navigate(`/w/handoffs/${id}`),
+        });
+      },
     }),
-    [issues, wikiNodes, memberNodes, handoffs],
+    [issues, wikiNodes, memberNodes, handoffs, onNavigateIssue, navigate],
   );
 
   return { plugins, mentionAutocomplete };
