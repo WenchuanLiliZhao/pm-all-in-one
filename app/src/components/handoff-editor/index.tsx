@@ -418,7 +418,7 @@ export function HandoffEditor({ handoffId }: Props) {
                 status === "dirty" ||
                 status === "conflict" ||
                 status === "error"
-                  ? "fill-inverse"
+                  ? "fill-danger"
                   : "ghost"
               }
               size="small"

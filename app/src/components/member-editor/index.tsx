@@ -350,7 +350,7 @@ export function MemberEditor({ memberId }: Props) {
                 status === "dirty" ||
                 status === "conflict" ||
                 status === "error"
-                  ? "fill-inverse"
+                  ? "fill-danger"
                   : "ghost"
               }
               size="small"

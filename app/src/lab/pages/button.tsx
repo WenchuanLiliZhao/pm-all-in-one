@@ -7,7 +7,13 @@ import { PageWidth } from "@/components/ui/page-width";
 import { Lucide } from "@/components/ui/lucide";
 import styles from "./page.module.scss";
 
-const VARIANTS: ButtonVariant[] = ["ghost", "outlined", "fill", "fill-inverse"];
+const VARIANTS: ButtonVariant[] = [
+  "ghost",
+  "outlined",
+  "fill",
+  "fill-inverse",
+  "fill-danger",
+];
 const SIZES: ButtonSize[] = ["small", "medium", "large"];
 
 const DANGER_COLORS = {
@@ -24,7 +30,7 @@ export function ButtonPage() {
         Real component: <code>@/components/ui/button</code>. Product and lab
         share this module. Default variant is <code>outlined</code>.{" "}
         <code>selected</code> raises label color to text-prime (orthogonal to
-        variant; skipped on <code>fill-inverse</code>). Tree outline rows and
+        variant; skipped on <code>fill-inverse</code> / <code>fill-danger</code>). Tree outline rows and
         expanders are out of scope — use <code>TreeRow</code> with Lucide lead
         icons (see Lab → Tree row).
       </p>

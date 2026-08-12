@@ -120,7 +120,7 @@ const pkg = {
   name: PACKAGE_NAME,
   version: appPkg.version,
   description:
-    "Command line interface for pm all in one workspaces — allocate ids, create and move issues, run doctor.",
+    "Command line interface for pm-all-in-one workspaces — allocate ids, create and move issues, run doctor.",
   license: appPkg.license ?? "UNLICENSED",
   type: "module",
   bin: { [PACKAGE_NAME]: "cli.js" },
@@ -137,7 +137,7 @@ fs.writeFileSync(
   path.join(targetDir, "README.md"),
   `# ${PACKAGE_NAME}
 
-Command line interface for [pm all in one](https://github.com/WenchuanLiliZhao/pm-all-in-one) workspaces. Runs on
+Command line interface for [pm-all-in-one](https://github.com/WenchuanLiliZhao/pm-all-in-one) workspaces. Runs on
 plain Node — the desktop app is not required.
 
 \`\`\`sh

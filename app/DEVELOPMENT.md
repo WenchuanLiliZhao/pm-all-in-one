@@ -134,8 +134,8 @@ esbuild spawns a platform executable, and `spawn` cannot run a path inside the a
 Smoke test after any packaging change — this must print `OK`, not `spawn ENOTDIR`:
 
 ```sh
-APP="release/mac-arm64/pm all in one.app"
-ELECTRON_RUN_AS_NODE=1 "$APP/Contents/MacOS/pm all in one" \
+APP="release/mac-arm64/pm-all-in-one.app"
+ELECTRON_RUN_AS_NODE=1 "$APP/Contents/MacOS/pm-all-in-one" \
   "$APP/Contents/Resources/app.asar/dist-electron/cli.js" doctor --workspace <path>
 ```
 

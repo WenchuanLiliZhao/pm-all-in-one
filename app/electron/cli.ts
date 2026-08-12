@@ -42,52 +42,7 @@ import {
 } from "./core/sync/delete-cost.js";
 import type { Issue, Membership } from "./core/identity/types.js";
 import { isValidEntityId } from "./core/identity/dir-id.js";
-
-type Args = {
-  _: string[];
-  flags: Record<string, string | boolean>;
-};
-
-function parseArgs(argv: string[]): Args {
-  const _: string[] = [];
-  const flags: Record<string, string | boolean> = {};
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i]!;
-    if (a === "--") {
-      _.push(...argv.slice(i + 1));
-      break;
-    }
-    if (a.startsWith("--")) {
-      const eq = a.indexOf("=");
-      if (eq !== -1) {
-        flags[a.slice(2, eq)] = a.slice(eq + 1);
-        continue;
-      }
-      const key = a.slice(2);
-      const next = argv[i + 1];
-      if (next && !next.startsWith("-")) {
-        flags[key] = next;
-        i++;
-      } else {
-        flags[key] = true;
-      }
-      continue;
-    }
-    if (a.startsWith("-") && a.length === 2) {
-      const key = a.slice(1);
-      const next = argv[i + 1];
-      if (next && !next.startsWith("-")) {
-        flags[key] = next;
-        i++;
-      } else {
-        flags[key] = true;
-      }
-      continue;
-    }
-    _.push(a);
-  }
-  return { _, flags };
-}
+import { parseCliArgs } from "./cli-args.js";
 
 function flagStr(flags: Record<string, string | boolean>, ...keys: string[]): string | undefined {
   for (const k of keys) {
@@ -633,7 +588,7 @@ async function cmdAdopt(
 }
 
 async function main(): Promise<void> {
-  const { _, flags } = parseArgs(process.argv.slice(2));
+  const { _, flags } = parseCliArgs(process.argv.slice(2));
   if (flags.help === true || flags.h === true || _.length === 0) {
     process.stdout.write(usage());
     return;

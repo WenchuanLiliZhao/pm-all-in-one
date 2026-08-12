@@ -1,0 +1,1 @@
+Stamped product `.pm/agent.md` with `<!-- local-pm agent.md rev 1 -->`. Added `electron/core/agent-md.ts` and doctor warnings `agent-md-outdated` / `agent-md-modified` (detection only; no auto-refresh). Synced `DoctorWarningKind` mirrors.

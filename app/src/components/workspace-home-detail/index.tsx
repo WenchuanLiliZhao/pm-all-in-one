@@ -120,7 +120,7 @@ export function WorkspaceHomeDetail({
           actions={
             <Button
               type="button"
-              variant={canSave ? "fill-inverse" : "ghost"}
+              variant={canSave ? "fill-danger" : "ghost"}
               size="small"
               disabled={!canSave || saveStatus === "saving"}
               startIcon={<Lucide.Save aria-hidden />}

@@ -13,7 +13,12 @@ import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from "react";
 import { Lucide } from "@/components/ui/lucide";
 import styles from "./styles.module.scss";
 
-export type ButtonVariant = "ghost" | "fill" | "outlined" | "fill-inverse";
+export type ButtonVariant =
+  | "ghost"
+  | "fill"
+  | "outlined"
+  | "fill-inverse"
+  | "fill-danger";
 
 export type ButtonSize = "small" | "medium" | "large";
 

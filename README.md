@@ -1,4 +1,4 @@
-# pm all in one
+# pm-all-in-one
 
 Project management for small teams where **humans and AI agents share one workspace**.
 
@@ -6,7 +6,7 @@ Jira, chat threads, and tool-only PM stacks split context across systems agents 
 
 This repository is the product home — macOS app + [`pm-all-in-one`](https://www.npmjs.com/package/pm-all-in-one) CLI.
 
-We run the product on itself: development of **pm all in one** is planned and tracked in a local-pm workspace. The README, releases, and disk contract below are what that dogfood has to survive, not a slide deck.
+We run the product on itself: development of **pm-all-in-one** is planned and tracked in a local-pm workspace. A filtered snapshot of that dogfood ships in-repo as [`example-workspace/`](example-workspace/) (Open Folder on that directory in the app — not the product repo root). The README, releases, and disk contract below are what that dogfood has to survive, not a slide deck.
 
 ## What matters
 
@@ -34,6 +34,33 @@ The dividing line is how work is produced, not company headcount: **is company s
 - Anyone who wants hosted sync, in-app ACL, or a board that hides the files
 
 **Validation (honest):** There is **no large-team experiment** yet. Dogfood and active testing stay in the **3–5 person** range. Larger headcount may still adopt the model for an AI-native layer, but that scale is unproven here.
+
+## Not Jira (even when it looks like Jira + Confluence)
+
+The desktop shell borrows the familiar shape of **Jira + Confluence** — projects, issue trees, wiki, status and priority — **only so people do not have to relearn where to click**. Familiar chrome is onboarding, not identity.
+
+There is one structural difference, and the rest follows from it:
+
+> Jira's source of truth is a remote database reached through an API. Here it is a directory of text files you already have checked out.
+
+What that buys, concretely:
+
+- **Resolution without a server.** Every reference is a path join — `@issue-<projectId>::<issueId>` → `issue-hierarchy/<projectId>/<issueId>/`, `@wiki-<id>` → `wiki/<id>/README.md`. No index to rebuild, no app running, no auth.
+- **Cross-cutting questions are a grep, not N API calls.** From this repo, against the shipped snapshot:
+
+```sh
+rg -l '"status": "in-progress"' example-workspace/issue-hierarchy   # everything in flight
+rg -l 'blockedBy' example-workspace/issue-hierarchy                 # every declared dependency
+```
+
+- **A change of plan is a diff.** Intent moves on branches, arrives in PRs, and reverts like any other commit. `git log` over `issue-hierarchy/` is the decision history, with no separate audit feature.
+- **Agent writes are typed, not trusted.** `props.ts` is `satisfies`-checked against a generated `schema.d.ts`, and a `level` that contradicts its `parentId` is reported by `pm-all-in-one doctor` — **never quietly reinterpreted**. A malformed write fails loudly instead of landing silently.
+
+**"Jira has an MCP server now."** It does, and it works. The gap is not access, it is shape. An API answers questions an agent already knew to ask, one paginated call at a time, and hands back an unversioned snapshot it cannot diff. A directory hands over the corpus: grep it, `git log` it, and read the code in the same pass. Same reason a database endpoint is not "having the repo".
+
+**Where the files live is your call.** A workspace is just a directory, so it can sit inside your code repo — intent and implementation in one PR — or be a repo beside it. pm-all-in-one takes the second path: the live dogfood library is a separate repo because it tracks more than this codebase, and [`example-workspace/`](example-workspace/) is a filtered snapshot of it. Same-repo co-review is available to you; it is not what we run daily.
+
+**What it costs.** The ladder is fixed at epic → task → subtask — no configurable workflows, schemes, or issue types. That is a real capability loss against Jira, taken deliberately: a structure every workspace can redefine is a structure no agent learns once. Per-project custom fields exist (`custom-props.ts`), but the three ranks do not move. And Jira still wins at cross-org ticket flow, audit reports, SLA, and ACL — that is its home field, **walking onto it is losing**, and this product stays off it on purpose.
 
 ## Tradeoffs (read before you adopt)
 
@@ -83,7 +110,7 @@ Prebuilt macOS artifacts: [GitHub Releases](https://github.com/WenchuanLiliZhao/
 Because the build is unsigned, macOS will refuse the first open — on Apple Silicon it usually reports the app as *damaged* rather than *unsigned*. After moving it into `/Applications`:
 
 ```sh
-xattr -dr com.apple.quarantine "/Applications/pm all in one.app"
+xattr -dr com.apple.quarantine "/Applications/pm-all-in-one.app"
 ```
 
 Only do that if you trust this source. The app embeds a terminal and reads/writes your workspace directory.
@@ -92,9 +119,9 @@ Only do that if you trust this source. The app embeds a terminal and reads/write
 
 | Doc | Role |
 | --- | --- |
+| [example-workspace/](example-workspace/) | Filtered dogfood snapshot (open this folder in the app) |
 | [docs/cli.md](docs/cli.md) | CLI install and common commands |
 | [docs/releasing.md](docs/releasing.md) | Cut app + npm releases |
-| [docs/v0-misc-log.md](docs/v0-misc-log.md) | Temporary pointer → dogfood catch-all for misc v0 changes (delete when that issue closes) |
 | [app/DEVELOPMENT.md](app/DEVELOPMENT.md) | Develop the desktop shell |
 
 Inside an opened workspace, agent-facing law lives in `AGENTS.md` → `.pm/agent.md` (not duplicated here).
@@ -103,7 +130,5 @@ Inside an opened workspace, agent-facing law lives in `AGENTS.md` → `.pm/agent
 
 | Surface | Value |
 | --- | --- |
-| Display / app bundle | pm all in one |
-| Repo / slug | `pm-all-in-one` |
-| CLI / npm | `pm-all-in-one` |
+| Product name (repo, CLI, npm, app bundle) | `pm-all-in-one` |
 | macOS `appId` | `com.pm-all-in-one.desktop` |

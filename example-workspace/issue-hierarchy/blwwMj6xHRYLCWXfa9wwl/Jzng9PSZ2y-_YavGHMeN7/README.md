@@ -1,0 +1,1 @@
+Synced dogfood library harness to template (byte-identical `AGENTS.md`, `.pm/agent.md`, two skills). Updated wiki nodes @wiki-pJ3oGRPyFA1QRT9pWIk5_ @wiki-uDY1G0KYgYaC1AD6EVqXi @wiki-yp5aoc8X1YX4UjCT5Ec-w @wiki-hXnkzhcPc1eVN25SwOZ3d @wiki-D9Sd2WYlM-2hdgcXcUbhl @wiki-7j0Ak3N2wsnQodOSxSzZ9 @wiki-kF6sQ8ynVamZ-AL5QzTtc and this task's decision body.

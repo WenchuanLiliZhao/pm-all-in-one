@@ -10,7 +10,7 @@ import styles from "./styles.module.scss";
 
 export type InputSize = "small" | "medium";
 
-export type InputProps = InputHTMLAttributes<HTMLInputElement> & {
+export type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "size"> & {
   /** Default `medium`. Detail panel props use `small`. */
   size?: InputSize;
 };

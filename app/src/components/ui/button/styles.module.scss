@@ -2,7 +2,7 @@
  * Flat button variants with UI-304-style hover overlay.
  * Anatomy mirrors Figma: icon slots match text line-height; `--button-icon-size` on
  * `button__icon-container` — omit `size` on Lucide icons in startIcon / endIcon.
- * `data-selected` raises `--button-fg` to text-prime (skip fill-inverse).
+ * `data-selected` raises `--button-fg` to text-prime (skip fill-inverse / fill-danger).
  *
  * Size small (22) is the detail-panel props strip rhythm — Input size=small and
  * MemberPerson card/select `controlSize="small"` twin these tokens.
@@ -187,8 +187,19 @@
     --button-active-overlay-opacity: 0.2;
   }
 
+  /* Solid danger fill — dirty Save icon in DocEditNav. */
+  &[data-variant="fill-danger"] {
+    --button-fg: var(--color-use--in-components-button-text-color-in-fill-mode);
+    --button-bg: var(--color-use--danger);
+    --button-hover-bg: var(--color-use--danger-fg);
+    --button-hover-overlay-opacity: 0.12;
+    --button-active-overlay-opacity: 0.2;
+  }
+
   /* After variants so selected wins; inline `colors.fg` still overrides. */
-  &[data-selected="true"]:not([data-variant="fill-inverse"]) {
+  &[data-selected="true"]:not([data-variant="fill-inverse"]):not(
+      [data-variant="fill-danger"]
+    ) {
     --button-fg: var(--color-use--text-prime-hex);
   }
 

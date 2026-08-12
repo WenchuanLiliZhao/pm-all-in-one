@@ -1,0 +1,3 @@
+This project tracks the product itself: product name **`pm-all-in-one`** (display, CLI, npm, and repo slug). **`local-pm`** is this workspace library format, not the product name. Machine-local checkout paths for agents live in `.pm/local.md` (gitignored), not here.
+
+Current focus is the epic **v0 — Open-source release** (`0.x`, unsigned, developer-first). v1 (signed `1.0.0` + UI / feature polish) is blocked on v0. Product PM lives in this workspace; the in-repo handoff roadmap is no longer the execution tree.

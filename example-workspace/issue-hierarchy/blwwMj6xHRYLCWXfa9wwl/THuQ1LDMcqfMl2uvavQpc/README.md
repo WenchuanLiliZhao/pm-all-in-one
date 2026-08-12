@@ -1,0 +1,1 @@
+Extended `workspace-template.test.ts`, added `agent-md.test.ts`, updated `DEVELOPMENT.md` § Workspace templates (skills subtree, rev bump rule, nested-template skill side effect). `npm test` 137 pass; scaffold smoke + doctor checks green.
