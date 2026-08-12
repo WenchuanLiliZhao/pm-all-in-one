@@ -1,7 +1,7 @@
 // ↔ ./index.ts — createListLiveExtensions re-exported for element registry
 // ↔ ./preview.tsx — Reading View twin (ul/ol/li)
 // ↔ ../../extensions/live-preview.ts — orchestrator does not own ListMark
-// ↔ AGENTS.md — Live lists checklist (hide ListMark; task checkboxes; caret reveals)
+// ↔ AGENTS.md — Live lists checklist (hide ListMark; hang soft-wrap; task checkboxes; caret reveals)
 
 import { syntaxTree } from "@codemirror/language";
 import {
@@ -138,7 +138,53 @@ const orderedListIndentRenumber = EditorState.transactionFilter.of((tr) => {
   return [tr, { changes, sequential: true }];
 });
 
-/** Idle marker: bullet glyph or ordinal text. SoT stays the raw ListMark. */
+/** Idle bullet box + gap — keep in sync with `.cm-md-list-mark-bullet`. */
+const BULLET_HANG_EM = 1.65;
+
+/**
+ * Soft-wrap hang CSS length for a ListItem.
+ * Must match the idle marker chrome width (not raw SoT `ch` alone) so the
+ * first-line text lines up with wrapped lines — and so text-indent does not
+ * pull a wide/`ch`-stretched glyph into the clip edge.
+ */
+function listItemHangCss(state: EditorState, item: SyntaxNode): string | null {
+  const line = state.doc.lineAt(item.from);
+  let mark: SyntaxNode | null = null;
+  for (let c = item.firstChild; c; c = c.nextSibling) {
+    if (c.name === "ListMark") {
+      mark = c;
+      break;
+    }
+  }
+  if (!mark) return null;
+
+  const leadingCh = mark.from - line.from;
+  let markEnd = mark.to;
+  const lineTo = line.to;
+  while (markEnd < lineTo) {
+    const ch = state.doc.sliceString(markEnd, markEnd + 1);
+    if (ch === " " || ch === "\t") markEnd += 1;
+    else break;
+  }
+  const markCh = markEnd - mark.from;
+
+  const after = state.doc.sliceString(markEnd, Math.min(markEnd + 3, lineTo));
+  const isTask = listItemHasTask(item) || /^\[[ xX]\]/.test(after);
+  if (isTask) {
+    // ListMark hidden; checkbox chrome ≈ 1.25em (see .cm-md-task-checkbox).
+    return `calc(${leadingCh + markCh}ch + 1.25em)`;
+  }
+
+  if (item.parent?.name === "OrderedList") {
+    // Ordinal widget tracks SoT mark columns + trailing gap in theme.
+    return `calc(${leadingCh}ch + ${markCh}ch)`;
+  }
+
+  // Bullet widget is fixed-em chrome (see BULLET_HANG_EM / theme).
+  return `calc(${leadingCh}ch + ${BULLET_HANG_EM}em)`;
+}
+
+/** Idle marker: bullet disc or ordinal text. SoT stays the raw ListMark. */
 class ListMarkerWidget extends WidgetType {
   constructor(
     readonly label: string,
@@ -156,8 +202,15 @@ class ListMarkerWidget extends WidgetType {
     span.className = this.ordered
       ? "cm-md-list-mark cm-md-list-mark-ordered"
       : "cm-md-list-mark cm-md-list-mark-bullet";
-    span.textContent = this.label;
     span.setAttribute("aria-hidden", "true");
+    if (this.ordered) {
+      span.textContent = this.label;
+    } else {
+      // Explicit DOM disc — more reliable than glyphs/`::before` in CM widgets.
+      const dot = document.createElement("span");
+      dot.className = "cm-md-list-bullet-dot";
+      span.appendChild(dot);
+    }
     return span;
   }
 
@@ -212,16 +265,32 @@ class TaskCheckboxWidget extends WidgetType {
 
 function buildListDecorations(view: EditorView): DecorationSet {
   const specs: DecSpec[] = [];
+  // Innermost ListItem wins when nested items share a line range.
+  const hangByLine = new Map<number, string>();
   const focused = view.hasFocus;
   const sel = view.state.selection.main;
   const selFrom = focused ? sel.from : -1;
   const selTo = focused ? sel.to : -1;
+  const doc = view.state.doc;
 
   for (const { from, to } of view.visibleRanges) {
     syntaxTree(view.state).iterate({
       from,
       to,
       enter: (node) => {
+        if (node.name === "ListItem") {
+          const hang = listItemHangCss(view.state, node.node);
+          if (hang) {
+            const startLine = doc.lineAt(node.from);
+            // node.to often sits on the following line break — stay on the item.
+            const endLine = doc.lineAt(Math.max(node.from, node.to - 1));
+            for (let n = startLine.number; n <= endLine.number; n++) {
+              hangByLine.set(doc.line(n).from, hang);
+            }
+          }
+          return;
+        }
+
         if (node.name === "ListMark") {
           const item = node.node.parent;
           if (!item || item.name !== "ListItem") return;
@@ -250,7 +319,7 @@ function buildListDecorations(view: EditorView): DecorationSet {
           const markText = view.state.doc.sliceString(node.from, node.to);
           const label = ordered
             ? orderedMarkerLabel(item, markText)
-            : "•";
+            : "";
 
           specs.push({
             from: node.from,
@@ -289,6 +358,20 @@ function buildListDecorations(view: EditorView): DecorationSet {
     });
   }
 
+  for (const [lineFrom, hang] of hangByLine) {
+    // Inline padding beats shell `.cm-line { padding: 0 }` (EditorView.theme).
+    specs.push({
+      from: lineFrom,
+      to: lineFrom,
+      deco: Decoration.line({
+        class: "cm-md-list-hang",
+        attributes: {
+          style: `--cm-md-list-hang:${hang};padding-left:var(--cm-md-list-hang);text-indent:calc(-1 * var(--cm-md-list-hang));overflow:visible`,
+        },
+      }),
+    });
+  }
+
   specs.sort((a, b) => a.from - b.from || a.to - b.to);
   return Decoration.set(
     specs.map((s) => s.deco.range(s.from, s.to)),
@@ -299,18 +382,32 @@ function buildListDecorations(view: EditorView): DecorationSet {
 const listTheme = EditorView.baseTheme({
   ".cm-md-list-mark": {
     display: "inline-block",
+    boxSizing: "border-box",
     color: "var(--color-use--text-secondary)",
     userSelect: "none",
+    verticalAlign: "baseline",
   },
+  // Fixed em chrome — hang uses the same BULLET_HANG_EM sum.
   ".cm-md-list-mark-bullet": {
-    minWidth: "1.2em",
-    textAlign: "center",
-    marginRight: "0.35em",
+    width: "1.25em",
+    marginRight: "0.4em",
+    height: "1em",
+    position: "relative",
+    verticalAlign: "-0.15em",
+  },
+  ".cm-md-list-bullet-dot": {
+    position: "absolute",
+    left: "50%",
+    top: "50%",
+    width: "0.42em",
+    height: "0.42em",
+    marginLeft: "-0.21em",
+    marginTop: "-0.15em", // optical: sit on x-height, not geometric center
+    borderRadius: "50%",
+    backgroundColor: "var(--color-use--text-secondary)",
   },
   ".cm-md-list-mark-ordered": {
-    minWidth: "1.4em",
-    textAlign: "right",
-    marginRight: "0.45em",
+    marginRight: "0.35em",
     fontVariantNumeric: "tabular-nums",
   },
   ".cm-md-task-checkbox": {
