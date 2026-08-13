@@ -6,11 +6,12 @@
 // ↔ ../elements/list/live.ts — owns ListMark (bullet/ordered/task widgets)
 // ↔ ../elements/link/live.ts — owns Link / Autolink / bare URL
 // ↔ ../transform-outside-code.ts — Reading View counterpart (skip @ in code)
+// ↔ ../markdown-escape.ts — hide Escape backslash in Live idle
 // ↔ AGENTS.md — Live ≠ split-pane; SoT stays raw Markdown; @ in code stays literal
 // ↔ src/lib/markdown/use-pm-mentions.ts — product onActivate → navigate
 
 import { syntaxTree } from "@codemirror/language";
-import type { Extension } from "@codemirror/state";
+import { Prec, type Extension } from "@codemirror/state";
 import {
   Decoration,
   EditorView,
@@ -28,6 +29,10 @@ import {
 } from "./live-ownership";
 
 const hideMark = Decoration.replace({});
+const escapeIdle = Decoration.mark({
+  class: "cm-md-escape-idle",
+  attributes: { style: "color: var(--color-use--text-prime)" },
+});
 const heading = (level: number) =>
   Decoration.mark({ class: `cm-md-heading cm-md-h${level}` });
 const strong = Decoration.mark({ class: "cm-md-strong" });
@@ -45,6 +50,20 @@ function selectionOverlaps(
   selTo: number,
 ): boolean {
   return selFrom <= to && selTo >= from;
+}
+
+/** Caret in the escape, or immediately left/right of it (same line). */
+function selectionRevealsEscape(
+  from: number,
+  to: number,
+  selFrom: number,
+  selTo: number,
+  lineFrom: number,
+  lineTo: number,
+): boolean {
+  const padFrom = Math.max(lineFrom, from - 1);
+  const padTo = Math.min(lineTo, to + 1);
+  return selectionOverlaps(padFrom, padTo, selFrom, selTo);
 }
 
 const MENTION_RE = /@[A-Za-z][\w:-]*/g;
@@ -279,6 +298,50 @@ function buildDecorations(
           return;
         }
 
+        if (name === "Escape") {
+          // Table idle HTML owns cell escapes; active pipe source must keep `\|`.
+          // Code constructs keep literal backslashes.
+          let skip = false;
+          for (let p = node.node.parent; p; p = p.parent) {
+            if (
+              p.name === "Table" ||
+              p.name === "InlineCode" ||
+              p.name === "FencedCode" ||
+              p.name === "CodeBlock"
+            ) {
+              skip = true;
+              break;
+            }
+          }
+          if (skip || node.to <= node.from) return;
+          const line = view.state.doc.lineAt(node.from);
+          const reveal = selectionRevealsEscape(
+            node.from,
+            node.to,
+            selFrom,
+            selTo,
+            line.from,
+            line.to,
+          );
+          if (reveal) return;
+          const ch = view.state.doc.sliceString(node.from, node.from + 1);
+          if (ch === "\\") {
+            specs.push({
+              from: node.from,
+              to: node.from + 1,
+              deco: hideMark,
+            });
+            if (node.from + 1 < node.to) {
+              specs.push({
+                from: node.from + 1,
+                to: node.to,
+                deco: escapeIdle,
+              });
+            }
+          }
+          return;
+        }
+
         if (name.startsWith("ATXHeading")) {
           const level = Number(name.replace("ATXHeading", "")) || 1;
           if (!active) {
@@ -439,6 +502,13 @@ const livePreviewTheme = EditorView.baseTheme({
   },
 });
 
+/** Beat HighlightStyle `tags.escape` orange while the backslash is hidden. */
+const escapeIdleTheme = EditorView.theme({
+  ".cm-md-escape-idle": {
+    color: "var(--color-use--text-prime)",
+  },
+});
+
 /**
  * Higher priority than baseTheme so pointer/underline beat CM's content
  * `cursor: text`. `cm-mod-held` lives on the editor root — use `&`.
@@ -464,6 +534,7 @@ export function createLivePreviewExtensions(
       options.onMentionActivate,
     ),
     livePreviewTheme,
+    Prec.high(escapeIdleTheme),
   ];
   if (options.localMedia) {
     exts.push(localMediaFacet.of(options.localMedia));

@@ -110,7 +110,7 @@ Verify in Lab **Live** (screenshot or `getComputedStyle` on `.cm-line.cm-md-…`
 
 Shipped: `elements/table/` — Preview (remark-gfm HTML) + Live **idle projection** (`chrome.ts`); active caret falls back to parent CM pipe text.
 
-Shipped: `elements/codeblock/` — Preview (`pre`/`code` + rehype-highlight) + Live **`live.ts`** (collapse fences, lang badge, nested highlight).
+Shipped: `elements/codeblock/` — Preview (`pre`/`code` + rehype-highlight; mermaid fence → SVG) + Live **`live.ts`** (collapse fences, lang badge, nested highlight; idle mermaid SVG).
 
 Shipped: `elements/list/` — Preview (`ul`/`ol`/`li`) + Live **`live.ts`** (hide `ListMark`; bullet/ordinal widgets; GFM task checkboxes with SoT toggle).
 
@@ -130,7 +130,9 @@ Shipped: `elements/image/` — Preview (`img`) + Live **`live.ts`** (image widge
 | ATX heading | covered | orchestrator |
 | Strong / Emphasis / Strikethrough | covered | orchestrator |
 | Inline code | covered | orchestrator |
+| Escape (`\|`, `\*`) | covered | orchestrator + table HTML |
 | Fenced code | covered | `elements/codeblock/` |
+| Mermaid fence | covered | `elements/codeblock/` (idle SVG; active = source) |
 | Table (GFM) | covered | `elements/table/` |
 | Bullet / ordered list | covered | `elements/list/` |
 | Task list (GFM) | covered | `elements/list/` |
@@ -188,7 +190,7 @@ DEV-only: `#/lab/markdown-editor` (`src/lab/pages/markdown-editor.tsx`). Mock wi
 - `MarkdownEditor` baseline: Live only (mode props accepted, ignored), label, placeholder, controlled value
 - `MarkdownEditor` **borderless**: no mode header; no Live↔Source toggle; Focus start button lands caret (programmatic focus gate bypass); title↔body handoff still works (save is host Save / Cmd+S only)
 - Auto-pair: `[]` / `*` / `**` / `()` — **not** backticks
-- Live: markers hide off-cursor; headings/emphasis styled; `@…` mentions show resolved title when inactive; mentions inside `` `inline` `` / fenced code stay literal (no chip); ⌘/Ctrl-click a mention (chip or raw, outside code) calls `mentionAutocomplete.onActivate` with the SoT token (product navigates)
+- Live: markers hide off-cursor; headings/emphasis styled; escaped punctuation (`\|`, `\*`) hides the backslash when idle (escaped char uses body color, not `tags.escape` orange); caret in the escape or immediately left/right reveals `\` + orange; `@…` mentions show resolved title when inactive; mentions inside `` `inline` `` / fenced code stay literal (no chip); ⌘/Ctrl-click a mention (chip or raw, outside code) calls `mentionAutocomplete.onActivate` with the SoT token (product navigates)
 - Preview (standalone `MarkdownPreview`): same — `@…` inside code is not rewritten to chips (`replaceOutsideCode`)
 - Live **lists**: inactive `ListItem` hides `-` / `*` / `+` / `1.` `ListMark` and shows bullet `•` or **sibling-index** ordinal widget (not raw SoT digits — so Enter→renumber then indent does not leave a nested `2` / outer `3`); indent/dedent (`Mod-]` / `Mod-[`) also rewrites touched OrderedList marks to `1..n`; GFM `- [ ]` / `- [x]` show checkboxes (click toggles SoT); caret anywhere in the item reveals raw marks; nested bullets / ordered under bullet stay indented
 - Live **links**: inactive `Link` / `Autolink` hide `[]()` / `<>` and URL chrome; label (or URL for autolink) styled with accent; caret in construct reveals source
@@ -196,10 +198,11 @@ DEV-only: `#/lab/markdown-editor` (`src/lab/pages/markdown-editor.tsx`). Mock wi
 - Live **hr**: inactive `---` / `***` → soft rule widget; caret on line reveals source
 - Live **images**: inactive `![alt](url)` → `<figure>` (+ figcaption from alt via `renderInlineMarkdownFragment`) or attachment card for non-images; caret reveals source
 - Live **code blocks**: fenced blocks get block chrome; fences collapse off-cursor (lang badge); body uses nested language highlighting (`codeLanguages`). At the first/last nav edge, ↑/← and ↓/→ leave the whole fence (idle skips lang header + collapsed footer)
-- Preview: fenced code highlighted via rehype-highlight (token colors from `--color-use--*`)
+- Live **mermaid**: idle closed `mermaid` fence → SVG on the opening line (body + footer collapsed); caret in the fence reveals source + ordinary code chrome; parse errors use `--color-use--danger-*` (not an empty hole)
+- Preview: fenced code highlighted via rehype-highlight (token colors from `--color-use--*`); mermaid fences render the same SVG (highlight skipped)
 - Live **tables** (idle projection + parent-CM pipe editing):
   - Idle: every GFM table is a **pinned-width horizontal scroll host** — only the table scrolls horizontally; editor body text does not shift
-  - Idle: cell inline Markdown (`**` / `*` / `~~` / `` `code` `` / links) renders as styled HTML
+  - Idle: cell inline Markdown (`**` / `*` / `~~` / `` `code` `` / links / `\|` escapes) renders as styled HTML
   - Idle: `:---` / `:---:` / `---:` alignments apply; empty cells keep their column slot
   - Caret enters the table range **or** sits on the line immediately above/below → decoration clears; raw pipe lines show
   - Caret leaves the table and its neighboring lines → projection returns; no extra key required
@@ -213,6 +216,7 @@ DEV-only: `#/lab/markdown-editor` (`src/lab/pages/markdown-editor.tsx`). Mock wi
 - Fixture **HR** — `---` and `***`
 - Fixture **Images** — data-URI demo + broken URL stub
 - Fixture **Code** — js / python / json fences styled + highlighted in Live and Preview
+- Fixture **Mermaid** — valid flowchart renders as SVG in Live idle + Preview; invalid fence shows an error box; caret in the fence reveals source
 - Fixture **Table** — cells with `**` / `*` / `~~` / `` `code` `` / links styled in idle Live host; click/caret enters pipe edit in parent CM
 - Fixture **Table (long)** — long Chinese cells must not shatter columns; overflow scrolls **inside the host** while idle; body text above/below must not shift horizontally; active state is ordinary wrapped pipe text (acceptable)
 - Fixture **Table (align)** — `:---` / `:---:` / `---:` + mixed CJK/ASCII + empty cell; empty cell keeps its column box; idle projection shares the separator's `text-align`

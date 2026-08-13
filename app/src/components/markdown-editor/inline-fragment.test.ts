@@ -16,3 +16,13 @@ test("renderInlineMarkdownFragment empty / plain", () => {
   assert.equal(renderInlineMarkdownFragment(""), "");
   assert.equal(renderInlineMarkdownFragment("  hello  "), "hello");
 });
+
+test("renderInlineMarkdownFragment hides Escape backslash", () => {
+  const html = renderInlineMarkdownFragment(
+    '`"epic"` \\| `"task"` and \\*star\\*',
+  );
+  assert.match(html, /\|/);
+  assert.doesNotMatch(html, /\\\|/);
+  assert.match(html, /\*star\*/);
+  assert.doesNotMatch(html, /\\\*/);
+});

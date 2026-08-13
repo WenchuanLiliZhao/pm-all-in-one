@@ -1,5 +1,6 @@
 // ↔ merge-plugins.ts — transform / components / URL-scheme merge
 // ↔ elements/index.ts — core elementPreviewComponents defaults
+// ↔ elements/codeblock/preview.tsx — mermaid skipped in rehype-highlight
 // ↔ types.ts — MarkdownPreviewProps / MarkdownPlugin
 
 import { useMemo } from "react";
@@ -16,7 +17,12 @@ import type { MarkdownPreviewProps } from "./types";
 import styles from "./styles.module.scss";
 
 const REMARK_PLUGINS = [remarkGfm];
-const REHYPE_PLUGINS = [rehypeHighlight];
+const REHYPE_PLUGINS = [
+  [
+    rehypeHighlight,
+    { ignoreMissing: true, plainText: ["mermaid"] },
+  ] as [typeof rehypeHighlight, { ignoreMissing: boolean; plainText: string[] }],
+];
 
 function createPluginAwareUrlTransform(allowedSchemes: Set<string>) {
   return (url: string): string => {

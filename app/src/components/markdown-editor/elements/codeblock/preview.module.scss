@@ -46,6 +46,31 @@
   background: var(--color-use--bg-darken);
 }
 
+.mermaid {
+  margin: 0.75em 0;
+  padding: 10px 12px;
+  border: 1px solid var(--color-use--border-emphasis-hex);
+  border-radius: 6px;
+  background: var(--color-use--bg-prime-hex);
+  overflow-x: auto;
+  box-sizing: border-box;
+  color: var(--color-use--text-prime);
+}
+
+.mermaid svg {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaidError {
+  color: var(--color-use--danger-fg);
+  background: var(--color-use--danger-bg);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+  white-space: pre-wrap;
+}
+
 // Token colors for rehype-highlight / highlight.js (token-driven, no hljs theme).
 .fenceCode:global(.hljs),
 .pre :global(.hljs) {

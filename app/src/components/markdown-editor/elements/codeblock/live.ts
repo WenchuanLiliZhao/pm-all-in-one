@@ -1,8 +1,10 @@
 // ↔ ./index.ts — createCodeblockLiveExtensions re-exported for element registry
-// ↔ ./preview.tsx — Reading View twin (boxed pre/code + highlight)
+// ↔ ./preview.tsx — Reading View twin (boxed pre/code + highlight / mermaid)
+// ↔ ./mermaid-info.ts — idle mermaid fence vs ordinary code chrome
+// ↔ ./mermaid-widget.ts — idle header replaced by SVG / error
 // ↔ ../../extensions/live-preview.ts — skips FencedCode CodeMarks via live-ownership
 // ↔ ../../extensions/live-ownership.ts — CodeMark under FencedCode owned here
-// ↔ AGENTS.md — Live codeblock checklist (collapse fences, lang badge, edge exit)
+// ↔ AGENTS.md — Live codeblock checklist (collapse fences, lang badge, mermaid, edge exit)
 
 import { syntaxTree } from "@codemirror/language";
 import { EditorSelection, Prec, type Extension } from "@codemirror/state";
@@ -16,6 +18,9 @@ import {
   type ViewUpdate,
 } from "@codemirror/view";
 import type { SyntaxNode } from "@lezer/common";
+import { isMermaidLang } from "./mermaid-info";
+import { mermaidColorTheme } from "./mermaid-render";
+import { MermaidWidget } from "./mermaid-widget";
 
 // ViewPlugin decorations must not replace line breaks — hide marks only.
 const hide = Decoration.replace({});
@@ -29,6 +34,10 @@ const codeLast = Decoration.line({
 const codeSolo = Decoration.line({
   class:
     "cm-md-codeblock-line cm-md-codeblock-first cm-md-codeblock-last",
+});
+const mermaidHost = Decoration.line({
+  class:
+    "cm-md-codeblock-line cm-md-codeblock-first cm-md-codeblock-last cm-md-mermaid-host",
 });
 const codeHeader = Decoration.line({
   class: "cm-md-codeblock-line cm-md-codeblock-header",
@@ -143,6 +152,39 @@ function buildCodeblockDecorations(view: EditorView): DecorationSet {
                     ? codeLast
                     : codeLine,
             );
+          }
+          return;
+        }
+
+        // Idle mermaid: diagram on the opening-fence line; collapse body + footer.
+        // Do not replace the whole fence (block widgets need a StateField).
+        if (isMermaidLang(lang) && hasHeader) {
+          const source = codeText
+            ? view.state.doc.sliceString(codeText.from, codeText.to)
+            : "";
+          pushLine(fenceStart.from, mermaidHost);
+          specs.push({
+            from: fenceStart.from,
+            to: fenceStart.to,
+            deco: Decoration.replace({
+              widget: new MermaidWidget(source, mermaidColorTheme()),
+            }),
+          });
+          for (let n = bodyStart.number; n <= bodyEnd.number; n++) {
+            const line = view.state.doc.line(n);
+            pushLine(line.from, fenceCollapsed);
+          }
+          if (hasFooter) {
+            for (let c = node.node.firstChild; c; c = c.nextSibling) {
+              if (
+                (c.name === "CodeMark" || c.name === "CodeInfo") &&
+                c.from >= fenceEnd.from &&
+                c.to <= fenceEnd.to
+              ) {
+                specs.push({ from: c.from, to: c.to, deco: hide });
+              }
+            }
+            pushLine(fenceEnd.from, fenceCollapsed);
           }
           return;
         }
@@ -263,6 +305,38 @@ const codeblockTheme = EditorView.baseTheme({
     fontSize: "0",
     overflow: "hidden",
   },
+  ".cm-line.cm-md-mermaid-host": {
+    fontFamily: "inherit",
+    backgroundColor: "var(--color-use--bg-prime-hex)",
+  },
+  ".cm-md-mermaid-host .cm-widgetBuffer": {
+    display: "inline",
+    width: "0",
+    height: "0",
+    lineHeight: "0",
+    fontSize: "0",
+    overflow: "hidden",
+  },
+  ".cm-md-mermaid": {
+    display: "block",
+    width: "100%",
+    boxSizing: "border-box",
+    overflowX: "auto",
+    color: "var(--color-use--text-prime)",
+  },
+  ".cm-md-mermaid svg": {
+    width: "auto",
+    maxWidth: "100%",
+    height: "auto",
+  },
+  ".cm-md-mermaid-error": {
+    padding: "8px 0",
+    color: "var(--color-use--danger-fg)",
+    backgroundColor: "var(--color-use--danger-bg)",
+    fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+    fontSize: "0.85em",
+    whiteSpace: "pre-wrap",
+  },
   ".cm-line.cm-md-codeblock-fence-collapsed": {
     fontSize: "0",
     lineHeight: "0",
@@ -306,8 +380,12 @@ function closedFencedCodeBounds(
   if (!found || !isClosedFencedCode({ node: found })) return null;
 
   let codeText: { from: number; to: number } | null = null;
+  let lang = "";
   for (let c = found.firstChild; c; c = c.nextSibling) {
     if (c.name === "CodeText") codeText = { from: c.from, to: c.to };
+    if (c.name === "CodeInfo") {
+      lang = state.doc.sliceString(c.from, c.to).trim();
+    }
   }
   const fenceStart = state.doc.lineAt(found.from);
   const fenceEnd = state.doc.lineAt(Math.max(found.from, found.to - 1));
@@ -317,12 +395,20 @@ function closedFencedCodeBounds(
   const bodyEnd = state.doc.lineAt(Math.max(bodyFrom, bodyTo - 1));
   const hasHeader = fenceStart.number < bodyStart.number;
   const hasFooter = fenceEnd.number > bodyEnd.number;
+  const idleMermaid = !active && isMermaidLang(lang) && hasHeader;
   // Idle: lang header + zero-height footer are chrome, not content — one more
-  // ↑/↓ from the body edge should leave the block.
-  const firstNavLine =
-    !active && hasHeader ? bodyStart.number : fenceStart.number;
-  const lastNavLine =
-    !active && hasFooter ? bodyEnd.number : fenceEnd.number;
+  // ↑/↓ from the body edge should leave the block. Idle mermaid is one visual
+  // line (the diagram widget).
+  const firstNavLine = idleMermaid
+    ? fenceStart.number
+    : !active && hasHeader
+      ? bodyStart.number
+      : fenceStart.number;
+  const lastNavLine = idleMermaid
+    ? fenceStart.number
+    : !active && hasFooter
+      ? bodyEnd.number
+      : fenceEnd.number;
 
   return {
     from: found.from,

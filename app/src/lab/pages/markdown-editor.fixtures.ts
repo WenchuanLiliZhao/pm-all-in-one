@@ -4,6 +4,7 @@ export type FixtureId =
   | "lists"
   | "blockquote"
   | "code"
+  | "mermaid"
   | "links"
   | "hr"
   | "images"
@@ -112,6 +113,29 @@ def greet(name: str) -> str:
 \`\`\`
 `,
     note: "Live: block chrome + nested CM highlight via codeLanguages. Preview: rehype-highlight.",
+  },
+  mermaid: {
+    label: "Mermaid",
+    source: `Valid flowchart:
+
+\`\`\`mermaid
+flowchart TD
+  project["Project container"]
+  epic[epic]
+  task[task]
+  subtask[subtask]
+  project --> epic
+  epic --> task
+  task --> subtask
+\`\`\`
+
+Invalid fence (error box, not empty):
+
+\`\`\`mermaid
+this is not a mermaid diagram
+\`\`\`
+`,
+    note: "Live idle: SVG on the opening fence (body collapsed); caret in fence reveals source. Preview: same SVG. Parse errors use danger tokens.",
   },
   links: {
     label: "Links",

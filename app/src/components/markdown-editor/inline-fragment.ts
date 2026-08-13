@@ -1,10 +1,12 @@
 // ↔ elements/image/live.ts — figcaption / attachment card titles
 // ↔ elements/image/preview.tsx — Reading View captions
 // ↔ elements/table/inline-html.ts — table cells keep tree-based twin (optional unify later)
+// ↔ ./markdown-escape.ts — Escape backslash dropped in projection
 // ↔ AGENTS.md — caption fragment seam for future $...$ math
 
 import { markdownLanguage } from "@codemirror/lang-markdown";
 import type { SyntaxNode } from "@lezer/common";
+import { unescapeMarkdownEscape } from "./markdown-escape.ts";
 
 /** Marks / chrome — omitted from inactive HTML projection. */
 const SKIP = new Set([
@@ -63,6 +65,10 @@ function renderNode(doc: string, node: SyntaxNode): string {
   const name = node.name;
 
   if (SKIP.has(name)) return "";
+
+  if (name === "Escape") {
+    return escapeHtml(unescapeMarkdownEscape(slice(doc, node.from, node.to)));
+  }
 
   if (name === "HardBreak") return "<br>";
 

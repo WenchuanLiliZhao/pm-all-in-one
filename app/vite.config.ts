@@ -42,6 +42,7 @@ export default defineConfig({
       "@dnd-kit/sortable",
       "@dnd-kit/utilities",
       "remark-gfm",
+      "mermaid",
     ],
   },
 });

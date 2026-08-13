@@ -359,15 +359,14 @@ function buildListDecorations(view: EditorView): DecorationSet {
   }
 
   for (const [lineFrom, hang] of hangByLine) {
-    // Inline padding beats shell `.cm-line { padding: 0 }` (EditorView.theme).
+    // Length only here — padding/text-indent live on `.cm-line.cm-md-list-hang`
+    // (two-class) so they beat shell `.cm-line { padding: 0 }`.
     specs.push({
       from: lineFrom,
       to: lineFrom,
       deco: Decoration.line({
         class: "cm-md-list-hang",
-        attributes: {
-          style: `--cm-md-list-hang:${hang};padding-left:var(--cm-md-list-hang);text-indent:calc(-1 * var(--cm-md-list-hang));overflow:visible`,
-        },
+        attributes: { style: `--cm-md-list-hang:${hang}` },
       }),
     });
   }
@@ -380,12 +379,21 @@ function buildListDecorations(view: EditorView): DecorationSet {
 }
 
 const listTheme = EditorView.baseTheme({
+  // Must beat markdown-cm-view `.cm-line { padding: 0 }` (EditorView.theme).
+  // Without padding-left, negative text-indent pulls the ordinal into the
+  // scroller's overflow-x gutter — numbers look missing, bullets may still peek.
+  ".cm-line.cm-md-list-hang": {
+    paddingLeft: "var(--cm-md-list-hang)",
+    textIndent: "calc(-1 * var(--cm-md-list-hang))",
+    overflow: "visible",
+  },
   ".cm-md-list-mark": {
     display: "inline-block",
     boxSizing: "border-box",
     color: "var(--color-use--text-secondary)",
     userSelect: "none",
     verticalAlign: "baseline",
+    flexShrink: "0",
   },
   // Fixed em chrome — hang uses the same BULLET_HANG_EM sum.
   ".cm-md-list-mark-bullet": {
@@ -408,7 +416,12 @@ const listTheme = EditorView.baseTheme({
   },
   ".cm-md-list-mark-ordered": {
     marginRight: "0.35em",
+    minWidth: "1.6em",
+    textAlign: "right",
     fontVariantNumeric: "tabular-nums",
+    whiteSpace: "nowrap",
+    overflowWrap: "normal",
+    wordBreak: "keep-all",
   },
   ".cm-md-task-checkbox": {
     margin: "0 0.45em 0 0",

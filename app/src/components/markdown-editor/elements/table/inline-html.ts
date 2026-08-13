@@ -1,8 +1,10 @@
 // ↔ ./chrome.ts — idle TableHostWidget cells call renderInlineHtml
+// ↔ ../../markdown-escape.ts — Escape backslash dropped in projection
 // ↔ AGENTS.md — idle Live host must style ** / * / ~~ / `code` / links
 
 import type { EditorState } from "@codemirror/state";
 import type { SyntaxNode } from "@lezer/common";
+import { unescapeMarkdownEscape } from "../../markdown-escape.ts";
 
 /** Marks / chrome nodes — omitted from inactive HTML projection. */
 const SKIP = new Set([
@@ -52,6 +54,12 @@ function renderNode(state: EditorState, node: SyntaxNode): string {
   const name = node.name;
 
   if (SKIP.has(name)) return "";
+
+  if (name === "Escape") {
+    return escapeHtml(
+      unescapeMarkdownEscape(state.doc.sliceString(node.from, node.to)),
+    );
+  }
 
   if (name === "HardBreak") return "<br>";
 
