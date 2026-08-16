@@ -103,10 +103,76 @@
   gap: var(--space--8);
 }
 
+.listBox {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  border: 1px solid var(--color-use--border-prime-hex);
+  border-radius: 8px;
+  background: var(--color-use--bg-prime-hex);
+  overflow: hidden;
+}
+
+.listBox .empty {
+  margin: var(--space--16) var(--space--12);
+}
+
+.tabList {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space--4);
+  flex-shrink: 0;
+  padding: 0 var(--space--8);
+  border-bottom: 1px solid var(--color-use--border-prime-hex);
+  background: var(--color-use--bg-secondary-hex, transparent);
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space--8);
+  margin: 0;
+  padding: var(--space--12) var(--space--8);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--color-use--text-secondary);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  color: var(--color-use--text-prime);
+}
+
+.tabSelected {
+  color: var(--color-use--text-prime);
+  font-weight: 650;
+  border-bottom-color: var(--color-use--text-prime);
+}
+
+.tabIconOpen {
+  width: 1em;
+  height: 1em;
+  color: var(--color-use--success);
+}
+
+.tabIconClosed {
+  width: 1em;
+  height: 1em;
+  color: var(--color-use--accent);
+}
+
 .grid {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: var(--space--12);
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
   gap: var(--space--12);

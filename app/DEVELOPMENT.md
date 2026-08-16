@@ -156,22 +156,26 @@ For vibe coding (one human + AI): treat roles as **session zones**, not packages
 | 1 Spec | Repo `AGENTS.md`; durable orientation in dogfood wiki (`@wiki-WZ_eBxLpaAG_HYKecNZeW`, `@wiki-X-Z3_3kcrIQ--pNVQhzcw`) |
 | 2 Contract | `src/lib/types.ts`, `src/lib/bridge/pm-api.ts` (+ OCC slice types from `@pm-core/sync/detail-diff`) |
 | 3 Core | `electron/core/{identity,domain,workspace,sync,views,desktop,infra}/` (filesystem SoT; also `@pm-core/<cat>/*` Vite/TS alias) |
-| 4 Desktop | `electron/main.ts`, `electron/preload.cts`, pty / packaging |
+| 4 Desktop | `electron/main.ts`, `electron/preload.cts`, packaging (electron-builder / `package.json` product bits) |
 | 5 Web bridge | `server/main.ts`, `src/lib/bridge/http-pm.ts` |
 | 6 Design system | `src/components/ui/`, `src/global-styles/`, `src/lab/` |
-| 7 Markdown | `src/components/markdown-editor/`, `src/lib/markdown/` |
+| 7 Markdown | `src/components/markdown-editor/`, `src/lib/markdown/` (`markdown-editor/**` can often move alone; `src/lib/markdown/node-local-media.ts` is bridge-adjacent — `getNodeAssetsDir` / `openPath` on `pm-api`) |
 | 8 Feature / shell | `src/pages/`, feature components; **shell hub** `src/lib/workspace/workspace-context.tsx` (orchestrates only — do not pile logic) |
 
-**Dual bridge (must stay paired):** `pm-api.ts` ↔ `preload.cts` ↔ `http-pm.ts`; IPC handlers in `electron/main.ts` ↔ HTTP in `server/main.ts`; entry `src/lib/bridge.ts` (`getPm`). Stale-write transport: `electron/core/sync/detail-diff.ts` encode/parse ↔ main IPC catch ↔ `server` `sendError` 409 ↔ `http-pm` reconstruct. Code comments use `// ↔ path — relation` on both ends.
+**Dual bridge (must stay paired):** `pm-api.ts` ↔ `preload.cts` ↔ `http-pm.ts`; IPC handlers in `electron/main.ts` ↔ HTTP in `server/main.ts`; entry `src/lib/bridge.ts` (`getPm`). Stale-write transport: `electron/core/sync/detail-diff.ts` encode/parse ↔ main IPC catch ↔ `server` `sendError` 409 ↔ `http-pm` reconstruct. Code comments use `// ↔ path — relation` on both ends. **PmApi / IPC channel changes are one co-change group across Zones 2, 4, and 5 — three rows, one atom.**
 
 ### Mirror / alias inventory (do **not** merge this pass)
 
 | Renderer / client | Core / twin | Notes |
 | --- | --- | --- |
-| `src/lib/types.ts` | `electron/core/identity/types.ts` | Hand-mirrored Zone-2 IPC shapes; core splits `EntityId` / ladder / doctor — sync on contract change, **do not collapse** |
+| `src/lib/types.ts` | `electron/core/identity/types.ts` | Hand-mirrored Zone-2 IPC shapes; core splits `EntityId` / ladder — sync on contract change, **do not collapse** |
 | `src/lib/types.ts` | `electron/src/lib/types.ts` | Orphan Electron-root twin of renderer types (no runtime importers) |
+| `src/lib/types.ts` (`DoctorReport` / `AdoptResult`) | `electron/core/workspace/doctor.ts` | Hand-duplicated doctor payload; do not collapse this pass |
+| `src/lib/types.ts` (`DoctorReport` / `AdoptResult`) | `electron/src/lib/types.ts` | Orphan twin of renderer |
 | `src/lib/issue-status.ts` | `electron/core/identity/issue-status.ts` | Builtin status catalog; SoT in core |
 | `src/lib/issue-status.ts` | `electron/src/lib/issue-status.ts` | Orphan twin of renderer |
+| `src/lib/issue-priority.ts` | `electron/core/identity/issue-priority.ts` | Builtin priority catalog; SoT in core |
+| `src/lib/issue-priority.ts` | `electron/src/lib/issue-priority.ts` | Orphan twin of renderer |
 | `src/lib/ai-locator.ts` | `electron/core/identity/ai-locator.ts` | Thin re-export via `@pm-core/identity/ai-locator` |
 | `src/lib/workspace/slugify-folder.ts` | `electron/core/identity/slugify-folder.ts` | Hand-copy; body identical |
 | `src/lib/workspace/delete-cost.ts` | `electron/core/sync/delete-cost.ts` | **Sibling APIs** (tree walk vs `parentId` graph) — related, not byte-sync |

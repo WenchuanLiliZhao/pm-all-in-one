@@ -1,6 +1,7 @@
 /**
  * Zone 2 IPC payload types for the renderer (hand-mirrored; keep shapes in sync).
- * ↔ electron/core/identity/types.ts — core SoT splits EntityId / ladder / doctor elsewhere
+ * ↔ electron/core/identity/types.ts — core SoT splits EntityId / ladder elsewhere
+ * ↔ electron/core/workspace/doctor.ts — hand-duplicated DoctorReport / AdoptResult (do not collapse)
  * ↔ electron/src/lib/types.ts — orphan Electron-root twin of this file
  */
 

@@ -1,6 +1,7 @@
 /**
  * Orphan Electron-root twin of renderer types (no runtime importers found).
  * ↔ src/lib/types.ts — keep identical to renderer mirror if this file stays compiled
+ * ↔ electron/core/workspace/doctor.ts — hand-duplicated DoctorReport / AdoptResult (do not collapse)
  * Prefer src/lib/types.ts ↔ electron/core/identity/types.ts as the real Zone-2 pair.
  */
 

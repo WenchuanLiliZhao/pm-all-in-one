@@ -8,6 +8,7 @@
  * `ladder.ts`, reported per issue.
  * ↔ agent-md.ts — agent-md-modified / agent-md-outdated warnings
  * ↔ ../domain/node-assets.ts — skip reserved `assets/` under projects
+ * ↔ src/lib/types.ts — renderer hand-duplicated DoctorReport / AdoptResult (do not collapse)
  */
 import fs from "node:fs";
 import path from "node:path";

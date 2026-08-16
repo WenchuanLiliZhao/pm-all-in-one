@@ -1,18 +1,27 @@
 /**
  * Handoffs card list — topbar channel `/w/handoffs`.
+ * Open / Closed tabs live in the search string (`?state=closed`), not extra
+ * routes — refresh keeps the tab; `/w/handoffs/:handoffId` stays unambiguous.
  *
  * ↔ pages/channels/workspace-page/route.tsx — `CollaborationView`
  * ↔ electron/core/domain/handoffs.ts — getHandoffs / createHandoff
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { MemberPerson, MemberPersonSelect } from "@/components/member-person";
 import { Button } from "@/components/ui/button";
+import { Lucide } from "@/components/ui/lucide";
 import { getPm } from "@/lib/bridge";
 import type { HandoffMeta, HandoffSnapshot } from "@/lib/types";
 import { useMember } from "@/lib/workspace/member-context";
 import { useWorkspace } from "@/lib/workspace/workspace-context";
 import styles from "./styles.module.scss";
+
+type HandoffListState = "open" | "closed";
+
+function listStateFromSearch(searchParams: URLSearchParams): HandoffListState {
+  return searchParams.get("state") === "closed" ? "closed" : "open";
+}
 
 function formatSentAt(iso: string): string {
   try {
@@ -31,6 +40,8 @@ function formatSentAt(iso: string): string {
 
 export function CollaborationCards() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const listState = listStateFromSearch(searchParams);
   const { members, localMe } = useMember();
   const { projects } = useWorkspace();
   const [snap, setSnap] = useState<HandoffSnapshot | null>(null);
@@ -77,6 +88,11 @@ export function CollaborationCards() {
   }, [projects]);
 
   const cards = snap?.nodes ?? [];
+  const openCount = cards.filter((node) => node.open).length;
+  const closedCount = cards.length - openCount;
+  const visible = cards.filter((node) =>
+    listState === "open" ? node.open : !node.open,
+  );
 
   const openCompose = () => {
     setDraftTitle("");
@@ -258,29 +274,63 @@ export function CollaborationCards() {
         </div>
       ) : null}
 
-      {!snap ? (
-        <p className={styles.empty}>Loading…</p>
-      ) : cards.length === 0 && !composing ? (
-        <p className={styles.empty}>
-          No handoffs yet. Send one after a batch of work — it can cover many
-          issues.
-        </p>
-      ) : (
-        <ul className={styles.grid}>
-          {cards.map((node) => (
-            <li key={node.id}>
-              <HandoffCard
-                node={node}
-                projectTitle={
-                  projectTitleById.get(node.relatedProject) ??
-                  node.relatedProject
-                }
-                onOpen={() => navigate(`/w/handoffs/${node.id}`)}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
+      <div className={styles.listBox}>
+        <nav className={styles.tabList} aria-label="Handoff status">
+          <Link
+            to="/w/handoffs"
+            className={
+              listState === "open"
+                ? `${styles.tab} ${styles.tabSelected}`
+                : styles.tab
+            }
+            aria-current={listState === "open" ? "page" : undefined}
+          >
+            <Lucide.CircleDot className={styles.tabIconOpen} aria-hidden />
+            {openCount} Open
+          </Link>
+          <Link
+            to="/w/handoffs?state=closed"
+            className={
+              listState === "closed"
+                ? `${styles.tab} ${styles.tabSelected}`
+                : styles.tab
+            }
+            aria-current={listState === "closed" ? "page" : undefined}
+          >
+            <Lucide.CircleCheckBig
+              className={styles.tabIconClosed}
+              aria-hidden
+            />
+            {closedCount} Closed
+          </Link>
+        </nav>
+        {!snap ? (
+          <p className={styles.empty}>Loading…</p>
+        ) : visible.length === 0 ? (
+          <p className={styles.empty}>
+            {listState === "open"
+              ? cards.length === 0 && !composing
+                ? "No open handoffs. Send one after a batch of work — it can cover many issues."
+                : "No open handoffs."
+              : "No closed handoffs."}
+          </p>
+        ) : (
+          <ul className={styles.grid}>
+            {visible.map((node) => (
+              <li key={node.id}>
+                <HandoffCard
+                  node={node}
+                  projectTitle={
+                    projectTitleById.get(node.relatedProject) ??
+                    node.relatedProject
+                  }
+                  onOpen={() => navigate(`/w/handoffs/${node.id}`)}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
