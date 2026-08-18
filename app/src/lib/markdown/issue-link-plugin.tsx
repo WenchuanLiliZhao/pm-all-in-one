@@ -1,10 +1,11 @@
 // ↔ src/components/markdown-editor/types.ts — MarkdownPlugin contract
-// ↔ src/components/markdown-editor/index.ts — linkChipStyles + replaceOutsideCode
+// ↔ src/components/markdown-editor/index.ts — linkChipStyles + previewAnchorClassName + replaceOutsideCode
 // ↔ ./pm-link-plugin.tsx — preferred combined issue+wiki plugin (avoids components.a clobber)
 
 import type { MarkdownPlugin } from "@/components/markdown-editor";
 import {
   linkChipStyles,
+  previewAnchorClassName,
   replaceOutsideCode,
 } from "@/components/markdown-editor";
 import { issueRefKey } from "@/lib/types";
@@ -52,8 +53,8 @@ export function createIssueLinkPlugin(
           const key = issueRefKey(projectId, issueId);
           const ok = options.knownKeys.has(key);
           return (
-            <button
-              type="button"
+            <a
+              href={href}
               className={ok ? classNames.ok : classNames.broken}
               title={`@issue-${key}`}
               onClick={(e) => {
@@ -62,11 +63,16 @@ export function createIssueLinkPlugin(
               }}
             >
               {children}
-            </button>
+            </a>
           );
         }
         return (
-          <a href={href} target="_blank" rel="noreferrer">
+          <a
+            className={previewAnchorClassName}
+            href={href}
+            target="_blank"
+            rel="noreferrer"
+          >
             {children}
           </a>
         );

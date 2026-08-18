@@ -9,6 +9,7 @@ import {
 } from "react";
 import { getPm } from "@/lib/bridge";
 import type { CreateMemberInput, Member, MemberSnapshot } from "@/lib/types";
+import { useWorkspace } from "@/lib/workspace/workspace-context";
 
 type MemberContextValue = {
   members: MemberSnapshot | null;
@@ -26,6 +27,7 @@ type MemberContextValue = {
 const MemberContext = createContext<MemberContextValue | null>(null);
 
 export function MemberProvider({ children }: { children: ReactNode }) {
+  const { root } = useWorkspace();
   const [members, setMembersState] = useState<MemberSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [localMe, setLocalMeState] = useState<string | null>(null);
@@ -77,13 +79,15 @@ export function MemberProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
+    setMembersState(null);
+    setLocalMeState(null);
     void refresh();
     void refreshLocalMe();
     return getPm().onChanged(() => {
       void refresh();
       void refreshLocalMe();
     });
-  }, [refresh, refreshLocalMe]);
+  }, [refresh, refreshLocalMe, root]);
 
   const value = useMemo(
     () => ({

@@ -1,10 +1,11 @@
 // ↔ src/components/markdown-editor/types.ts — MarkdownPlugin contract
-// ↔ src/components/markdown-editor/index.ts — linkChipStyles + replaceOutsideCode
+// ↔ src/components/markdown-editor/index.ts — linkChipStyles + previewAnchorClassName + replaceOutsideCode
 // ↔ ./pm-link-plugin.tsx — preferred combined issue+wiki plugin (avoids components.a clobber)
 
 import type { MarkdownPlugin } from "@/components/markdown-editor";
 import {
   linkChipStyles,
+  previewAnchorClassName,
   replaceOutsideCode,
 } from "@/components/markdown-editor";
 
@@ -44,8 +45,8 @@ export function createWikiNodeLinkPlugin(
           const wikiNodeId = m[1]!;
           const ok = options.knownIds.has(wikiNodeId);
           return (
-            <button
-              type="button"
+            <a
+              href={href}
               className={ok ? classNames.ok : classNames.broken}
               title={`@wiki-${wikiNodeId}`}
               onClick={(e) => {
@@ -54,11 +55,16 @@ export function createWikiNodeLinkPlugin(
               }}
             >
               {children}
-            </button>
+            </a>
           );
         }
         return (
-          <a href={href} target="_blank" rel="noreferrer">
+          <a
+            className={previewAnchorClassName}
+            href={href}
+            target="_blank"
+            rel="noreferrer"
+          >
             {children}
           </a>
         );

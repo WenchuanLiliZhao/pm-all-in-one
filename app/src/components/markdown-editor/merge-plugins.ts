@@ -1,8 +1,8 @@
-// ↔ types.ts — MarkdownPlugin shape
+// ↔ types.ts — MarkdownPlugin shape (transform / components / schemes / fences)
 // ↔ markdown-preview.tsx — sole Reading View consumer of these merges
 
 import type { Components } from "react-markdown";
-import type { MarkdownPlugin } from "./types";
+import type { MarkdownFencePlugin, MarkdownPlugin } from "./types";
 
 export function applyTransforms(
   source: string,
@@ -19,7 +19,9 @@ export function applyTransforms(
 
 /**
  * Merge Reading View components: core element defaults first, then plugins
- * (plugins win on key collision).
+ * (plugins win on key collision). Callers that own `pre` / `a` / `img` must
+ * re-apply those factories after this merge so plugins cannot steal mermaid,
+ * `assets/` cards, or resolved images.
  */
 export function mergeComponents(
   plugins: MarkdownPlugin[] | undefined,
@@ -53,4 +55,30 @@ export function mergeAllowedUrlSchemes(
     }
   }
   return schemes;
+}
+
+/**
+ * Merge fence lang claims. First info-string token, lowercased.
+ * Duplicate `lang` is a load-time error.
+ */
+export function mergeFenceRegistry(
+  plugins: MarkdownPlugin[] | undefined,
+): Map<string, MarkdownFencePlugin> {
+  const map = new Map<string, MarkdownFencePlugin>();
+  if (!plugins?.length) {
+    return map;
+  }
+  for (const plugin of plugins) {
+    for (const fence of plugin.fences ?? []) {
+      const lang = fence.lang.trim().toLowerCase();
+      if (!lang) {
+        throw new Error("MarkdownPlugin fence lang must be non-empty");
+      }
+      if (map.has(lang)) {
+        throw new Error(`Duplicate MarkdownPlugin fence lang: ${lang}`);
+      }
+      map.set(lang, { ...fence, lang });
+    }
+  }
+  return map;
 }

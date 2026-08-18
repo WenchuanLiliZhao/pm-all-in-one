@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useState, type ReactNode } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { GitSyncPanel } from "@/components/git-sync-panel";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,20 @@ interface ElectronShellProps {
 /** macOS native hidden titlebar wrapper; passthrough on other platforms. */
 export function ElectronShell({ children }: ElectronShellProps) {
   const body = children ?? <Outlet />;
+  // Toast `top` uses this so fixed layers clear the Mac titlebar + workspace topbar.
+  useLayoutEffect(() => {
+    if (!isMacElectron) {
+      return;
+    }
+    const root = document.documentElement;
+    root.style.setProperty(
+      "--layout--shell-titlebar-height",
+      "var(--layout--titlebar-height)",
+    );
+    return () => {
+      root.style.removeProperty("--layout--shell-titlebar-height");
+    };
+  }, []);
   if (!isMacElectron) {
     return body;
   }

@@ -90,8 +90,9 @@ export function Content() {
         </div>
 
         <p className={styles.hint}>
-          Also under <strong>File</strong> → New Workspace / Open Workspace.
-          Open needs <code>issue-hierarchy/</code> and <code>.pm/</code>.
+          Also under <strong>File</strong> → New Workspace / Open Workspace /
+          Open Recent. Open needs <code>issue-hierarchy/</code> and{" "}
+          <code>.pm/</code>.
         </p>
 
         {showLabLink ? (

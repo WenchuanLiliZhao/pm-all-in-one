@@ -117,14 +117,15 @@ test("scaffold copies template files and skips .gitkeep", () => {
       assert.equal(agent, templateAgent);
       assert.match(
         agent,
-        /^<!-- local-pm agent\.md rev 7 — product-owned;/,
+        /^<!-- local-pm agent\.md rev 8 — product-owned;/,
       );
       assert.ok(agent.includes("Install Command Line Tool"));
       assert.ok(agent.includes("npx pm-all-in-one"));
       assert.ok(agent.includes("**When no CLI is reachable, stop and say so.**"));
       assert.ok(agent.includes("## Mentions (live cross-references)"));
       assert.ok(agent.includes("**Never** wrap a concrete locator"));
-      assert.ok(agent.includes("## Custom conventions"));
+      assert.ok(agent.includes("## Fence validators"));
+      assert.ok(agent.includes("trustFenceValidators"));
       assert.ok(agent.includes("local.md"));
       assert.ok(agent.includes("machine-absolute code paths"));
       assert.equal(agent.includes("## What goes where"), false);

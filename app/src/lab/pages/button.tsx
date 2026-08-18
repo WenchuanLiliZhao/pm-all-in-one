@@ -1,5 +1,7 @@
+import { useState } from "react";
 import {
   Button,
+  ButtonGroup,
   type ButtonSize,
   type ButtonVariant,
 } from "@/components/ui/button";
@@ -22,6 +24,59 @@ const DANGER_COLORS = {
   hoverBg: "var(--color-use--danger-soft)",
 } as const;
 
+const MODES = ["Source", "Live", "Preview"] as const;
+
+function GroupDemo() {
+  const [mode, setMode] = useState<(typeof MODES)[number]>("Preview");
+  return (
+    <ButtonGroup role="radiogroup" aria-label="Editor mode">
+      {MODES.map((item) => (
+        <Button
+          key={item}
+          type="button"
+          variant="outlined"
+          size="small"
+          selected={mode === item}
+          role="radio"
+          aria-checked={mode === item}
+          onClick={() => setMode(item)}
+        >
+          {item}
+        </Button>
+      ))}
+    </ButtonGroup>
+  );
+}
+
+function FlushGroupDemo() {
+  const [mode, setMode] = useState<(typeof MODES)[number]>("Preview");
+  return (
+    <ButtonGroup
+      appearance="flush"
+      role="radiogroup"
+      aria-label="Flush editor mode"
+    >
+      {MODES.map((item) => {
+        const active = mode === item;
+        return (
+          <Button
+            key={item}
+            type="button"
+            variant={active ? "fill-inverse" : "ghost"}
+            size="small"
+            selected={active}
+            role="radio"
+            aria-checked={active}
+            onClick={() => setMode(item)}
+          >
+            {item}
+          </Button>
+        );
+      })}
+    </ButtonGroup>
+  );
+}
+
 export function ButtonPage() {
   return (
     <PageWidth width="reading" className={styles.page}>
@@ -30,9 +85,12 @@ export function ButtonPage() {
         Real component: <code>@/components/ui/button</code>. Product and lab
         share this module. Default variant is <code>outlined</code>.{" "}
         <code>selected</code> raises label color to text-prime (orthogonal to
-        variant; skipped on <code>fill-inverse</code> / <code>fill-danger</code>). Tree outline rows and
-        expanders are out of scope — use <code>TreeRow</code> with Lucide lead
-        icons (see Lab → Tree row).
+        variant; skipped on <code>fill-inverse</code> / <code>fill-danger</code>).{" "}
+        <code>ButtonGroup</code> joins outlined buttons (UI-304 shared stroke);
+        <code>appearance="flush"</code> embeds in existing chrome with no extra
+        stroke.
+        Tree outline rows and expanders are out of scope — use{" "}
+        <code>TreeRow</code> with Lucide lead icons (see Lab → Tree row).
       </p>
 
       {VARIANTS.map((variant) => (
@@ -100,6 +158,30 @@ export function ButtonPage() {
           >
             Delete
           </Button>
+        </div>
+      </div>
+
+      <div className={styles.block}>
+        <p className={styles.blockLabel}>group (outlined, shared stroke)</p>
+        <div className={styles.row}>
+          <GroupDemo />
+          <ButtonGroup aria-label="Sizes">
+            <Button variant="outlined" size="small">
+              small
+            </Button>
+            <Button variant="outlined" size="small">
+              pair
+            </Button>
+          </ButtonGroup>
+        </div>
+      </div>
+
+      <div className={styles.block}>
+        <p className={styles.blockLabel}>
+          group flush (ghost + fill-inverse, no own stroke)
+        </p>
+        <div className={styles.row}>
+          <FlushGroupDemo />
         </div>
       </div>
     </PageWidth>

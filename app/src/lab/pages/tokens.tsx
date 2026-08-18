@@ -54,6 +54,7 @@ const SPACE_TOKENS = [
 
 const LAYOUT_TOKENS = [
   "--layout--titlebar-height",
+  "--layout--shell-titlebar-height",
   "--layout--titlebar-traffic-inset",
   "--layout--titlebar-traffic-y",
   "--layout--detail-min",

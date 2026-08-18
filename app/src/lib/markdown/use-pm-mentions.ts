@@ -4,6 +4,7 @@
  */
 // ↔ ./activate-pm-mention.ts — Live mention → navigate
 // ↔ ./pm-link-plugin.tsx — Reading View chips
+// ↔ ./plot-fence-plugin/ — Reading View plot fences
 // ↔ src/components/markdown-editor/types.ts — MentionAutocompleteProps.onActivate
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
@@ -14,6 +15,7 @@ import { issueRefKey } from "@/lib/types";
 import { useMember } from "@/lib/workspace/member-context";
 import { useHandoffMetas } from "@/lib/workspace/use-handoff-metas";
 import { activatePmMention } from "./activate-pm-mention";
+import { plotFencePlugin } from "./plot-fence-plugin";
 import { createPmLinkPlugin } from "./pm-link-plugin";
 import {
   toHandoffTitleMap,
@@ -73,6 +75,7 @@ export function usePmMentions({
 
   const plugins = useMemo(
     () => [
+      plotFencePlugin,
       createPmLinkPlugin({
         knownIssueKeys,
         knownWikiNodeIds,

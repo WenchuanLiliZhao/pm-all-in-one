@@ -1,5 +1,5 @@
 // ↔ src/components/markdown-editor/types.ts — MarkdownPlugin contract
-// ↔ src/components/markdown-editor/index.ts — linkChipStyles + replaceOutsideCode
+// ↔ src/components/markdown-editor/index.ts — linkChipStyles + previewAnchorClassName + replaceOutsideCode
 // ↔ src/components/markdown-editor/AGENTS.md — product adapters live here, not in core
 // ↔ ./activate-pm-mention.ts — Live Cmd/Ctrl+click (same navigate destinations)
 // ↔ electron/core/identity/links.ts — canonical @issue- / @wiki- / @member- / @handoff- shapes
@@ -7,6 +7,7 @@
 import type { MarkdownPlugin } from "@/components/markdown-editor";
 import {
   linkChipStyles,
+  previewAnchorClassName,
   replaceOutsideCode,
 } from "@/components/markdown-editor";
 import { issueRefKey } from "@/lib/types";
@@ -96,8 +97,8 @@ export function createPmLinkPlugin(options: PmLinkPluginOptions): MarkdownPlugin
           const key = issueRefKey(projectId, issueId);
           const ok = options.knownIssueKeys.has(key);
           return (
-            <button
-              type="button"
+            <a
+              href={href}
               className={ok ? classNames.ok : classNames.broken}
               title={`@issue-${key}`}
               onClick={(e) => {
@@ -106,7 +107,7 @@ export function createPmLinkPlugin(options: PmLinkPluginOptions): MarkdownPlugin
               }}
             >
               {children}
-            </button>
+            </a>
           );
         }
         const wikiMatch = href?.match(wikiHrefRe);
@@ -114,8 +115,8 @@ export function createPmLinkPlugin(options: PmLinkPluginOptions): MarkdownPlugin
           const wikiNodeId = wikiMatch[1]!;
           const ok = options.knownWikiNodeIds.has(wikiNodeId);
           return (
-            <button
-              type="button"
+            <a
+              href={href}
               className={ok ? classNames.ok : classNames.broken}
               title={`@wiki-${wikiNodeId}`}
               onClick={(e) => {
@@ -124,7 +125,7 @@ export function createPmLinkPlugin(options: PmLinkPluginOptions): MarkdownPlugin
               }}
             >
               {children}
-            </button>
+            </a>
           );
         }
         const memberMatch = href?.match(memberHrefRe);
@@ -132,8 +133,8 @@ export function createPmLinkPlugin(options: PmLinkPluginOptions): MarkdownPlugin
           const memberId = memberMatch[1]!;
           const ok = knownMemberIds.has(memberId);
           return (
-            <button
-              type="button"
+            <a
+              href={href}
               className={ok ? classNames.ok : classNames.broken}
               title={`@member-${memberId}`}
               onClick={(e) => {
@@ -142,7 +143,7 @@ export function createPmLinkPlugin(options: PmLinkPluginOptions): MarkdownPlugin
               }}
             >
               {children}
-            </button>
+            </a>
           );
         }
         const handoffMatch = href?.match(handoffHrefRe);
@@ -150,8 +151,8 @@ export function createPmLinkPlugin(options: PmLinkPluginOptions): MarkdownPlugin
           const handoffId = handoffMatch[1]!;
           const ok = knownHandoffIds.has(handoffId);
           return (
-            <button
-              type="button"
+            <a
+              href={href}
               className={ok ? classNames.ok : classNames.broken}
               title={`@handoff-${handoffId}`}
               onClick={(e) => {
@@ -160,11 +161,16 @@ export function createPmLinkPlugin(options: PmLinkPluginOptions): MarkdownPlugin
               }}
             >
               {children}
-            </button>
+            </a>
           );
         }
         return (
-          <a href={href} target="_blank" rel="noreferrer">
+          <a
+            className={previewAnchorClassName}
+            href={href}
+            target="_blank"
+            rel="noreferrer"
+          >
             {children}
           </a>
         );

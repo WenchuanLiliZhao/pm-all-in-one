@@ -4,6 +4,8 @@
  */
 :root {
   --layout--titlebar-height: 37px;
+  /* 0 until ElectronShell mounts the Mac titlebar (inline override on <html>). */
+  --layout--shell-titlebar-height: 0px;
   /* Horizontal inset for React titlebar content (past traffic lights). */
   --layout--titlebar-traffic-inset: 78px;
   /* Electron main `MAC_TRAFFIC_LIGHT_POSITION.y` — keep in sync (not used in CSS). */

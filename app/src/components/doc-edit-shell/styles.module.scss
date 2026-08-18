@@ -11,6 +11,11 @@
   gap: 0;
   min-width: 0;
   /*
+   * DocEditNav chrome: padding-block 0.5rem × 2 + Button size=small (22px).
+   * MarkdownEditor sticky filename nav docks under this, not over Save.
+   */
+  --markdown-editor-sticky-top: calc(1rem + 22px);
+  /*
    * Span the nearest `doc-edit-view` (WikiShell `.main` / detail aside), not the
    * reading-width PageWidth box. Breakout lives on this non-sticky root so the
    * sticky chrome below can be plain `width: 100%` (no horizontal margin jump).

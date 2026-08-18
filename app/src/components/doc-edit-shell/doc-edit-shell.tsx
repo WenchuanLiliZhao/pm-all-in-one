@@ -21,7 +21,7 @@ export type DocEditShellProps = {
   title: ReactNode;
   /** Status / priority / dates / readonly meta — existing controls. */
   propsSlot?: ReactNode;
-  /** Borderless locked-live MarkdownEditor. */
+  /** Bordered MarkdownEditor (filename nav + Source/Live/Preview). */
   body: ReactNode;
   /** Assets, custom fields, dialogs. */
   footer?: ReactNode;

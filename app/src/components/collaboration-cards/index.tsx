@@ -7,15 +7,30 @@
  * ↔ electron/core/domain/handoffs.ts — getHandoffs / createHandoff
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+  useOutletContext,
+  useSearchParams,
+} from "react-router-dom";
+import { MarkdownEditor } from "@/components/markdown-editor";
 import { MemberPerson, MemberPersonSelect } from "@/components/member-person";
 import { Button } from "@/components/ui/button";
 import { Lucide } from "@/components/ui/lucide";
 import { getPm } from "@/lib/bridge";
-import type { HandoffMeta, HandoffSnapshot } from "@/lib/types";
+import { usePmMentions } from "@/lib/markdown/use-pm-mentions";
+import type { HandoffMeta, HandoffSnapshot, WikiNodeMeta } from "@/lib/types";
 import { useMember } from "@/lib/workspace/member-context";
-import { useWorkspace } from "@/lib/workspace/workspace-context";
+import {
+  useWorkspace,
+  type Selection,
+} from "@/lib/workspace/workspace-context";
 import styles from "./styles.module.scss";
+
+type HandoffListOutlet = {
+  openSelection: (sel: Selection) => void;
+  wikiNodes: WikiNodeMeta[];
+};
 
 type HandoffListState = "open" | "closed";
 
@@ -43,7 +58,18 @@ export function CollaborationCards() {
   const [searchParams] = useSearchParams();
   const listState = listStateFromSearch(searchParams);
   const { members, localMe } = useMember();
-  const { projects } = useWorkspace();
+  const { projects, issues } = useWorkspace();
+  const { openSelection, wikiNodes } = useOutletContext<HandoffListOutlet>();
+  const navigateIssue = useCallback(
+    (p: string, i: string) =>
+      openSelection({ kind: "issue", projectId: p, issueId: i }),
+    [openSelection],
+  );
+  const { plugins, mentionAutocomplete } = usePmMentions({
+    issues,
+    wikiNodes,
+    onNavigateIssue: navigateIssue,
+  });
   const [snap, setSnap] = useState<HandoffSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [composing, setComposing] = useState(false);
@@ -241,16 +267,15 @@ export function CollaborationCards() {
                   />
                 </div>
               </div>
-              <label className={styles.field}>
-                <span>Body</span>
-                <textarea
-                  className={styles.textarea}
-                  value={draftBody}
-                  onChange={(e) => setDraftBody(e.target.value)}
-                  rows={5}
-                  placeholder="What you finished, what’s next, blockers…"
-                />
-              </label>
+              <MarkdownEditor
+                filename="README.md"
+                value={draftBody}
+                onChange={setDraftBody}
+                plugins={plugins}
+                mentionAutocomplete={mentionAutocomplete}
+                placeholder="What you finished, what’s next, blockers…"
+                rows={5}
+              />
               <div className={styles.composeActions}>
                 <Button
                   type="button"

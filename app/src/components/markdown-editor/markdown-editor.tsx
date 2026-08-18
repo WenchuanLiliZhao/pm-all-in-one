@@ -1,63 +1,129 @@
-// ↔ markdown-cm-view.tsx — Live CodeMirror host
-// ↔ types.ts — MarkdownEditorProps / mode / variant / handle
-// ↔ styles.module.scss — chrome label header + borderless shell
-// ↔ AGENTS.md — UI always Live; mode props retained (temporarily unused)
+// ↔ markdown-cm-view.tsx — Source / Live CodeMirror host
+// ↔ markdown-preview.tsx — Preview pane; pass localMedia so assets/ resolve
+// ↔ types.ts — MarkdownEditorProps / mode / filename / handle
+// ↔ styles.module.scss — bordered shell + sticky filename nav
+// ↔ AGENTS.md — chrome + Source/Live/Preview; default Preview
 
-import { useImperativeHandle, useRef } from "react";
+import { useEffect, useImperativeHandle, useRef, useState } from "react";
+import { Button, ButtonGroup } from "@/components/ui/button";
 import { MarkdownCmView, type MarkdownCmViewHandle } from "./markdown-cm-view";
-import type { MarkdownEditorProps } from "./types";
+import { MarkdownPreview } from "./markdown-preview";
+import type { MarkdownEditorMode, MarkdownEditorProps } from "./types";
 import styles from "./styles.module.scss";
+
+const MODES: { id: MarkdownEditorMode; label: string }[] = [
+  { id: "source", label: "Source" },
+  { id: "live", label: "Live" },
+  { id: "preview", label: "Preview" },
+];
+
+function nearestScrollRoot(el: Element): Element | null {
+  let node = el.parentElement;
+  while (node && node !== document.documentElement) {
+    const overflowY = getComputedStyle(node).overflowY;
+    if (
+      overflowY === "auto" ||
+      overflowY === "scroll" ||
+      overflowY === "overlay"
+    ) {
+      return node;
+    }
+    node = node.parentElement;
+  }
+  return null;
+}
 
 export function MarkdownEditor({
   value,
   onChange,
   placeholder,
-  defaultMode = "live",
-  variant = "chrome",
+  defaultMode = "preview",
+  filename = "README.md",
   editorRef,
   onNavigateOutAtStart,
   onBlur,
   plugins,
   className,
   rows = 12,
-  label,
   autoPair = true,
   mentionAutocomplete,
   localMedia,
   assetFilenames,
   ingestAssetFiles,
 }: MarkdownEditorProps) {
-  // Mode props stay on the public contract; UI is temporarily locked to Live.
-  void defaultMode;
-  void plugins; // Reading View / Preview path paused with mode switching
-
-  const borderless = variant === "borderless";
+  const [mode, setMode] = useState<MarkdownEditorMode>(defaultMode);
   const cmRef = useRef<MarkdownCmViewHandle | null>(null);
+  const pendingFocusRef = useRef<{ at?: "start" | "end" } | null>(null);
+  const pendingInsertRef = useRef<string | null>(null);
   const minHeightPx = Math.max(120, rows * 18);
+  const preview = mode === "preview";
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const [stuck, setStuck] = useState(false);
 
   useImperativeHandle(
     editorRef,
     () => ({
       focus: (opts) => {
+        if (mode === "preview") {
+          pendingFocusRef.current = opts ?? { at: "start" };
+          setMode("live");
+          return;
+        }
         cmRef.current?.focus(opts);
       },
       insertAtCursor: (text) => {
+        if (mode === "preview") {
+          pendingInsertRef.current = text;
+          setMode("live");
+          return;
+        }
         cmRef.current?.insertAtCursor(text);
       },
     }),
-    [],
+    [mode],
   );
+
+  useEffect(() => {
+    if (mode === "preview") {
+      return;
+    }
+    const focusOpts = pendingFocusRef.current;
+    const insert = pendingInsertRef.current;
+    pendingFocusRef.current = null;
+    pendingInsertRef.current = null;
+    if (focusOpts) {
+      cmRef.current?.focus(focusOpts);
+    }
+    if (insert) {
+      cmRef.current?.insertAtCursor(insert);
+    }
+  }, [mode]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    const header = headerRef.current;
+    if (!sentinel || !header) {
+      return;
+    }
+    const stickyTopPx = Number.parseFloat(getComputedStyle(header).top) || 0;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setStuck(!entry.isIntersecting);
+      },
+      {
+        root: nearestScrollRoot(header),
+        threshold: 0,
+        rootMargin: `-${stickyTopPx + 1}px 0px 0px 0px`,
+      },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div
-      className={[
-        styles.root,
-        borderless ? styles.rootBorderless : "",
-        className,
-      ]
-        .filter(Boolean)
-        .join(" ")}
-      data-variant={variant}
+      className={[styles.root, className].filter(Boolean).join(" ")}
       onBlur={(e) => {
         if (!onBlur) {
           return;
@@ -69,27 +135,65 @@ export function MarkdownEditor({
         onBlur();
       }}
     >
-      {!borderless ? (
-        <div className={styles.header}>
-          <span>{label ?? "Markdown"}</span>
-        </div>
-      ) : null}
-      <MarkdownCmView
-        handleRef={cmRef}
-        className={borderless ? styles.cmShellBorderless : styles.cmShell}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        live
-        autoPair={autoPair}
-        mentionAutocomplete={mentionAutocomplete}
-        localMedia={localMedia}
-        assetFilenames={assetFilenames}
-        ingestAssetFiles={ingestAssetFiles}
-        minHeightPx={minHeightPx}
-        borderless={borderless}
-        onNavigateOutAtStart={onNavigateOutAtStart}
-      />
+      <div ref={sentinelRef} className={styles.stickySentinel} aria-hidden />
+      <div
+        ref={headerRef}
+        className={[styles.header, stuck ? styles.headerStuck : ""]
+          .filter(Boolean)
+          .join(" ")}
+      >
+        <span className={styles.filename}>{filename}</span>
+        <ButtonGroup
+          className={styles.modes}
+          appearance="flush"
+          role="radiogroup"
+          aria-label="Editor mode"
+        >
+          {MODES.map((item) => {
+            const active = mode === item.id;
+            return (
+              <Button
+                key={item.id}
+                type="button"
+                variant={active ? "fill-inverse" : "ghost"}
+                size="small"
+                selected={active}
+                role="radio"
+                aria-checked={active}
+                onClick={() => setMode(item.id)}
+              >
+                {item.label}
+              </Button>
+            );
+          })}
+        </ButtonGroup>
+      </div>
+      <div className={styles.body} style={{ minHeight: minHeightPx }}>
+        <MarkdownCmView
+          handleRef={cmRef}
+          className={styles.cmShell}
+          hidden={preview}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          live={mode === "live"}
+          autoPair={autoPair}
+          mentionAutocomplete={mentionAutocomplete}
+          localMedia={localMedia}
+          assetFilenames={assetFilenames}
+          ingestAssetFiles={ingestAssetFiles}
+          minHeightPx={minHeightPx}
+          onNavigateOutAtStart={onNavigateOutAtStart}
+        />
+        {preview ? (
+          <MarkdownPreview
+            source={value}
+            plugins={plugins}
+            localMedia={localMedia}
+            className={styles.previewBody}
+          />
+        ) : null}
+      </div>
     </div>
   );
 }

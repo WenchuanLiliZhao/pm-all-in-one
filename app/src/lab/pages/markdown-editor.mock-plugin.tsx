@@ -42,8 +42,8 @@ export function createMockWikiPlugin(
           const key = decodeURIComponent(m[1]);
           const ok = options.knownKeys.has(key);
           return (
-            <button
-              type="button"
+            <a
+              href={href}
               className={ok ? classNames.ok : classNames.broken}
               title={`@wiki-${key}`}
               onClick={(e) => {
@@ -52,7 +52,7 @@ export function createMockWikiPlugin(
               }}
             >
               {children}
-            </button>
+            </a>
           );
         }
         return (

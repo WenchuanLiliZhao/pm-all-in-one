@@ -1,8 +1,10 @@
 /**
  * Per-workspace local (gitignored) config: `.pm/local.json`.
- * Holds machine-local facts that must not enter git — today: `me` (current member).
+ * Holds machine-local facts that must not enter git — today: `me` (current member)
+ * and `trustFenceValidators` (opt-in to import workspace fence-validator modules).
  *
  * Never cache the result as a module singleton; callers pass actor as a parameter.
+ * ↔ fence-validators.ts — trustFenceValidators gate
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -15,6 +17,12 @@ export interface LocalConfig {
   me?: EntityId | null;
   /** Reserved for repo-links local path table (future). */
   repos?: Record<string, string>;
+  /**
+   * Opt-in: doctor may `import()` workspace fence-validator modules declared
+   * in `.pm/fence-validators.json`. Default off — a clone does not run
+   * someone else's code.
+   */
+  trustFenceValidators?: boolean;
 }
 
 export function localConfigPath(workspaceRoot: string): string {
@@ -47,6 +55,9 @@ export function readLocalConfig(workspaceRoot: string): LocalConfig {
       }
       out.repos = repos;
     }
+    if (typeof obj.trustFenceValidators === "boolean") {
+      out.trustFenceValidators = obj.trustFenceValidators;
+    }
     return out;
   } catch {
     return {};
@@ -63,6 +74,9 @@ export function writeLocalConfig(
   const next: LocalConfig = { ...prev, ...config };
   if (config.me === undefined) {
     next.me = prev.me;
+  }
+  if (config.trustFenceValidators === undefined) {
+    next.trustFenceValidators = prev.trustFenceValidators;
   }
   if (next.me != null && !isValidEntityId(next.me)) {
     throw new Error(`Invalid me member id: ${JSON.stringify(next.me)}`);

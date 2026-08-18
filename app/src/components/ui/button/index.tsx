@@ -7,11 +7,15 @@
  * ↔ components/member-person — card chrome imports button styles.module.scss directly
  * ↔ components/ui/input — size=small twin for detail props
  * ↔ src/global-styles/seams.md — `detail-prop-controls`
- * ↔ lab/pages/button — variant × size × selected matrix
+ * ↔ lab/pages/button — variant × size × selected × group matrix
+ * ↔ group.tsx — joined outlined cluster (UI-304)
  */
 import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from "react";
 import { Lucide } from "@/components/ui/lucide";
 import styles from "./styles.module.scss";
+
+export type { ButtonGroupAppearance, ButtonGroupProps } from "./group";
+export { ButtonGroup } from "./group";
 
 export type ButtonVariant =
   | "ghost"

@@ -1,7 +1,7 @@
 // ↔ elements/image/live.ts — figure / attachment widgets
 // ↔ elements/link/live.ts — assets/ links → attachment cards
 // ↔ extensions/live-preview.ts — facet provided with Live options
-// ↔ types.ts — LocalMediaProps on MarkdownEditor
+// ↔ types.ts — LocalMediaProps on MarkdownEditor + MarkdownPreview
 
 import { Facet } from "@codemirror/state";
 import { renderInlineMarkdownFragment } from "./inline-fragment";

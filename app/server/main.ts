@@ -2,7 +2,7 @@ import http from "node:http";
 import path from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { adoptStray, scanStrays } from "../electron/core/workspace/doctor.js";
+import { adoptStray, scanWorkspace } from "../electron/core/workspace/doctor.js";
 import {
   createWikiNode,
   deleteWikiNode,
@@ -189,7 +189,7 @@ async function openSnapshot(root: string) {
   const tree = await rebuildIndex(root);
   const projects = await listProjects(root);
   const issues = await listIssues(root);
-  const strays = scanStrays(root);
+  const strays = await scanWorkspace(root);
 
   watcher.start(root, (payload: WorkspaceChangePayload) => {
     broadcast("changed", payload);
@@ -433,7 +433,7 @@ async function handleApi(
   }
 
   if (method === "GET" && pathname === "/api/doctor") {
-    sendJson(res, 200, scanStrays(root));
+    sendJson(res, 200, await scanWorkspace(root));
     return;
   }
   if (method === "POST" && pathname === "/api/doctor/adopt") {

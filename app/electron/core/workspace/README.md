@@ -12,10 +12,11 @@ Workspace lifecycle: create from shipped templates, open-time health (doctor), c
 | --- | --- |
 | `rebuild-index.ts` | Derived `.pm/index.json` + `tree.md` (**not** a barrel) |
 | `watch.ts` | Chokidar → rebuild + doctor payload |
-| `doctor.ts` | Filesystem-shape stray scan |
+| `doctor.ts` | Filesystem-shape stray scan + `scanWorkspace` (fence validators) |
+| `fence-validators.ts` | Workspace-declared Markdown fence lint (opt-in module import) |
 | `agent-md.ts` | `.pm/agent.md` rev stamp + drift vs factory |
 | `scaffold-workspace.ts` | Create workspace from templates |
 | `workspace-template.ts` | Resolve/copy `workspace-template/` + `project-template/` |
 | `workspace-gitignore.ts` | Ensure local files listed in `.gitignore` |
-| `local-config.ts` | Gitignored `.pm/local.json` (`me`, …) |
-| `settings.ts` | App-level `settings.json` (last workspace) |
+| `local-config.ts` | Gitignored `.pm/local.json` (`me`, `trustFenceValidators`, …) |
+| `settings.ts` | App-level `settings.json` (last workspace + Open Recent MRU) |

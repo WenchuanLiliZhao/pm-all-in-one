@@ -26,3 +26,33 @@ test("renderInlineMarkdownFragment hides Escape backslash", () => {
   assert.match(html, /\*star\*/);
   assert.doesNotMatch(html, /\\\*/);
 });
+
+test("renderInlineMarkdownFragment renders $…$ via KaTeX", () => {
+  const html = renderInlineMarkdownFragment("see $x^2$ here");
+  assert.match(html, /katex/);
+  assert.doesNotMatch(html, /\$x\^2\$/);
+  assert.match(html, /see /);
+  assert.match(html, / here/);
+});
+
+test("renderInlineMarkdownFragment leaves $ inside inline code", () => {
+  const html = renderInlineMarkdownFragment("keep `$x^2$` literal");
+  assert.doesNotMatch(html, /katex/);
+  assert.match(html, /<code>/);
+  assert.match(html, /\$x\^2\$/);
+});
+
+test("renderInlineMarkdownFragment plot title with unicode math", () => {
+  const html = renderInlineMarkdownFragment(
+    "Secant slope as $h → 0$ for $f(x) = x²$",
+  );
+  assert.match(html, /katex/);
+  assert.doesNotMatch(html, /\$h/);
+  assert.doesNotMatch(html, /\$f/);
+});
+
+test("renderInlineMarkdownFragment math inside strong", () => {
+  const html = renderInlineMarkdownFragment("**$x$**");
+  assert.match(html, /<strong>/);
+  assert.match(html, /katex/);
+});

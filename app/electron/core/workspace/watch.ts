@@ -2,7 +2,7 @@ import chokidar, { type FSWatcher } from "chokidar";
 import path from "node:path";
 
 import { loadCustomProps } from "../domain/custom-props.js";
-import { scanStrays, type DoctorReport } from "./doctor.js";
+import { scanWorkspace, type DoctorReport } from "./doctor.js";
 import { rebuildIndex } from "./rebuild-index.js";
 import { listIssues, listProjects } from "../domain/store.js";
 import type { CustomPropsSchema, WorkspaceMeta } from "../identity/types.js";
@@ -85,7 +85,7 @@ export class WorkspaceWatcher {
             const tree = await rebuildIndex(workspaceRoot);
             const projects = await listProjects(workspaceRoot);
             const issues = await listIssues(workspaceRoot);
-            const strays = scanStrays(workspaceRoot);
+            const strays = await scanWorkspace(workspaceRoot);
             const meta = await readWorkspaceMeta(workspaceRoot);
             const customProps: Record<string, CustomPropsSchema> = {};
             for (const project of projects) {

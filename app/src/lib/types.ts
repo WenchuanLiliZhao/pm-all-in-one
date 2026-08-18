@@ -206,13 +206,19 @@ export type DoctorWarningKind =
   | "props-timestamp-missing"
   | "props-timestamp-malformed"
   | "agent-md-modified"
-  | "agent-md-outdated";
+  | "agent-md-outdated"
+  | "fence-invalid"
+  | "fence-validators-untrusted"
+  | "fence-validator-load-failed"
+  | "fence-validators-unreadable";
 
 export interface DoctorWarning {
   kind: DoctorWarningKind;
   message: string;
   path?: string;
   relPath?: string;
+  /** 1-based line in the file, when the warning points at Markdown. */
+  line?: number;
 }
 
 export interface DoctorReport {

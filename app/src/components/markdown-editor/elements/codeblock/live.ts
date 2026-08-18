@@ -158,6 +158,9 @@ function buildCodeblockDecorations(view: EditorView): DecorationSet {
 
         // Idle mermaid: diagram on the opening-fence line; collapse body + footer.
         // Do not replace the whole fence (block widgets need a StateField).
+        // Unknown langs (including product figure DSLs such as `plot`) fall
+        // through to ordinary header + body chrome — do not add a second
+        // idle-replace branch here.
         if (isMermaidLang(lang) && hasHeader) {
           const source = codeText
             ? view.state.doc.sliceString(codeText.from, codeText.to)

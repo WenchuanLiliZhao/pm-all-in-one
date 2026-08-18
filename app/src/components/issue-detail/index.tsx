@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/issue-priority";
 import { usePmMentions } from "@/lib/markdown/use-pm-mentions";
 import { useNodeLocalMedia } from "@/lib/markdown/node-local-media";
+import { keyToKebab } from "@pm-core/identity/dir-id";
 import type { WikiNodeMeta } from "@/lib/types";
 import styles from "./styles.module.scss";
 
@@ -717,7 +718,6 @@ export function IssueDetail({
       }
       body={
         <MarkdownEditor
-          variant="borderless"
           editorRef={bodyRef}
           value={issue.description}
           onChange={(description) => onChange({ description })}
@@ -746,6 +746,7 @@ export function IssueDetail({
                   return (
                     <PropField key={def.key} layout={layout} label={label}>
                       <MarkdownEditor
+                        filename={`${keyToKebab(def.key)}.md`}
                         value={issue.markdownFields[def.key] ?? ""}
                         onChange={(next) =>
                           onChange({

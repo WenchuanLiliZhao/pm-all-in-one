@@ -225,7 +225,6 @@ export function ProjectDetail({
       }
       body={
         <MarkdownEditor
-          variant="borderless"
           editorRef={bodyRef}
           value={project.description}
           onChange={(description) => onChange({ description })}

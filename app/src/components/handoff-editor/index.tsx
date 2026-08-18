@@ -580,7 +580,6 @@ export function HandoffEditor({ handoffId }: Props) {
       }
       body={
         <MarkdownEditor
-          variant="borderless"
           editorRef={bodyEditorRef}
           value={bodyDraft}
           onChange={(body) => {

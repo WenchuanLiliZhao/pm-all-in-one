@@ -7,13 +7,15 @@ import {
   net,
   protocol,
   shell,
+  type Event as ElectronEvent,
   type MenuItemConstructorOptions,
   type WebPreferences,
 } from "electron";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { adoptStray, scanStrays } from "./core/workspace/doctor.js";
+import { adoptStray, scanWorkspace } from "./core/workspace/doctor.js";
 import {
   getGitSyncStatus,
   pullFastForward,
@@ -69,7 +71,10 @@ import {
   type ScaffoldWorkspaceOptions,
 } from "./core/workspace/scaffold-workspace.js";
 import {
+  clearRecentWorkspaceRoots,
+  listRecentWorkspaceRoots,
   readSettings,
+  removeRecentWorkspaceRoot,
   setLastWorkspaceRoot,
 } from "./core/workspace/settings.js";
 import {
@@ -162,6 +167,8 @@ let mainWindow: BrowserWindow | null = null;
 let labWindow: BrowserWindow | null = null;
 let workspaceRoot: string | null = null;
 let localPmShimPath: string | null = null;
+/** Set when `openWorkspaceAt` schedules a full renderer reload (switch only). */
+let rendererReloadPending = false;
 const watcher = new WorkspaceWatcher();
 const ptyManager = new PtyManager();
 
@@ -347,13 +354,83 @@ function requireWorkspace(): string {
   return workspaceRoot;
 }
 
-async function openWorkspaceAt(root: string) {
+/**
+ * Full document URL for a workspace boot. The `ws` query must change: Chromium
+ * treats a same-document hash-only loadURL (`…/#/w/home`) as in-page navigation,
+ * so React providers / module caches never reset.
+ */
+function rendererHomeUrl(): string {
+  const ws = String(Date.now());
+  if (isDev) {
+    return `http://127.0.0.1:5173/?ws=${encodeURIComponent(ws)}#/w/home`;
+  }
+  const file = pathToFileURL(path.join(__dirname, "../dist/index.html"));
+  file.searchParams.set("ws", ws);
+  file.hash = "/w/home";
+  return file.href;
+}
+
+/**
+ * Drop renderer session state after opening a library: new document, hash →
+ * Home, navigation stack, sessionStorage. Restore-on-boot must pass
+ * `{ reloadRenderer: false }` or this loops with `pm:restoreWorkspace`.
+ */
+function scheduleRendererReloadToHome(): void {
+  rendererReloadPending = true;
+  const win = mainWindow;
+  if (!win || win.isDestroyed()) {
+    return;
+  }
+  const target = win;
+  setImmediate(() => {
+    if (target.isDestroyed() || mainWindow !== target) {
+      return;
+    }
+    const contents = target.webContents;
+    const allowUnload = (event: ElectronEvent): void => {
+      event.preventDefault();
+    };
+    contents.on("will-prevent-unload", allowUnload);
+    const cleanup = (): void => {
+      contents.removeListener("will-prevent-unload", allowUnload);
+    };
+    contents.once("did-finish-load", cleanup);
+    contents.once("did-fail-load", cleanup);
+    const url = rendererHomeUrl();
+    const navigate = (): void => {
+      try {
+        contents.navigationHistory.clear();
+      } catch {
+        // ignore — history clear is best-effort
+      }
+      void target.loadURL(url);
+    };
+    void contents
+      .executeJavaScript(
+        "try { sessionStorage.clear(); localStorage.removeItem('pm.roadmap.collapsed'); localStorage.removeItem('pm.wiki.contents.collapsed'); } catch (e) {}",
+      )
+      .then(navigate, navigate);
+  });
+}
+
+async function openWorkspaceAt(
+  root: string,
+  opts?: { reloadRenderer?: boolean },
+) {
   if (!isValidWorkspace(root)) {
     throw new Error(
       `Not a workspace (need issue-hierarchy/ and .pm/): ${root}`,
     );
   }
   assertSupportedLayout(root);
+  rendererReloadPending = false;
+  const previous = workspaceRoot;
+  const switched =
+    previous != null && path.resolve(previous) !== path.resolve(root);
+  const reloadRenderer = opts?.reloadRenderer ?? true;
+  if (switched || reloadRenderer) {
+    ptyManager.killAll();
+  }
   workspaceRoot = root;
   setLastWorkspaceRoot(root);
   ptyManager.setCwd(root);
@@ -368,12 +445,18 @@ async function openWorkspaceAt(root: string) {
   const tree = await rebuildIndex(root);
   const projects = await listProjects(root);
   const issues = await listIssues(root);
-  const strays = scanStrays(root);
+  const strays = await scanWorkspace(root);
 
   watcher.start(root, (payload) => {
     mainWindow?.webContents.send("pm:changed", payload);
   });
 
+  buildAppMenu();
+  // Every user open (File → Open / Recent / New, Welcome, `openWorkspacePath`)
+  // loads a new document. Restore-on-launch is the exception.
+  if (reloadRenderer) {
+    scheduleRendererReloadToHome();
+  }
   return { root, meta, projects, tree, issues, strays };
 }
 
@@ -437,8 +520,11 @@ async function runMenuWorkspaceAction(
   action: () => Promise<WorkspaceSnapshot | null>,
 ): Promise<void> {
   try {
+    rendererReloadPending = false;
     const snap = await action();
-    if (snap) {
+    // A switch reloads the window; restore after load paints Home. Same-root
+    // reopen still pushes so the renderer can applySnapshot in place.
+    if (snap && !rendererReloadPending) {
       pushWorkspaceOpened(snap);
     }
   } catch (e) {
@@ -481,6 +567,60 @@ async function runInstallCli(): Promise<void> {
   }
 }
 
+function recentWorkspaceLabel(root: string, all: string[]): string {
+  const base = path.basename(root);
+  const clash = all.filter((item) => path.basename(item) === base).length > 1;
+  if (!clash) {
+    return base;
+  }
+  const home = os.homedir();
+  const parent = path.dirname(root);
+  if (parent === home) {
+    return `${base} — ~`;
+  }
+  if (parent.startsWith(`${home}${path.sep}`)) {
+    return `${base} — ~${parent.slice(home.length)}`;
+  }
+  return `${base} — ${parent}`;
+}
+
+function openRecentWorkspace(root: string): void {
+  if (workspaceRoot && path.resolve(workspaceRoot) === path.resolve(root)) {
+    return;
+  }
+  void (async () => {
+    await runMenuWorkspaceAction(() => openWorkspaceAt(root));
+    if (!isValidWorkspace(root)) {
+      removeRecentWorkspaceRoot(root);
+      buildAppMenu();
+    }
+  })();
+}
+
+function recentWorkspacesSubmenu(): MenuItemConstructorOptions {
+  const roots = listRecentWorkspaceRoots();
+  const items: MenuItemConstructorOptions[] = roots.length
+    ? roots.map((root) => ({
+        label: recentWorkspaceLabel(root, roots),
+        click: () => openRecentWorkspace(root),
+      }))
+    : [{ label: "No Recent Workspaces", enabled: false }];
+
+  items.push(
+    { type: "separator" },
+    {
+      label: "Clear Recent",
+      enabled: roots.length > 0,
+      click: () => {
+        clearRecentWorkspaceRoots();
+        buildAppMenu();
+      },
+    },
+  );
+
+  return { label: "Open Recent", submenu: items };
+}
+
 function buildAppMenu(): void {
   const fileSubmenu: MenuItemConstructorOptions[] = [
     {
@@ -497,6 +637,7 @@ function buildAppMenu(): void {
         void runMenuWorkspaceAction(promptOpenWorkspace);
       },
     },
+    recentWorkspacesSubmenu(),
   ];
 
   if (process.platform !== "win32") {
@@ -596,7 +737,7 @@ function registerIpc(): void {
     const candidates = [workspaceRoot, readSettings().lastWorkspaceRoot];
     for (const root of candidates) {
       if (root && isValidWorkspace(root)) {
-        return openWorkspaceAt(root);
+        return openWorkspaceAt(root, { reloadRenderer: false });
       }
     }
     return null;
@@ -806,7 +947,7 @@ function registerIpc(): void {
     },
   );
 
-  ipcMain.handle("pm:doctor", () => scanStrays(requireWorkspace()));
+  ipcMain.handle("pm:doctor", () => scanWorkspace(requireWorkspace()));
   ipcMain.handle("pm:adoptStray", (_event, strayPath: string) => {
     return adoptStray(requireWorkspace(), strayPath);
   });

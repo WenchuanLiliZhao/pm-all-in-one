@@ -2,6 +2,7 @@
 // ↔ ../elements/codeblock/live.ts — owns CodeMark under FencedCode
 // ↔ ../elements/link/live.ts — owns LinkMark / URL under Link|Autolink|Image
 // ↔ ../elements/list/live.ts — owns ListMark (and TaskMarker) outside orchestrator
+// ↔ ../elements/math/live.ts — scanner-owned $ / $$ (no Lezer Math nodes)
 // ↔ AGENTS.md — ownership registry contract
 
 import type { SyntaxNode } from "@lezer/common";
@@ -10,6 +11,10 @@ import type { SyntaxNode } from "@lezer/common";
  * True when an element package owns this mark and the orchestrator must not
  * hide/style it. Element packages register ownership by extending the rules
  * below (or by never claiming the mark in the orchestrator at all — e.g. ListMark).
+ *
+ * Math (`elements/math/`) is scanner-owned: `@lezer/markdown` has no Math
+ * nodes, so `$` / `$$` are not marks here. The Live plugin skips code ranges
+ * the same way mentions do; the orchestrator has nothing to hide.
  */
 export function isMarkOwnedByElement(
   markName: string,

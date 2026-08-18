@@ -5,56 +5,105 @@
 .root {
   display: flex;
   flex-direction: column;
-  gap: 6px;
   min-width: 0;
+  border: 1px solid var(--color-use--border-prime);
+  border-radius: 6px;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+.stickySentinel {
+  height: 1px;
+  margin-bottom: -1px;
+  pointer-events: none;
+  visibility: hidden;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: stretch;
+  gap: 0;
+  position: sticky;
+  top: var(--markdown-editor-sticky-top, 0px);
+  z-index: 1;
+  min-height: 28px;
+  padding: 0 0 0 12px;
   font-size: 12px;
   color: var(--color-use--text-secondary);
+  background: var(--color-use--bg-prime-hex);
+  border-bottom: 1px solid var(--color-use--border-prime-hex);
+  border-radius: 6px 6px 0 0;
+}
+
+.headerStuck {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+
+  .modes {
+    border-top-right-radius: 0;
+  }
+}
+
+.filename {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.modes {
+  align-self: stretch;
+  height: auto;
+  border-left: 1px solid var(--color-use--border-prime-hex);
+  border-top-right-radius: 6px;
+  overflow: hidden;
+
+  :global(button) {
+    align-self: stretch;
+    height: auto;
+    min-height: 100%;
+    border-radius: 0;
+
+    &:not(:first-child) {
+      box-shadow: inset 1px 0 0 var(--color-use--border-prime-hex);
+    }
+  }
+}
+
+.body {
+  min-width: 0;
 }
 
 .cmShell {
   width: 100%;
-  border: 1px solid var(--color-use--border-emphasis-hex);
-  border-radius: 6px;
-  background: var(--color-use--bg-prime-hex);
   box-sizing: border-box;
-  overflow: hidden;
 
   :global(.cm-editor) {
     background: transparent;
   }
 }
 
-.rootBorderless {
-  position: relative;
-  gap: 0;
-}
-
-.cmShellBorderless {
-  width: 100%;
-  border: none;
-  border-radius: 0;
+.previewBody {
+  display: block;
+  font-size: 15px;
+  line-height: 1.55;
+  padding: 10px 12px;
   background: transparent;
+  min-height: inherit;
   box-sizing: border-box;
-  overflow: hidden;
-
-  :global(.cm-editor) {
-    background: transparent;
-  }
 }
 
 .previewShell {
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 1.55;
   padding: 10px 12px;
-  border: 1px solid var(--color-use--border-emphasis-hex);
+  border: 1px solid var(--color-use--border-prime);
   border-radius: 6px;
-  background: var(--color-use--bg-secondary-hex);
+  background: transparent;
   min-height: 200px;
   box-sizing: border-box;
 }
@@ -65,7 +114,9 @@
   :global(h1),
   :global(h2),
   :global(h3),
-  :global(h4) {
+  :global(h4),
+  :global(h5),
+  :global(h6) {
     margin: 0.9em 0 0.35em;
     line-height: 1.25;
     font-weight: 650;
@@ -83,6 +134,23 @@
     font-size: 1.1em;
   }
 
+  :global(h4) {
+    font-size: 1.05em;
+  }
+
+  :global(h5) {
+    font-size: 1em;
+  }
+
+  :global(h6) {
+    font-size: 0.95em;
+  }
+
+  :global(del) {
+    text-decoration: line-through;
+    color: var(--color-use--text-secondary);
+  }
+
   :global(p) {
     margin: 0.55em 0;
   }
@@ -98,31 +166,31 @@
   color: var(--color-use--text-secondary);
 }
 
-.linkChip {
+.linkChip,
+.linkChipBroken {
+  // True inline (not a button box) so chips fragment across lines like Live marks.
   display: inline;
   padding: 0 4px;
   margin: 0 1px;
-  background: var(--color-use--accent-bg);
-  color: var(--color-use--accent-text);
   border-radius: 3px;
   font: inherit;
   min-height: 0;
   vertical-align: baseline;
   border: none;
   cursor: pointer;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.linkChip {
+  background: var(--color-use--accent-bg);
+  color: var(--color-use--accent-text);
 }
 
 .linkChipBroken {
-  display: inline;
-  padding: 0 4px;
-  margin: 0 1px;
   background: var(--color-use--danger-bg);
   color: var(--color-use--danger-fg);
-  border-radius: 3px;
-  font: inherit;
-  min-height: 0;
-  vertical-align: baseline;
   text-decoration: line-through;
-  border: none;
-  cursor: pointer;
 }

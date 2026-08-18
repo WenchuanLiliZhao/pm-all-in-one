@@ -10,7 +10,8 @@
  * ↔ components/member-person — card appearance / select trigger reuse these classes
  * ↔ components/ui/input — size=small geometry twin
  * ↔ src/global-styles/seams.md — `detail-prop-controls`
- * ↔ lab/pages/button — selected matrix
+ * ↔ lab/pages/button — variant × size × selected × group matrix
+ * ↔ group.tsx — joined outlined cluster (UI-304)
  */
 .button {
   --button-text-font-size: 13px;
@@ -147,8 +148,8 @@
     --button-text-font-size: 11px;
     --button-text-line-height: 18px;
     --button-icon-size: 14px;
-    --button-padding-x: 4px;
-    --button-text-padding-x: 2px;
+    --button-padding-x: 5px;
+    --button-text-padding-x: 3px;
     --button-min-height: 22px;
   }
 

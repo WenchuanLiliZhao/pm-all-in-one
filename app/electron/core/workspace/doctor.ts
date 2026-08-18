@@ -1,12 +1,13 @@
 /**
- * Filesystem-shape checks only.
+ * Filesystem-shape checks (`scanStrays`) plus workspace health (`scanWorkspace`).
  *
  * Flat storage makes two of the old checks unnecessary: two issues cannot claim
  * the same id (a directory name is unique within its parent) and nothing can be
  * nested too deep (there is no nesting). Relationship problems — wrong parent
  * level, dangling parent, cycles — are not shape problems and live in
  * `ladder.ts`, reported per issue.
- * ↔ agent-md.ts — agent-md-modified / agent-md-outdated warnings
+ * ↔ agent-md.ts — scanStrays appends agent-md-modified / agent-md-outdated
+ * ↔ fence-validators.ts — scanWorkspace appends declared-fence findings
  * ↔ ../domain/node-assets.ts — skip reserved `assets/` under projects
  * ↔ src/lib/types.ts — renderer hand-duplicated DoctorReport / AdoptResult (do not collapse)
  */
@@ -46,6 +47,12 @@ import { DEFAULT_ISSUE_STATUS } from "../identity/issue-status.js";
 import { LEVEL_TYPE_NAME } from "../infra/schema-dts.js";
 import { isIsoDateTimeZ, nowIsoUtcZ } from "../infra/timestamps.js";
 import { agentMdPath, checkAgentMd } from "./agent-md.js";
+import {
+  FENCE_SOFT_WARNING_KINDS,
+  isFenceSoftWarning,
+  scanFenceValidators,
+  type FenceDoctorWarningKind,
+} from "./fence-validators.js";
 
 export type StrayKind = "invalid-name" | "missing-props" | "bare-numeric";
 
@@ -73,14 +80,19 @@ export type DoctorWarningKind =
   | "props-timestamp-missing"
   | "props-timestamp-malformed"
   | "agent-md-modified"
-  | "agent-md-outdated";
+  | "agent-md-outdated"
+  | FenceDoctorWarningKind;
 
 export interface DoctorWarning {
   kind: DoctorWarningKind;
   message: string;
   path?: string;
   relPath?: string;
+  /** 1-based line in the file, when the warning points at Markdown. */
+  line?: number;
 }
+
+export { FENCE_SOFT_WARNING_KINDS, isFenceSoftWarning };
 
 export interface DoctorReport {
   strays: StrayEntry[];
@@ -112,6 +124,20 @@ function isValidProjectDir(dir: string): boolean {
     parseId(path.basename(dir)) !== null &&
     fs.existsSync(path.join(dir, "project.ts"))
   );
+}
+
+/**
+ * Shape scan plus declared fence validators.
+ * Fence modules load only when trusted (see `fence-validators.ts`).
+ */
+export async function scanWorkspace(
+  workspaceRoot: string,
+  options?: { trustFenceValidators?: boolean },
+): Promise<DoctorReport> {
+  const report = scanStrays(workspaceRoot);
+  const extra = await scanFenceValidators(workspaceRoot, options);
+  report.warnings.push(...extra);
+  return report;
 }
 
 /** Directories under `issue-hierarchy/` that are not projects or issues. */

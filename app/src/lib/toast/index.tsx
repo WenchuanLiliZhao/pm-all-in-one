@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import styles from "./styles.module.scss";
 
@@ -69,37 +70,41 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(() => ({ showToast }), [showToast]);
 
+  const stack = (
+    <div className={styles.stack} aria-live="polite">
+      {items.map((item) => (
+        <div key={item.id} className={styles.toast} role="status">
+          <span className={styles.message}>{item.message}</span>
+          {item.actionLabel && item.onAction ? (
+            <Button
+              type="button"
+              variant="ghost"
+              className={styles.action}
+              onClick={() => {
+                item.onAction?.();
+                dismiss(item.id);
+              }}
+            >
+              {item.actionLabel}
+            </Button>
+          ) : null}
+          <button
+            type="button"
+            className={styles.dismiss}
+            aria-label="Dismiss"
+            onClick={() => dismiss(item.id)}
+          >
+            ×
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className={styles.stack} aria-live="polite">
-        {items.map((item) => (
-          <div key={item.id} className={styles.toast} role="status">
-            <span className={styles.message}>{item.message}</span>
-            {item.actionLabel && item.onAction ? (
-              <Button
-                type="button"
-                variant="ghost"
-                className={styles.action}
-                onClick={() => {
-                  item.onAction?.();
-                  dismiss(item.id);
-                }}
-              >
-                {item.actionLabel}
-              </Button>
-            ) : null}
-            <button
-              type="button"
-              className={styles.dismiss}
-              aria-label="Dismiss"
-              onClick={() => dismiss(item.id)}
-            >
-              ×
-            </button>
-          </div>
-        ))}
-      </div>
+      {createPortal(stack, document.body)}
     </ToastContext.Provider>
   );
 }

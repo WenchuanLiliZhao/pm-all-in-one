@@ -1,12 +1,13 @@
 // ↔ AGENTS.md — module law / layout / public API this barrel exports
 // ↔ types.ts — MarkdownPlugin + prop contracts
 // ↔ transform-outside-code.ts — replaceOutsideCode for mention adapters
-// ↔ src/lib/markdown/ — product plugins consume MarkdownPlugin + linkChipStyles + replaceOutsideCode
+// ↔ src/lib/markdown/ — product plugins consume MarkdownPlugin + linkChipStyles + previewAnchorClassName + replaceOutsideCode
 
 export { MarkdownEditor } from "./markdown-editor";
 export { MarkdownPreview } from "./markdown-preview";
 export { replaceOutsideCode } from "./transform-outside-code";
 export { renderInlineMarkdownFragment } from "./inline-fragment";
+export { previewAnchorClassName } from "./elements/link";
 export {
   isEmbeddableImageUrl,
   isNodeAssetRelUrl,
@@ -17,7 +18,7 @@ export type {
   MarkdownEditorHandle,
   MarkdownEditorMode,
   MarkdownEditorProps,
-  MarkdownEditorVariant,
+  MarkdownFencePlugin,
   MarkdownPlugin,
   MarkdownPreviewProps,
   MentionAutocompleteCandidate,

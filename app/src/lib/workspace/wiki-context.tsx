@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { getPm } from "@/lib/bridge";
+import { useWorkspace } from "@/lib/workspace/workspace-context";
 import type { WikiSnapshot } from "@/lib/types";
 
 type WikiContextValue = {
@@ -20,6 +21,7 @@ type WikiContextValue = {
 const WikiContext = createContext<WikiContextValue | null>(null);
 
 export function WikiProvider({ children }: { children: ReactNode }) {
+  const { root } = useWorkspace();
   const [wiki, setWikiState] = useState<WikiSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,11 +41,12 @@ export function WikiProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    setWikiState(null);
     void refresh();
     return getPm().onChanged(() => {
       void refresh();
     });
-  }, [refresh]);
+  }, [refresh, root]);
 
   const value = useMemo(
     () => ({ wiki, error, refresh, setWiki }),

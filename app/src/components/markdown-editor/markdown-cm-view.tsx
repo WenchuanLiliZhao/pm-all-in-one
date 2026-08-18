@@ -1,4 +1,4 @@
-// ↔ markdown-editor.tsx — mounts this for Live editing
+// ↔ markdown-editor.tsx — mounts this for Source / Live editing
 // ↔ extensions/live-preview.ts — same-pane Live decorations + element hosts
 // ↔ extensions/auto-pair.ts — delimiter auto-pair keymap
 // ↔ autocomplete/mention.ts — generic @ mention completion shell
@@ -136,8 +136,8 @@ export type MarkdownCmViewProps = {
   ingestAssetFiles?: (files: File[]) => Promise<string[]>;
   minHeightPx: number;
   className?: string;
-  /** Thinner scroller padding; used by borderless shell. */
-  borderless?: boolean;
+  /** Hide the host (Preview mode) without destroying the CM instance. */
+  hidden?: boolean;
   /** Imperative focus API (bypasses accidental-focus gate). */
   handleRef?: Ref<MarkdownCmViewHandle | null>;
   /** ArrowUp/Left at doc start → leave editor (title handoff). */
@@ -188,22 +188,21 @@ function liveExtensions(
 }
 
 /** Chrome + dark-safe CM surfaces (caret, selection, autocomplete tooltip). */
-function createChromeTheme(minHeightPx: number, borderless: boolean) {
-  const pad = borderless ? "4px 0" : "10px 12px";
-  const fontFamily = borderless
+function createChromeTheme(minHeightPx: number, live: boolean) {
+  const fontFamily = live
     ? "inherit"
     : "ui-monospace, SFMono-Regular, Menlo, monospace";
   return EditorView.theme({
     "&": {
-      fontSize: borderless ? "15px" : "13px",
+      fontSize: live ? "15px" : "13px",
       minHeight: `${minHeightPx}px`,
       color: "var(--color-use--text-prime)",
     },
     ".cm-scroller": {
       fontFamily,
-      lineHeight: borderless ? "1.55" : "1.45",
+      lineHeight: live ? "1.55" : "1.45",
       // View-level inset — not per-line. Lines stay flush inside the content box.
-      padding: pad,
+      padding: "10px 12px",
       boxSizing: "border-box",
       // Fill editor minHeight so empty chrome isn't a dead click/hover target
       // (height:100% fails when parent only has min-height).
@@ -332,7 +331,7 @@ export function MarkdownCmView({
   ingestAssetFiles,
   minHeightPx,
   className,
-  borderless = false,
+  hidden = false,
   handleRef,
   onNavigateOutAtStart,
 }: MarkdownCmViewProps) {
@@ -413,7 +412,7 @@ export function MarkdownCmView({
             onChangeRef.current(update.state.doc.toString());
           }
         }),
-        themeComp.of(createChromeTheme(minHeightPx, borderless)),
+        themeComp.of(createChromeTheme(minHeightPx, live)),
         phComp.of(placeholder ? cmPlaceholder(placeholder) : []),
         pairComp.of(autoPair ? createAutoPairExtensions() : []),
         liveComp.of(liveExtensions(live, mentionAutocomplete, localMedia)),
@@ -548,11 +547,15 @@ export function MarkdownCmView({
 
   useEffect(() => {
     viewRef.current?.dispatch({
-      effects: themeComp.reconfigure(
-        createChromeTheme(minHeightPx, borderless),
-      ),
+      effects: themeComp.reconfigure(createChromeTheme(minHeightPx, live)),
     });
-  }, [minHeightPx, borderless, themeComp]);
+  }, [minHeightPx, live, themeComp]);
+
+  useEffect(() => {
+    if (!hidden) {
+      viewRef.current?.requestMeasure();
+    }
+  }, [hidden]);
 
   useEffect(() => {
     viewRef.current?.dispatch({
@@ -562,5 +565,5 @@ export function MarkdownCmView({
     });
   }, [onNavigateOutAtStart, edgeComp]);
 
-  return <div ref={hostRef} className={className} />;
+  return <div ref={hostRef} className={className} hidden={hidden} />;
 }

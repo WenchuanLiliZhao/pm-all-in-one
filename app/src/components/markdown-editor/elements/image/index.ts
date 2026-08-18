@@ -2,5 +2,5 @@
 // ↔ ./live.ts — Live image decorations
 // ↔ ./preview.tsx — Reading View img
 
-export { imagePreviewComponents } from "./preview";
+export { createImagePreviewComponents, imagePreviewComponents } from "./preview";
 export { createImageLiveExtensions } from "./live";

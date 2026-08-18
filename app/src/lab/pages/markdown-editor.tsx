@@ -1,5 +1,6 @@
 // ↔ src/components/markdown-editor/AGENTS.md — Lab review harness + checklist
-// ↔ src/components/markdown-editor/index.ts — real module under test (mock wiki only)
+// ↔ src/components/markdown-editor/index.ts — real module under test
+// ↔ src/lib/markdown/plot-fence-plugin/ — Preview plot fences (Live stays source)
 
 import { useMemo, useRef, useState } from "react";
 import {
@@ -16,11 +17,12 @@ import {
   FIXTURES,
   type FixtureId,
 } from "./markdown-editor.fixtures";
+import { plotFencePlugin } from "@/lib/markdown/plot-fence-plugin";
 import { createMockWikiPlugin } from "./markdown-editor.mock-plugin";
 import pageStyles from "./page.module.scss";
 import styles from "./markdown-editor.module.scss";
 
-const KNOWN_WIKI = new Set(["ok"]);
+const KNOWN_WIKI = new Set(["ok", "long"]);
 
 const MOCK_MENTION_CANDIDATES: MentionAutocompleteCandidate[] = [
   {
@@ -41,18 +43,26 @@ const MOCK_MENTION_CANDIDATES: MentionAutocompleteCandidate[] = [
     secondary: "wiki-guide",
     insertText: "@wiki-guide",
   },
+  {
+    id: "long",
+    label:
+      "A fairly long wiki title that should wrap across lines in a narrow Preview pane",
+    secondary: "wiki-long",
+    insertText: "@wiki-long",
+  },
 ];
 
 export function MarkdownEditorPage() {
   const [fixtureId, setFixtureId] = useState<FixtureId>(DEFAULT_FIXTURE);
   const [value, setValue] = useState(FIXTURES[DEFAULT_FIXTURE].source);
   const [logLines, setLogLines] = useState<string[]>([]);
-  const borderlessRef = useRef<MarkdownEditorHandle>(null);
+  const focusRef = useRef<MarkdownEditorHandle>(null);
 
   const fixture = FIXTURES[fixtureId];
 
   const plugins = useMemo(
     () => [
+      plotFencePlugin,
       createMockWikiPlugin({
         knownKeys: KNOWN_WIKI,
         titles: new Map(
@@ -102,9 +112,10 @@ export function MarkdownEditorPage() {
     <PageWidth width="full" className={pageStyles.page}>
       <h1 className={pageStyles.title}>Markdown editor</h1>
       <p className={pageStyles.lead}>
-        Real module: <code>@/components/markdown-editor</code>. Live editor
-        (mode switching paused), auto-pair, @ mention autocomplete, plugins.
-        Mock providers only — no workspace data.
+        Real module: <code>@/components/markdown-editor</code>. Bordered
+        chrome, sticky filename nav, Source / Live / Preview (default
+        Preview), auto-pair, @ mention autocomplete, plugins. Mock providers
+        only — no workspace data.
       </p>
 
       <div className={styles.toolbar}>
@@ -141,11 +152,11 @@ export function MarkdownEditorPage() {
             MarkdownEditor — baseline
           </h2>
           <p className={styles.desc}>
-            No plugins. Always Live (mode props retained, ignored). Auto-pair
-            on. Controlled value.
+            No plugins. Opens in Preview. Filename nav + Source / Live /
+            Preview. Auto-pair on. Controlled value.
           </p>
           <MarkdownEditor
-            label="Baseline"
+            filename="README.md"
             value={value}
             onChange={setValue}
             placeholder="Type Markdown… try **bold**, @, ```"
@@ -158,11 +169,12 @@ export function MarkdownEditorPage() {
             MarkdownEditor — mock @wiki + autocomplete
           </h2>
           <p className={styles.desc}>
-            Preview chips via plugin (standalone Preview below). Type @ in Live
-            for mock candidates. ⌘/Ctrl-click a Live @mention to log navigate.
+            Preview chips via plugin. Type @ in Live for mock candidates.
+            ⌘/Ctrl-click a Live @mention to log navigate. Opens in Live so
+            autocomplete is ready.
           </p>
           <MarkdownEditor
-            label="With plugin"
+            filename="plugin.md"
             value={value}
             onChange={setValue}
             plugins={plugins}
@@ -176,29 +188,29 @@ export function MarkdownEditorPage() {
 
       <section className={pageStyles.block}>
         <h2 className={pageStyles.sectionTitle}>
-          MarkdownEditor — borderless (Live)
+          MarkdownEditor — programmatic focus
         </h2>
         <p className={styles.desc}>
-          Doc-shell variant: no mode chrome, no border. Use Focus start to
-          verify programmatic focus bypasses the accidental-focus gate.
+          Opens in Preview. Focus start switches to Live and lands the caret
+          (programmatic focus gate bypass).
         </p>
         <div className={styles.toolbar}>
           <Button
             type="button"
             variant="outlined"
-            onClick={() => borderlessRef.current?.focus({ at: "start" })}
+            onClick={() => focusRef.current?.focus({ at: "start" })}
           >
             Focus start
           </Button>
         </div>
         <MarkdownEditor
-          variant="borderless"
-          editorRef={borderlessRef}
+          filename="README.md"
+          editorRef={focusRef}
           value={value}
           onChange={setValue}
           plugins={plugins}
           mentionAutocomplete={mentionAutocomplete}
-          placeholder="Borderless live body…"
+          placeholder="Markdown body…"
           rows={10}
         />
       </section>

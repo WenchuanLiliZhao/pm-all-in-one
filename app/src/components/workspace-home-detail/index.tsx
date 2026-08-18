@@ -159,7 +159,6 @@ export function WorkspaceHomeDetail({
       }
       body={
         <MarkdownEditor
-          variant="borderless"
           editorRef={bodyRef}
           value={meta.description}
           onChange={(description) => onChange({ description })}

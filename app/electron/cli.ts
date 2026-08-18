@@ -5,7 +5,7 @@
  */
 import path from "node:path";
 
-import { adoptStray, scanStrays, type DoctorReport } from "./core/workspace/doctor.js";
+import { adoptStray, isFenceSoftWarning, scanWorkspace, type DoctorReport } from "./core/workspace/doctor.js";
 import {
   handoffLinkSyntax,
   issueLinkSyntax,
@@ -141,13 +141,16 @@ Usage:
   pm-all-in-one wiki move   --id <wikiNodeId> --parent <wikiNodeId|root> [--index <n>]
   pm-all-in-one wiki delete --id <wikiNodeId>
   pm-all-in-one wiki list
-  pm-all-in-one doctor
+  pm-all-in-one doctor [--trust-fence-validators]
   pm-all-in-one adopt <path>
 
 Options:
   --workspace <path>   Workspace root (default: LOCAL_PM_WORKSPACE or cwd upward)
   --json               Machine-readable output
   --force              Cascade-delete when the issue has children
+  --trust-fence-validators
+                       This run: import workspace fence-validator modules
+                       (otherwise only when .pm/local.json sets trustFenceValidators)
   -h, --help           Show help
 `;
 }
@@ -784,14 +787,31 @@ function formatDoctor(report: DoctorReport, offenders: Issue[]): string {
   if (report.warnings.length > 0) {
     lines.push(`Warnings (${report.warnings.length}):`);
     for (const w of report.warnings) {
-      lines.push(`  [${w.kind}] ${w.message}`);
+      const loc =
+        w.relPath && w.line != null
+          ? `${w.relPath}:${w.line}`
+          : w.relPath
+            ? w.relPath
+            : "";
+      lines.push(
+        loc
+          ? `  [${w.kind}] ${loc} — ${w.message}`
+          : `  [${w.kind}] ${w.message}`,
+      );
     }
   }
   return `${lines.join("\n")}\n`;
 }
 
-async function cmdDoctor(root: string, json: boolean): Promise<void> {
-  const report = scanStrays(root);
+async function cmdDoctor(
+  root: string,
+  json: boolean,
+  trustFenceValidators?: boolean,
+): Promise<void> {
+  const report = await scanWorkspace(
+    root,
+    trustFenceValidators ? { trustFenceValidators: true } : undefined,
+  );
   const offenders = (await listIssues(root)).filter(
     (i) => i.violations.length > 0,
   );
@@ -807,11 +827,12 @@ async function cmdDoctor(root: string, json: boolean): Promise<void> {
   } else {
     process.stdout.write(formatDoctor(report, offenders));
   }
+  const hardWarnings = report.warnings.filter((w) => !isFenceSoftWarning(w.kind));
   if (report.strays.some((s) => s.adoptable)) {
     process.exitCode = 2;
   } else if (
     report.strays.length > 0 ||
-    report.warnings.length > 0 ||
+    hardWarnings.length > 0 ||
     offenders.length > 0
   ) {
     process.exitCode = 1;
@@ -847,7 +868,11 @@ async function main(): Promise<void> {
 
   if (cmd === "doctor") {
     const root = resolveWorkspace(flags);
-    await cmdDoctor(root, json);
+    await cmdDoctor(
+      root,
+      json,
+      flags["trust-fence-validators"] === true,
+    );
     return;
   }
   if (cmd === "adopt") {

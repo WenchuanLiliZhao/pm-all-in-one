@@ -456,7 +456,6 @@ export function WikiNodeEditor({
       }
       body={
         <MarkdownEditor
-          variant="borderless"
           editorRef={bodyEditorRef}
           value={draft}
           onChange={(body) => {

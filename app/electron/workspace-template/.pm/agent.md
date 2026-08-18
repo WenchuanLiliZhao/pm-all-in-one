@@ -1,4 +1,4 @@
-<!-- local-pm agent.md rev 7 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/custom/ (see pm-create-skill). -->
+<!-- local-pm agent.md rev 8 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/custom/ (see pm-create-skill). -->
 # Agent rules (local-pm)
 
 ## Finding things
@@ -75,6 +75,7 @@ Backticks are fine only when explaining the *syntax* with placeholders
     agent.md
     views.json
     view-orders.json
+    fence-validators.json      # optional — fence lang → validator module
     local.json                 # gitignored — machine-local `me` (+ future repos table)
     local.md                   # optional, gitignored — NL notes for AI (code paths, etc.)
 ```
@@ -95,6 +96,52 @@ Agent Skills live under `.agents/skills/`, split by ownership:
   `.agents/skills/custom/<name>/SKILL.md` (see skill `pm-create-skill`).
 
 Do **not** edit this file or root `AGENTS.md` to add conventions.
+
+## Fence validators
+
+Product Markdown may contain fenced blocks whose language is a workspace DSL
+(not generic mermaid / js). Doctor does not learn those languages. A workspace
+that wants them linted declares validators at **workspace scope** (not per
+project):
+
+`.pm/fence-validators.json`
+
+```json
+{
+  "validators": [
+    { "lang": "plot", "module": "fence-validators/plot.mjs" }
+  ]
+}
+```
+
+`lang` matches the first token of the fence info string (`plot riemann` →
+`plot`). `module` is a path relative to the workspace root, inside the
+workspace. The file is ESM and must `export function validate({ lang, info, body })`
+returning `{ message, line? }[]`. `line` is 1-based within the fence body;
+doctor maps it to a **file** line.
+
+**Opt-in.** Doctor never imports those modules by default (a `git pull` must
+not run someone else's code). Enable with `.pm/local.json`
+`"trustFenceValidators": true` (machine-local, gitignored) or this run only:
+
+```sh
+pm-all-in-one doctor --trust-fence-validators
+```
+
+If validators are declared but not trusted, doctor prints
+`fence-validators-untrusted` and skips them.
+
+**No eval, no codegen.** `validate` must parse the body (YAML / an AST / a
+schema) and walk that tree. Do not `eval`, `new Function`, or compile the
+fence into runnable code. Doctor itself only `import()`s the opted-in module.
+
+**Exit code.** `fence-invalid` and `fence-validators-untrusted` are warnings
+in the same doctor output as ladder / shape findings; they do **not** fail
+doctor. Structural problems (strays, ladder, unreadable declaration, failed
+module load) still fail.
+
+Do not seed an empty `.pm/fence-validators.json`; omit the file until you have
+a validator.
 
 ## Wiki
 
@@ -233,6 +280,10 @@ or member `props.ts`.** They are system fields: `created` is set once at create;
   cannot tell whether a `parentId` is a legal parent.
 - `.pm/index.json` and `.pm/tree.md` are derived. Editing them changes nothing.
 - `.pm/local.json` is machine-local (gitignored) — current `me` member id
-  (and, later, structured `repos` path table).
+  (and, later, structured `repos` path table). Optional
+  `trustFenceValidators` opts in to importing workspace fence-validator
+  modules for this machine.
 - `.pm/local.md` is optional machine-local prose (gitignored) for AI-oriented
   path notes; create only when needed; never commit.
+- `.pm/fence-validators.json` is committed workspace config (see *Fence
+  validators*). The CLI has no built-in fence languages.

@@ -1,0 +1,49 @@
+/**
+ * UI-304 outlined Button group: one shared stroke, collapsed inner corners.
+ * Overlap is -1px so adjacent `button__outline-border` strokes coincide.
+ * `flush` drops overlap + radii so a host chrome can own the outer edge.
+ *
+ * ↔ group.tsx — component
+ * ↔ styles.module.scss — `--button-border-radius` (5px) on Button
+ */
+
+.group {
+  display: inline-flex;
+  isolation: isolate;
+  vertical-align: middle;
+  flex-shrink: 0;
+
+  > button {
+    &:not(:first-child) {
+      margin-left: -1px;
+    }
+
+    &:first-child:not(:last-child) {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+
+    &:not(:first-child):not(:last-child) {
+      border-radius: 0;
+    }
+
+    &:last-child:not(:first-child) {
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+
+    &:hover,
+    &:focus-visible,
+    &[data-selected="true"] {
+      z-index: 1;
+    }
+  }
+}
+
+.groupFlush > button,
+.groupFlush > button:first-child:not(:last-child),
+.groupFlush > button:not(:first-child):not(:last-child),
+.groupFlush > button:last-child:not(:first-child) {
+  margin-left: 0;
+  border-radius: 0;
+}

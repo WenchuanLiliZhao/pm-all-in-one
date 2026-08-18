@@ -1,9 +1,16 @@
 .stack {
   position: fixed;
-  right: 1rem;
-  top: 3.5rem;
+  right: var(--space--16);
+  /*
+   * Below Mac titlebar + workspace topbar (same min-height as `.topbarRow`).
+   * ↔ layout.scss — `--layout--shell-titlebar-height`
+   */
+  top: calc(
+    var(--layout--shell-titlebar-height) + var(--layout--topbar-pad-y) * 2 + 1.5rem +
+      var(--space--8)
+  );
   bottom: auto;
-  z-index: 2000;
+  z-index: var(--z-index-toast);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -17,7 +24,7 @@
   align-items: center;
   gap: 0.55rem;
   padding: 0.65rem 0.75rem;
-  background: var(--color-use--bg-prime-inverse);
+  background: var(--color-use--bg-prime-hex-inverse);
   color: var(--color-use--text-prime-inverse);
   border-radius: 8px;
   box-shadow: var(--shadow-lg);

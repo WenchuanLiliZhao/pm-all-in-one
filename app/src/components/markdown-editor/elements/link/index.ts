@@ -2,5 +2,9 @@
 // ↔ ./live.ts — Live link decorations / theme
 // ↔ ./preview.tsx — Reading View a component
 
-export { linkPreviewComponents } from "./preview";
+export {
+  createLinkPreviewComponents,
+  linkPreviewComponents,
+  previewAnchorClassName,
+} from "./preview";
 export { createLinkLiveExtensions } from "./live";

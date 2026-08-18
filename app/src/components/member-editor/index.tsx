@@ -458,7 +458,6 @@ export function MemberEditor({ memberId }: Props) {
       }
       body={
         <MarkdownEditor
-          variant="borderless"
           editorRef={bodyEditorRef}
           value={bodyDraft}
           onChange={(body) => {

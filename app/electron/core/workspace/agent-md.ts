@@ -2,6 +2,7 @@
  * Product-owned `.pm/agent.md` revision stamp + drift check against the
  * shipped workspace template.
  * ↔ doctor.ts — scanStrays appends agent-md-modified / agent-md-outdated
+ * ↔ fence-validators.ts / doctor.ts — product body documents fence validators
  * ↔ workspace-template.ts — factory body lives under workspaceTemplateDir()
  * ↔ DEVELOPMENT.md — § Workspace templates (rev bump house rule)
  */

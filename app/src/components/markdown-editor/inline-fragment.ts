@@ -1,12 +1,20 @@
 // ↔ elements/image/live.ts — figcaption / attachment card titles
 // ↔ elements/image/preview.tsx — Reading View captions
+// ↔ elements/math/parse.ts + render.ts — $…$ / $$…$$ same scanner + KaTeX as Live
 // ↔ elements/table/inline-html.ts — table cells keep tree-based twin (optional unify later)
 // ↔ ./markdown-escape.ts — Escape backslash dropped in projection
-// ↔ AGENTS.md — caption fragment seam for future $...$ math
+// ↔ AGENTS.md — caption / title fragment seam (inline Markdown + math)
+// ↔ src/lib/markdown/plot-fence-plugin/mount.ts — plot title / caption consumer
 
 import { markdownLanguage } from "@codemirror/lang-markdown";
-import type { SyntaxNode } from "@lezer/common";
+import type { SyntaxNode, Tree } from "@lezer/common";
 import { unescapeMarkdownEscape } from "./markdown-escape.ts";
+import {
+  findMathSpans,
+  type ByteRange,
+  type MathSpan,
+} from "./elements/math/parse.ts";
+import { renderMath } from "./elements/math/render.ts";
 
 /** Marks / chrome — omitted from inactive HTML projection. */
 const SKIP = new Set([
@@ -28,17 +36,68 @@ function escapeAttr(text: string): string {
   return escapeHtml(text).replace(/'/g, "&#39;");
 }
 
+/** Private-use tokens so math can be restored after the Markdown pass. */
+function mathToken(index: number): string {
+  return `\uE000${index}\uE000`;
+}
+
+const MATH_TOKEN_RE = /\uE000(\d+)\uE000/g;
+
+function codeRangesFromTree(tree: Tree): ByteRange[] {
+  const ranges: ByteRange[] = [];
+  tree.iterate({
+    enter: (node) => {
+      if (
+        node.name === "InlineCode" ||
+        node.name === "FencedCode" ||
+        node.name === "CodeBlock"
+      ) {
+        ranges.push({ from: node.from, to: node.to });
+        return false;
+      }
+    },
+  });
+  return ranges;
+}
+
+function mathToHtml(span: MathSpan): string {
+  const result = renderMath(span.tex, span.display);
+  if (result.ok) return result.html;
+  return `<span class="katex-error">${escapeHtml(result.error)}</span>`;
+}
+
 /**
  * Render a short inline Markdown **string** to HTML (strong / em / strike /
- * code / links). Used for image alt / attachment labels — CommonMark does not
- * parse markup inside `![…]`, so callers must re-parse. Future `$...$` math
- * belongs here (not on the body AST). Nested images are omitted.
+ * code / links / `$…$` math). Used for image alt / attachment labels and
+ * plot title / caption — CommonMark does not parse markup inside `![…]` or
+ * YAML scalars, so callers must re-parse. Math uses the same `$` / `$$`
+ * scanner and KaTeX as Live (`elements/math`), not a second dialect.
+ * Nested images are omitted.
  */
 export function renderInlineMarkdownFragment(text: string): string {
   const src = text.trim();
   if (!src) return "";
   const tree = markdownLanguage.parser.parse(src);
-  return renderNode(src, tree.topNode);
+  const spans = findMathSpans(src, codeRangesFromTree(tree));
+  if (spans.length === 0) {
+    return renderNode(src, tree.topNode);
+  }
+  const mathHtml: string[] = [];
+  let withTokens = "";
+  let pos = 0;
+  for (let i = 0; i < spans.length; i++) {
+    const span = spans[i]!;
+    withTokens += src.slice(pos, span.from);
+    withTokens += mathToken(i);
+    mathHtml.push(mathToHtml(span));
+    pos = span.to;
+  }
+  withTokens += src.slice(pos);
+  const html = renderNode(
+    withTokens,
+    markdownLanguage.parser.parse(withTokens).topNode,
+  );
+  return html.replace(MATH_TOKEN_RE, (_, n) => mathHtml[Number(n)] ?? "");
 }
 
 function slice(doc: string, from: number, to: number): string {

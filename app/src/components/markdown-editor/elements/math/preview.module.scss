@@ -1,0 +1,18 @@
+// Token remap for KaTeX (keep class names global — hashing would break KaTeX).
+// ↔ ./preview.tsx — imported so Reading View gets the remap
+// ↔ ./index.ts — also imported so Live widgets get the same colors
+// ↔ AGENTS.md — host token contract
+
+:global(.katex) {
+  color: var(--color-use--text-prime);
+}
+
+:global(.katex-display) {
+  color: var(--color-use--text-prime);
+  margin: 0.75em 0;
+}
+
+:global(.katex-error) {
+  color: var(--color-use--danger-fg) !important;
+  background-color: var(--color-use--danger-bg);
+}

@@ -18,7 +18,7 @@ import {
 } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CreateWorkspaceWizard } from "@/components/create-workspace-wizard";
-import { getPm } from "@/lib/bridge";
+import { getPm, isWebPm } from "@/lib/bridge";
 import type {
   CustomPropsSchema,
   DoctorWarning,
@@ -62,6 +62,16 @@ import { useUnsavedLeaveGuard } from "@/lib/workspace/use-unsaved-leave-guard";
 export function workspaceNameFromPath(root: string): string {
   const parts = root.replace(/[/\\]+$/, "").split(/[/\\]/);
   return parts[parts.length - 1] || root;
+}
+
+function isDifferentWorkspaceRoot(
+  current: string | null,
+  next: string,
+): boolean {
+  if (!current) {
+    return false;
+  }
+  return current.replace(/[/\\]+$/, "") !== next.replace(/[/\\]+$/, "");
 }
 
 export type Selection =
@@ -189,6 +199,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [createWizardOpen, setCreateWizardOpen] = useState(false);
 
   const dirtyRef = useRef(false);
+  const rootRef = useRef<string | null>(null);
   const selectionRef = useRef<Selection>(null);
   const issuesRef = useRef<Issue[]>([]);
   const projectsRef = useRef<Project[]>([]);
@@ -327,6 +338,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const saving = saveStatus === "saving";
 
   useEffect(() => {
+    rootRef.current = root;
+  }, [root]);
+  useEffect(() => {
     selectionRef.current = selection;
   }, [selection]);
   useEffect(() => {
@@ -380,6 +394,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     workspaceBaselineRef.current = snap.meta
       ? pickWorkspaceEditable(snap.meta)
       : null;
+    const switched = isDifferentWorkspaceRoot(rootRef.current, snap.root);
+    rootRef.current = snap.root;
     setRoot(snap.root);
     setMeta(snap.meta);
     metaRef.current = snap.meta;
@@ -389,6 +405,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setStrays(snap.strays?.strays ?? []);
     setWarnings(snap.strays?.warnings ?? []);
     setError(null);
+    if (switched) {
+      setSelection(null);
+      return;
+    }
     setSelection((cur) => {
       if (cur?.kind === "project" && snap.projects.some((p) => p.id === cur.projectId)) {
         const p = snap.projects.find((x) => x.id === cur.projectId);
@@ -414,6 +434,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       return null;
     });
   }, []);
+
+  /** Desktop always reloads the window; do not paint the old session. */
+  const adoptOpenedWorkspace = useCallback(
+    (snap: WorkspaceSnapshot) => {
+      if (!isWebPm()) {
+        return;
+      }
+      applySnapshot(snap);
+    },
+    [applySnapshot],
+  );
 
   useEffect(() => {
     const unsubChanged = getPm().onChanged((payload) => {
@@ -568,7 +599,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       }
     });
     const unsubOpened = getPm().onWorkspaceOpened((snap) => {
-      applySnapshot(snap);
+      adoptOpenedWorkspace(snap);
     });
     const unsubTerminal = getPm().onToggleTerminal(() => {
       setTerminalOpen((open) => !open);
@@ -582,7 +613,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       unsubTerminal();
       unsubNewWorkspace();
     };
-  }, [applySnapshot]);
+  }, [adoptOpenedWorkspace]);
 
   useEffect(() => {
     let cancelled = false;
@@ -631,12 +662,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     try {
       const snap = await getPm().openWorkspace();
       if (snap) {
-        applySnapshot(snap);
+        adoptOpenedWorkspace(snap);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
-  }, [applySnapshot]);
+  }, [adoptOpenedWorkspace]);
 
   const openCreateWizard = useCallback(() => {
     setError(null);
@@ -654,9 +685,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         input.folderName,
         { title: input.title },
       );
-      applySnapshot(snap);
+      adoptOpenedWorkspace(snap);
     },
-    [applySnapshot],
+    [adoptOpenedWorkspace],
   );
 
   const updateIssueDraft = useCallback((patch: IssuePatch) => {
