@@ -11,6 +11,21 @@ import {
 
 const ALLOCATE_RETRIES = 8;
 
+/** Placeholder so git can track a required directory that may have no children. */
+export const GITKEEP_NAME = ".gitkeep";
+
+/**
+ * Create `dir` if needed and write `.gitkeep` when missing.
+ * ↔ ../workspace/workspace-gitkeep.ts — required workspace dirs
+ */
+export function ensureDirWithGitkeep(dir: string): void {
+  fs.mkdirSync(dir, { recursive: true });
+  const keep = path.join(dir, GITKEEP_NAME);
+  if (!fs.existsSync(keep)) {
+    fs.writeFileSync(keep, "");
+  }
+}
+
 export function hierarchyRoot(workspaceRoot: string): string {
   return path.join(workspaceRoot, "issue-hierarchy");
 }

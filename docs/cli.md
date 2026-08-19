@@ -59,9 +59,9 @@ pm-all-in-one member list
 pm-all-in-one member update <id> [--title <t>] [--membership involved|left]
 pm-all-in-one member avatar <id> --file <path>
 
-pm-all-in-one handoff create --from <memberId> --to <memberId> --related-project <projectId> [--title <t>] [--closed]
+pm-all-in-one handoff create --from <memberId> --to <memberId> --related-project <projectId> [--title <t>] [--description <d>] [--body <md>] [--body-file <path>] [--closed]
 pm-all-in-one handoff list
-pm-all-in-one handoff update <id> [--title <t>] [--from <id>] [--to <id>] [--related-project <id>] [--open|--closed]
+pm-all-in-one handoff update <id> [--title <t>] [--description <d>] [--body <md>] [--body-file <path>] [--from <id>] [--to <id>] [--related-project <id>] [--open|--closed]
 
 pm-all-in-one wiki create --title "…" [--parent <wikiNodeId|root>] [--description <d>]
 pm-all-in-one wiki move   --id <wikiNodeId> --parent <wikiNodeId|root> [--index <n>]
@@ -73,6 +73,8 @@ pm-all-in-one adopt path/to/stray-dir
 ```
 
 Add `--json` for machine-readable output.
+
+Handoff README body: prefer `--body-file` for anything longer than a line (quotes and newlines in `--body` are shell-hostile). Do not invent a handoff directory by hand — create, then the CLI writes `README.md`.
 
 **Never invent nanoid directory ids by hand** — create through this CLI or the app. Directory name = id and is never renamed.
 

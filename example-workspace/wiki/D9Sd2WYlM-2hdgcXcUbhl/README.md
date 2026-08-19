@@ -18,7 +18,7 @@ CLI examples:
 pm-all-in-one issue create --project <projectId> --parent <issueId|root> --title "…"
 pm-all-in-one issue move   --project <projectId> --issue <issueId> --parent <issueId|root>
 pm-all-in-one member create --title "…"
-pm-all-in-one handoff create --from <memberId> --to <memberId> --related-project <projectId> [--title "…"]
+pm-all-in-one handoff create --from <memberId> --to <memberId> --related-project <projectId> [--title "…"] [--body-file <path>]
 ```
 
 Cold path without the app: `npx pm-all-in-one …`. With the app: **File → Install Command Line Tool…**, or use the in-app terminal PATH.

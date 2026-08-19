@@ -42,9 +42,10 @@ async function withTempWorkspace(
   }
 }
 
-test("scaffold seeds members/", async () => {
+test("scaffold seeds members/ with .gitkeep", async () => {
   await withTempWorkspace(async (root) => {
     assert.equal(fs.existsSync(path.join(root, "members")), true);
+    assert.ok(fs.existsSync(path.join(root, "members", ".gitkeep")));
     const snap = await ensureMembers(root);
     assert.deepEqual(snap.nodes, []);
     assert.deepEqual(snap.invalidNames, []);

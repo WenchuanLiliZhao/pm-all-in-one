@@ -19,3 +19,4 @@ description: >-
 3. **`.pm/agent.md` rev** — bump the HTML comment `rev N` by hand when changing the product body of the factory file; do not tie to app semver.
 4. **`workspace.ts` `createdDate`** — set once at create; never patch via UI / `WorkspacePatch` / hand edit.
 5. Shipped skills under template `.agents/skills/core/` are create-time copy only — no product refresh on open.
+6. Required dirs that may be empty (`members/`, `handoffs/`, `issue-hierarchy/`, `.agents/skills/custom/`) always contain `.gitkeep` — copy on create, rewrite on open. Do not skip them in `copyTemplateTree`. Optional `assets/` stays absent when empty.

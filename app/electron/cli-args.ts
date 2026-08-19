@@ -32,6 +32,9 @@ export const CLI_VALUE_FLAGS = new Set([
   "createdBy",
   "assignee",
   "description",
+  "body",
+  "body-file",
+  "bodyFile",
   "index",
 ]);
 

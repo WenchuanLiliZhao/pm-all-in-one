@@ -38,7 +38,7 @@ function withSourceTemplates<T>(fn: () => T): T {
   }
 }
 
-test("scaffold copies template files and skips .gitkeep", () => {
+test("scaffold copies template files including .gitkeep", () => {
   withSourceTemplates(() => {
     const root = tmpRoot();
     try {
@@ -99,23 +99,13 @@ test("scaffold copies template files and skips .gitkeep", () => {
       assert.ok(
         fs.statSync(path.join(root, ".agents", "skills", "custom")).isDirectory(),
       );
-      assert.equal(
-        fs.existsSync(path.join(root, "members", ".gitkeep")),
-        false,
-      );
-      assert.equal(
-        fs.existsSync(path.join(root, "handoffs", ".gitkeep")),
-        false,
-      );
-      assert.equal(
-        fs.existsSync(path.join(root, "issue-hierarchy", ".gitkeep")),
-        false,
-      );
-      assert.equal(
+      assert.ok(fs.existsSync(path.join(root, "members", ".gitkeep")));
+      assert.ok(fs.existsSync(path.join(root, "handoffs", ".gitkeep")));
+      assert.ok(fs.existsSync(path.join(root, "issue-hierarchy", ".gitkeep")));
+      assert.ok(
         fs.existsSync(
           path.join(root, ".agents", "skills", "custom", ".gitkeep"),
         ),
-        false,
       );
 
       const agent = fs.readFileSync(path.join(root, ".pm", "agent.md"), "utf8");
@@ -126,7 +116,7 @@ test("scaffold copies template files and skips .gitkeep", () => {
       assert.equal(agent, templateAgent);
       assert.match(
         agent,
-        /^<!-- local-pm agent\.md rev 8 — product-owned;/,
+        /^<!-- local-pm agent\.md rev 9 — product-owned;/,
       );
       assert.ok(agent.includes("Install Command Line Tool"));
       assert.ok(agent.includes("npx pm-all-in-one"));
@@ -137,6 +127,7 @@ test("scaffold copies template files and skips .gitkeep", () => {
       assert.ok(agent.includes("trustFenceValidators"));
       assert.ok(agent.includes("local.md"));
       assert.ok(agent.includes("machine-absolute code paths"));
+      assert.ok(agent.includes(".gitkeep"));
       assert.equal(agent.includes("## What goes where"), false);
       assert.equal(agent.includes("What goes where (project / epic / wiki)"), false);
 

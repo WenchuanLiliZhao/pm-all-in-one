@@ -17,7 +17,12 @@ import {
   StaleWriteError,
   type HandoffEditableSlice,
 } from "../sync/detail-diff.js";
-import { allocateHandoffId, handoffsRoot, hierarchyRoot } from "../identity/ids.js";
+import {
+  allocateHandoffId,
+  ensureDirWithGitkeep,
+  handoffsRoot,
+  hierarchyRoot,
+} from "../identity/ids.js";
 import { memberDirPath } from "./members.js";
 import { loadHandoffProps, writePropsTs } from "../infra/props-load.js";
 import { projectDirPath } from "./store.js";
@@ -191,7 +196,7 @@ export async function readHandoffMeta(
 export async function ensureHandoffs(
   workspaceRoot: string,
 ): Promise<HandoffSnapshot> {
-  fs.mkdirSync(handoffsRoot(workspaceRoot), { recursive: true });
+  ensureDirWithGitkeep(handoffsRoot(workspaceRoot));
   return getHandoffSnapshot(workspaceRoot);
 }
 

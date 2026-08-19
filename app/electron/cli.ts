@@ -3,6 +3,7 @@
  * pm-all-in-one CLI — pure Node (no electron imports).
  * Invoked via ELECTRON_RUN_AS_NODE shim or `node dist-electron/cli.js`.
  */
+import fs from "node:fs";
 import path from "node:path";
 
 import { adoptStray, isFenceSoftWarning, scanWorkspace, type DoctorReport } from "./core/workspace/doctor.js";
@@ -75,6 +76,21 @@ function flagId(flags: Record<string, string | boolean>, ...keys: string[]): str
   return s;
 }
 
+/** README body for handoff create/update. `--body` and `--body-file` cannot both be set. */
+function resolveHandoffBody(
+  flags: Record<string, string | boolean>,
+): string | undefined {
+  const body = flagStr(flags, "body");
+  const bodyFile = flagStr(flags, "body-file", "bodyFile");
+  if (body !== undefined && bodyFile !== undefined) {
+    throw new Error("Use --body or --body-file, not both");
+  }
+  if (bodyFile !== undefined) {
+    return fs.readFileSync(path.resolve(bodyFile), "utf8");
+  }
+  return body;
+}
+
 function parseParentId(raw: string | undefined): string | null {
   if (raw === undefined || raw === "root" || raw === "") {
     return null;
@@ -134,9 +150,9 @@ Usage:
   pm-all-in-one member update <id> [--title <t>] [--membership involved|left]
   pm-all-in-one member avatar <id> --file <path>
   pm-all-in-one member backfill --created-by <id> [--assignee <id>]
-  pm-all-in-one handoff create --from <memberId> --to <memberId> --related-project <projectId> [--title <t>] [--closed]
+  pm-all-in-one handoff create --from <memberId> --to <memberId> --related-project <projectId> [--title <t>] [--description <d>] [--body <md>] [--body-file <path>] [--closed]
   pm-all-in-one handoff list
-  pm-all-in-one handoff update <id> [--title <t>] [--from <id>] [--to <id>] [--related-project <id>] [--open|--closed]
+  pm-all-in-one handoff update <id> [--title <t>] [--description <d>] [--body <md>] [--body-file <path>] [--from <id>] [--to <id>] [--related-project <id>] [--open|--closed]
   pm-all-in-one wiki create --title <t> [--parent <wikiNodeId|root>] [--description <d>]
   pm-all-in-one wiki move   --id <wikiNodeId> --parent <wikiNodeId|root> [--index <n>]
   pm-all-in-one wiki delete --id <wikiNodeId>
@@ -674,6 +690,7 @@ async function cmdHandoffCreate(
   }
   const title = flagStr(flags, "title", "t");
   const description = flagStr(flags, "description");
+  const body = resolveHandoffBody(flags);
   const open = flags.closed === true ? false : true;
   const handoff = await createHandoff(root, {
     from,
@@ -682,6 +699,7 @@ async function cmdHandoffCreate(
     open,
     ...(title !== undefined ? { title } : {}),
     ...(description !== undefined ? { description } : {}),
+    ...(body !== undefined ? { body } : {}),
   });
   const ref = handoffLinkSyntax(handoff.id);
   if (json) {
@@ -718,6 +736,7 @@ async function cmdHandoffUpdate(
   }
   const title = flagStr(flags, "title", "t");
   const description = flagStr(flags, "description");
+  const body = resolveHandoffBody(flags);
   const from = flagId(flags, "from");
   const to = flagId(flags, "to");
   const relatedProject =
@@ -731,19 +750,21 @@ async function cmdHandoffUpdate(
   if (
     title === undefined &&
     description === undefined &&
+    body === undefined &&
     from === undefined &&
     to === undefined &&
     relatedProject === undefined &&
     open === undefined
   ) {
     throw new Error(
-      "Provide --title / --description / --from / --to / --related-project / --open / --closed",
+      "Provide --title / --description / --body / --body-file / --from / --to / --related-project / --open / --closed",
     );
   }
   await getHandoff(root, id);
   const handoff = await updateHandoff(root, id, {
     ...(title !== undefined ? { title } : {}),
     ...(description !== undefined ? { description } : {}),
+    ...(body !== undefined ? { body } : {}),
     ...(from !== undefined ? { from } : {}),
     ...(to !== undefined ? { to } : {}),
     ...(relatedProject !== undefined ? { relatedProject } : {}),

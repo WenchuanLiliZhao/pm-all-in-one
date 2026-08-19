@@ -10,7 +10,7 @@ Pure-ish identity and hierarchy law: opaque entity ids, `@issue-` / `@wiki-` / `
 | File | Role |
 | --- | --- |
 | `dir-id.ts` | nanoid(21) grammar + legacy rejection |
-| `ids.ts` | Allocate unique ids under workspace roots |
+| `ids.ts` | Allocate unique ids under workspace roots; `.gitkeep` on required empty dirs |
 | `links.ts` | Parse/emit `@…` locators |
 | `ai-locator.ts` | “Copy for AI” plaintext locators |
 | `issue-status.ts` / `issue-priority.ts` | Builtin catalogs (SoT) |

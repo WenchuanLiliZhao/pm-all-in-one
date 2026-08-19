@@ -17,6 +17,7 @@ Workspace lifecycle: create from shipped templates, open-time health (doctor), c
 | `agent-md.ts` | `.pm/agent.md` rev stamp + drift vs factory |
 | `scaffold-workspace.ts` | Create workspace from templates |
 | `workspace-template.ts` | Resolve/copy `workspace-template/` + `project-template/` |
+| `workspace-gitkeep.ts` | Keep `.gitkeep` in required empty dirs |
 | `workspace-gitignore.ts` | Ensure local files listed in `.gitignore` |
 | `local-config.ts` | Gitignored `.pm/local.json` (`me`, `trustFenceValidators`, …) |
 | `settings.ts` | App-level `settings.json` (last workspace + Open Recent MRU) |

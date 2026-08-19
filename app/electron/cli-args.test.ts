@@ -46,6 +46,19 @@ test("short -p accepts leading-dash project id", () => {
   assert.equal(flags.p, id);
 });
 
+test("--body is a value flag", () => {
+  const { flags } = parseCliArgs([
+    "handoff",
+    "create",
+    "--body",
+    "Hello Oliver",
+    "--body-file",
+    "/tmp/note.md",
+  ]);
+  assert.equal(flags.body, "Hello Oliver");
+  assert.equal(flags["body-file"], "/tmp/note.md");
+});
+
 test("--index is a value flag", () => {
   const { flags } = parseCliArgs([
     "wiki",

@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { loadCustomProps } from "../domain/custom-props.js";
-import { hierarchyRoot } from "../identity/ids.js";
+import { ensureDirWithGitkeep, hierarchyRoot } from "../identity/ids.js";
 import { writeSchemaDts } from "../infra/schema-dts.js";
 import { listIssues, listProjects } from "../domain/store.js";
 import {
@@ -153,7 +153,7 @@ export async function rebuildIndex(workspaceRoot: string): Promise<IssueTree> {
   return tree;
 }
 
-/** Ensure hierarchy root exists for empty workspaces. */
+/** Ensure hierarchy root exists for empty workspaces (with `.gitkeep`). */
 export function ensureHierarchyRoot(workspaceRoot: string): void {
-  fs.mkdirSync(hierarchyRoot(workspaceRoot), { recursive: true });
+  ensureDirWithGitkeep(hierarchyRoot(workspaceRoot));
 }

@@ -4,12 +4,11 @@
  * ↔ scripts/copy-templates.mjs — build step that places templates next to dist
  * ↔ agent-md.ts — factory `.pm/agent.md` for drift check
  * ↔ DEVELOPMENT.md — § Workspace templates
+ * ↔ workspace-gitkeep.ts — `.gitkeep` in required empty dirs is copied, not skipped
  */
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-
-const SKIP_NAMES = new Set([".gitkeep"]);
 
 /**
  * Absolute path to `workspace-template/` (source or compiled sibling).
@@ -46,7 +45,7 @@ export function projectTemplateDir(): string {
 }
 
 /**
- * Asar-safe recursive copy. Skips `.gitkeep` (git placeholders only).
+ * Asar-safe recursive copy, including `.gitkeep` so empty required dirs stay in git.
  * Prefer classic read/write over `fs.cpSync` for Electron asar reliability.
  */
 export function copyTemplateTree(srcDir: string, destDir: string): void {
@@ -55,9 +54,6 @@ export function copyTemplateTree(srcDir: string, destDir: string): void {
   }
   fs.mkdirSync(destDir, { recursive: true });
   for (const entry of fs.readdirSync(srcDir, { withFileTypes: true })) {
-    if (SKIP_NAMES.has(entry.name)) {
-      continue;
-    }
     const from = path.join(srcDir, entry.name);
     const to = path.join(destDir, entry.name);
     if (entry.isDirectory()) {

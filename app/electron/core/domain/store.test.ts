@@ -11,6 +11,7 @@ import { scaffoldWorkspace } from "../workspace/scaffold-workspace.js";
 import {
   createIssue,
   deleteIssue,
+  deleteProject,
   getIssue,
   getProject,
   issueDirPath,
@@ -564,5 +565,14 @@ test("blockedBy round-trip, cycle reject, and delete prune", async () => {
     assert.deepEqual(after.blockedBy, []);
     const taskAfter = await getIssue(root, projectId, task.id);
     assert.deepEqual(taskAfter.blockedBy, []);
+  });
+});
+
+test("delete last project leaves issue-hierarchy/.gitkeep", async () => {
+  await withWorkspace(async (root, projectId) => {
+    await deleteProject(root, projectId, { cascade: true });
+    assert.ok(fs.existsSync(path.join(root, "issue-hierarchy", ".gitkeep")));
+    const remaining = await listProjects(root);
+    assert.equal(remaining.length, 0);
   });
 });

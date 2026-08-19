@@ -16,6 +16,7 @@ import {
 import {
   allocateIssueId,
   allocateProjectId,
+  ensureDirWithGitkeep,
   hierarchyRoot,
 } from "../identity/ids.js";
 import { resolveActorMemberId } from "../workspace/local-config.js";
@@ -765,6 +766,7 @@ export async function deleteProject(
     );
   }
   fs.rmSync(project.path, { recursive: true, force: true });
+  ensureDirWithGitkeep(hierarchyRoot(workspaceRoot));
 }
 
 export async function createIssue(

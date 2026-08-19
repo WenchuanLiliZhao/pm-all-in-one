@@ -17,7 +17,11 @@ import {
   StaleWriteError,
   type MemberEditableSlice,
 } from "../sync/detail-diff.js";
-import { allocateMemberId, membersRoot } from "../identity/ids.js";
+import {
+  allocateMemberId,
+  ensureDirWithGitkeep,
+  membersRoot,
+} from "../identity/ids.js";
 import { loadMemberProps, writePropsTs } from "../infra/props-load.js";
 import {
   isIsoDateTimeZ,
@@ -197,7 +201,7 @@ export async function readMemberMeta(
 export async function ensureMembers(
   workspaceRoot: string,
 ): Promise<MemberSnapshot> {
-  fs.mkdirSync(membersRoot(workspaceRoot), { recursive: true });
+  ensureDirWithGitkeep(membersRoot(workspaceRoot));
   return getMemberSnapshot(workspaceRoot);
 }
 

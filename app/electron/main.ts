@@ -63,6 +63,7 @@ import {
 import { readLocalConfig, writeLocalConfig } from "./core/workspace/local-config.js";
 import { rebuildIndex } from "./core/workspace/rebuild-index.js";
 import { ensureLocalJsonGitignore } from "./core/workspace/workspace-gitignore.js";
+import { ensureStructuralGitkeeps } from "./core/workspace/workspace-gitkeep.js";
 import { installCliLink } from "./core/desktop/cli-install.js";
 import { ensureLocalPmShim } from "./core/desktop/local-pm-shim.js";
 import { PtyManager } from "./core/desktop/pty.js";
@@ -438,6 +439,7 @@ async function openWorkspaceAt(
   ensureViews(root);
   ensureViewOrders(root);
   ensureLocalJsonGitignore(root);
+  ensureStructuralGitkeeps(root);
   await ensureWiki(root);
   await ensureMembers(root);
   await ensureHandoffs(root);

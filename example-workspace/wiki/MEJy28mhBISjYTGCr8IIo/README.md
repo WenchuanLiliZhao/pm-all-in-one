@@ -45,7 +45,7 @@ pm-all-in-one issue move   --project <projectId> --issue <issueId> --parent <iss
 pm-all-in-one issue delete --project <projectId> --issue <issueId> [--force]
 pm-all-in-one issue list   [--project <projectId>]
 pm-all-in-one member create --title "…"
-pm-all-in-one handoff create --from <memberId> --to <memberId> --related-project <projectId>
+pm-all-in-one handoff create --from <memberId> --to <memberId> --related-project <projectId> [--title "…"] [--body-file <path>]
 pm-all-in-one doctor
 pm-all-in-one adopt path/to/stray-dir
 ```

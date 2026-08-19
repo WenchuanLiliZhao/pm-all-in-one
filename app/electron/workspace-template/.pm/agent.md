@@ -1,4 +1,4 @@
-<!-- local-pm agent.md rev 8 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/custom/ (see pm-create-skill). -->
+<!-- local-pm agent.md rev 9 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/custom/ (see pm-create-skill). -->
 # Agent rules (local-pm)
 
 ## Finding things
@@ -79,6 +79,12 @@ Backticks are fine only when explaining the *syntax* with placeholders
     local.json                 # gitignored — machine-local `me` (+ future repos table)
     local.md                   # optional, gitignored — NL notes for AI (code paths, etc.)
 ```
+
+Required directories that may be empty (`members/`, `handoffs/`,
+`issue-hierarchy/`, `.agents/skills/custom/`) always contain `.gitkeep` so git
+can track them. The app writes these on create and on open; do not delete them.
+Optional per-node `assets/` folders stay absent when empty — they are not this
+rule.
 
 Create `.pm/local.md` only when you have something to write (do **not** seed an empty
 file). It is for agents and humans on this machine — natural-language checkout

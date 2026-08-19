@@ -2,6 +2,7 @@
  * Create a new workspace by copying `electron/workspace-template/` then
  * patching only dynamic fields (title, views, optional seed project).
  * ↔ workspace-template.ts — path + asar-safe copy
+ * ↔ workspace-gitkeep.ts — required empty dirs keep `.gitkeep`
  * ↔ DEVELOPMENT.md — § Workspace templates
  */
 import fs from "node:fs";
@@ -12,6 +13,7 @@ import { allocateProjectId } from "../identity/ids.js";
 import { writePropsTs } from "../infra/props-load.js";
 import { writeSchemaDts } from "../infra/schema-dts.js";
 import { defaultViewsFile, viewsPath } from "../views/views.js";
+import { ensureStructuralGitkeeps } from "./workspace-gitkeep.js";
 import {
   copyTemplateTree,
   projectTemplateDir,
@@ -65,6 +67,7 @@ export function scaffoldWorkspace(
   assertUsableTarget(root);
 
   copyTemplateTree(workspaceTemplateDir(), root);
+  ensureStructuralGitkeeps(root);
 
   writeWorkspaceMeta(root, defaultWorkspaceMeta(root, options.title));
   fs.writeFileSync(
