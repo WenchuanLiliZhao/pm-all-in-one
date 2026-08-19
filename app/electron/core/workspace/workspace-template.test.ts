@@ -96,6 +96,9 @@ test("scaffold copies template files and skips .gitkeep", () => {
       assert.ok(skillsAgents.includes("Do not create, edit, rename, or delete"));
       assert.ok(skillsAgents.includes("core/"));
       assert.ok(skillsAgents.includes("custom/"));
+      assert.ok(
+        fs.statSync(path.join(root, ".agents", "skills", "custom")).isDirectory(),
+      );
       assert.equal(
         fs.existsSync(path.join(root, "members", ".gitkeep")),
         false,
@@ -106,6 +109,12 @@ test("scaffold copies template files and skips .gitkeep", () => {
       );
       assert.equal(
         fs.existsSync(path.join(root, "issue-hierarchy", ".gitkeep")),
+        false,
+      );
+      assert.equal(
+        fs.existsSync(
+          path.join(root, ".agents", "skills", "custom", ".gitkeep"),
+        ),
         false,
       );
 
