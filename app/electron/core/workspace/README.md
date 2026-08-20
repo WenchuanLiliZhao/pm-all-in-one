@@ -10,7 +10,7 @@ Workspace lifecycle: create from shipped templates, open-time health (doctor), c
 
 | File | Role |
 | --- | --- |
-| `rebuild-index.ts` | Derived `.pm/index.json` + `tree.md` (**not** a barrel) |
+| `rebuild-index.ts` | Derived `.pm/index.json` + `tree.md` (issues + wiki Contents; **not** a barrel) |
 | `watch.ts` | Chokidar → rebuild + doctor payload |
 | `doctor.ts` | Filesystem-shape stray scan + `scanWorkspace` (fence validators) |
 | `fence-validators.ts` | Workspace-declared Markdown fence lint (opt-in module import) |

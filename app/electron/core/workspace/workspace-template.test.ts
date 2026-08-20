@@ -116,8 +116,9 @@ test("scaffold copies template files including .gitkeep", () => {
       assert.equal(agent, templateAgent);
       assert.match(
         agent,
-        /^<!-- local-pm agent\.md rev 9 — product-owned;/,
+        /^<!-- local-pm agent\.md rev 10 — product-owned;/,
       );
+      assert.ok(agent.includes("Wiki Contents"));
       assert.ok(agent.includes("Install Command Line Tool"));
       assert.ok(agent.includes("npx pm-all-in-one"));
       assert.ok(agent.includes("**When no CLI is reachable, stop and say so.**"));

@@ -42,7 +42,7 @@ Rules (the two must agree):
 - A child must be exactly one rank below its parent (epic → task only; task → subtask only)
 - Subtask cannot have child issues
 
-`@issue-<projectId>::<issueId>` resolves by joining paths only; **.pm/tree.md** / **index.json** are derived views—editing them does not change real hierarchy.
+`@issue-<projectId>::<issueId>` resolves by joining paths only; **.pm/tree.md** / **index.json** are derived views—editing them does not change real hierarchy. The same `tree.md` file also renders wiki Contents; `wiki/sidebar.ts` remains that tree’s source of truth.
 
 ## Intentional dual authority
 

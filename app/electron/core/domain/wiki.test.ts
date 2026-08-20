@@ -6,6 +6,7 @@ import test from "node:test";
 
 import { isValidEntityId } from "../identity/dir-id.js";
 import { scanStrays } from "../workspace/doctor.js";
+import { rebuildIndex } from "../workspace/rebuild-index.js";
 import {
   createWikiNode,
   deleteWikiNode,
@@ -504,5 +505,26 @@ test("updateWikiNode without expected still writes (legacy)", async () => {
     const page = await createWikiNode(root, { title: "Legacy" });
     const next = await updateWikiNode(root, page.id, { body: "no occ\n" });
     assert.equal(next.body, "no occ\n");
+  });
+});
+
+test("rebuilding writes nested wiki Contents into tree.md", async () => {
+  await withTempWorkspace(async (root) => {
+    const parent = await createWikiNode(root, { title: "Parent section" });
+    const child = await createWikiNode(root, {
+      title: "Child page",
+      parentId: parent.id,
+    });
+    await rebuildIndex(root);
+    const map = fs.readFileSync(path.join(root, ".pm", "tree.md"), "utf8");
+    assert.match(map, /## Wiki Contents/);
+    assert.match(
+      map,
+      new RegExp(`- ${wikiLinkSyntax(parent.id)} — Parent section`),
+    );
+    assert.match(
+      map,
+      new RegExp(`  - ${wikiLinkSyntax(child.id)} — Child page`),
+    );
   });
 });

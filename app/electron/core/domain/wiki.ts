@@ -3,6 +3,7 @@
  * Ids are opaque nanoid(21) tokens (never renamed). Node pattern: dogfood @wiki-WZ_eBxLpaAG_HYKecNZeW.
  *
  * ↔ electron/core/sync/detail-diff.ts — OCC expected / StaleWriteError on updateWikiNode
+ * ↔ electron/core/workspace/rebuild-index.ts — listWikiContentsRows for derived tree.md
  * ↔ electron/main.ts — IPC encodeStaleWriteMessage on OCC
  * ↔ server/main.ts — HTTP twin PATCH /api/wiki/:id
  * ↔ src/lib/bridge/pm-api.ts — updateWikiNode expected option
@@ -12,6 +13,7 @@ import path from "node:path";
 import { z } from "zod";
 
 import { isValidEntityId, parseId, type EntityId } from "../identity/dir-id.js";
+import { wikiLinkSyntax } from "../identity/links.js";
 import { esbuild } from "../infra/esbuild-runtime.js";
 import { allocateWikiNodeId } from "../identity/ids.js";
 import { resolveActorMemberId } from "../workspace/local-config.js";
@@ -518,6 +520,75 @@ export function collectSidebarWikiNodeIds(nodes: WikiSidebarNode[]): EntityId[] 
   };
   walk(nodes);
   return out;
+}
+
+/** Contents display name: live wiki-node title first; sidebar `label` is a cache. */
+export function wikiContentsRefTitle(
+  node: WikiSidebarRefNode,
+  wikiNodes: ReadonlyArray<Pick<WikiNodeMeta, "id" | "title">>,
+): string {
+  const meta = wikiNodes.find((p) => p.id === node.id);
+  return meta?.title?.trim() || node.label?.trim() || node.id;
+}
+
+export type WikiContentsRow = {
+  id: EntityId;
+  title: string;
+  depth: number;
+  parentId: EntityId | null;
+  ref: string;
+};
+
+/**
+ * Flatten Contents `ref` nodes in sidebar order. Groups are transparent
+ * (children keep the group's parent). Links are skipped.
+ */
+export function flattenWikiContents(
+  nodes: WikiSidebarNode[],
+  wikiNodes: ReadonlyArray<Pick<WikiNodeMeta, "id" | "title">>,
+  parentId: EntityId | null = null,
+  depth = 0,
+): WikiContentsRow[] {
+  const rows: WikiContentsRow[] = [];
+  for (const node of nodes) {
+    if (node.type === "ref") {
+      rows.push({
+        id: node.id,
+        title: wikiContentsRefTitle(node, wikiNodes),
+        depth,
+        parentId,
+        ref: wikiLinkSyntax(node.id),
+      });
+      if (node.children?.length) {
+        rows.push(
+          ...flattenWikiContents(node.children, wikiNodes, node.id, depth + 1),
+        );
+      }
+      continue;
+    }
+    if (node.type === "group") {
+      rows.push(...flattenWikiContents(node.children, wikiNodes, parentId, depth));
+    }
+  }
+  return rows;
+}
+
+/**
+ * Read-only Contents rows for derived maps. Does not reconcile unlisted
+ * nodes into `sidebar.ts` (unlike `getWikiSnapshot`).
+ */
+export async function listWikiContentsRows(
+  workspaceRoot: string,
+): Promise<WikiContentsRow[]> {
+  const sidebar = await readSidebar(workspaceRoot);
+  const metas: WikiNodeMeta[] = [];
+  for (const id of listWikiNodeIdsOnDisk(workspaceRoot)) {
+    const meta = await readWikiNodeMeta(workspaceRoot, id);
+    if (meta) {
+      metas.push(meta);
+    }
+  }
+  return flattenWikiContents(sidebar, metas);
 }
 
 function removeIdFromSidebar(

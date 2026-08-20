@@ -1,4 +1,5 @@
 // ↔ electron/main.ts / server/main.ts — rebuildIndex consumers over dual bridge
+// ↔ electron/core/domain/wiki.ts — listWikiContentsRows for Wiki Contents section
 // Zone 3 core entry for derived .pm/index.json + tree.md (not a PmApi landing)
 import fs from "node:fs";
 import path from "node:path";
@@ -7,6 +8,10 @@ import { loadCustomProps } from "../domain/custom-props.js";
 import { ensureDirWithGitkeep, hierarchyRoot } from "../identity/ids.js";
 import { writeSchemaDts } from "../infra/schema-dts.js";
 import { listIssues, listProjects } from "../domain/store.js";
+import {
+  listWikiContentsRows,
+  type WikiContentsRow,
+} from "../domain/wiki.js";
 import {
   issueRefKey,
   type IssueTree,
@@ -88,10 +93,13 @@ export function persistIndex(workspaceRoot: string, tree: IssueTree): void {
  * A one-page map for agents working in a terminal.
  *
  * Flat directories give a mechanical path for every reference but no ancestry,
- * so this file supplies the ancestry. Derived and gitignored: files stay the
- * source of truth.
+ * so this file supplies the ancestry — issue ladder and wiki Contents. Derived
+ * and gitignored: files stay the source of truth.
  */
-export function renderAgentTree(tree: IssueTree): string {
+export function renderAgentTree(
+  tree: IssueTree,
+  wikiRows: readonly WikiContentsRow[] = [],
+): string {
   const lines = [
     "# Workspace map (derived)",
     "",
@@ -133,18 +141,39 @@ export function renderAgentTree(tree: IssueTree): string {
     lines.push("");
   }
 
+  lines.push("## Wiki Contents", "");
+  if (wikiRows.length === 0) {
+    lines.push("_no wiki-nodes yet_");
+  } else {
+    for (const row of wikiRows) {
+      const indent = "  ".repeat(row.depth);
+      lines.push(
+        `${indent}- ${row.ref} — ${row.title || "(untitled)"}`,
+      );
+    }
+  }
+  lines.push("");
+
   return `${lines.join("\n").trimEnd()}\n`;
 }
 
-export function persistAgentTree(workspaceRoot: string, tree: IssueTree): void {
+export async function persistAgentTree(
+  workspaceRoot: string,
+  tree: IssueTree,
+): Promise<void> {
+  const wikiRows = await listWikiContentsRows(workspaceRoot);
   fs.mkdirSync(path.join(workspaceRoot, ".pm"), { recursive: true });
-  fs.writeFileSync(agentTreePath(workspaceRoot), renderAgentTree(tree), "utf8");
+  fs.writeFileSync(
+    agentTreePath(workspaceRoot),
+    renderAgentTree(tree, wikiRows),
+    "utf8",
+  );
 }
 
 export async function rebuildIndex(workspaceRoot: string): Promise<IssueTree> {
   const tree = await buildTree(workspaceRoot);
   persistIndex(workspaceRoot, tree);
-  persistAgentTree(workspaceRoot, tree);
+  await persistAgentTree(workspaceRoot, tree);
   // schema.d.ts is committed, so a fresh clone or a hand-edited custom-props.ts
   // could leave it stale; regenerating on open keeps it honest.
   for (const project of await listProjects(workspaceRoot)) {

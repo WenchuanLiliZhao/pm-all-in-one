@@ -367,6 +367,8 @@ test("rebuilding writes the derived map and the generated types", async () => {
       map,
       new RegExp(`@issue-${projectId}::${subtask.id} subtask`),
     );
+    assert.match(map, /## Wiki Contents/);
+    assert.match(map, /_no wiki-nodes yet_/);
     assert.ok(
       fs.existsSync(path.join(root, "issue-hierarchy", projectId, "schema.d.ts")),
     );

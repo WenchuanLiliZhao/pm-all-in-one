@@ -18,10 +18,10 @@ Law without the live tree is not enough to choose a parent. The live tree withou
 | IDE entry | Workspace root `AGENTS.md` → points at `.pm/agent.md` |
 | Structural law | `.pm/agent.md` Wiki section (Contents required; create via app/CLI; `parentId` defaults to root) |
 | Editorial placement | Agent Skill `.agents/skills/core/pm-content-placement/SKILL.md` (project / epic / wiki boundaries) |
-| Live Contents tree | `wiki/sidebar.ts` (nested `ref` nodes — **read this** before create) |
+| Live Contents tree | `.pm/tree.md` **Wiki Contents** section (derived, readable); `wiki/sidebar.ts` remains the SoT |
 | Flat inventory | `wiki/<id>/` dirs (All pages); same set as Contents after the required-Contents invariant |
 
-`.pm/tree.md` is the **issue** map only. It does **not** render wiki Contents. Do not use it to choose a wiki parent.
+`.pm/tree.md` maps both the issue ladder and wiki Contents. Read the Wiki Contents section to see the tree and to choose a `parentId`. Do not glob `wiki/` nanoid folders. Editing `tree.md` changes nothing.
 
 ## Product / app side (not required to know)
 
@@ -36,12 +36,12 @@ There is **no** in-app model SDK that injects the current Contents tree into an 
 
 Workspace-only is enough for an IDE agent to **discover** the rules and the tree (read the files above).
 
-Actually **creating** a node still requires the allocator (`createWikiNode` via UI, or the same core from a built CLI / script). Hand-minting `wiki/<invented-id>/` violates `.pm/agent.md` even if you also edit `sidebar.ts`. Today the CLI may still lack `wiki create`; until it exists, prefer the app UI or call the shared core — details in @wiki-D9Sd2WYlM-2hdgcXcUbhl.
+Actually **creating** a node still requires the allocator (`createWikiNode` via UI, or `pm-all-in-one wiki create`). Hand-minting `wiki/<invented-id>/` violates `.pm/agent.md` even if you also edit `sidebar.ts`. Details: @wiki-D9Sd2WYlM-2hdgcXcUbhl.
 
 ## Practical checklist
 
 1. Read `.pm/agent.md` (Contents required).
-2. Read `wiki/sidebar.ts` and pick `parentId` (or root).
+2. Read `.pm/tree.md` **Wiki Contents** and pick `parentId` (or root). `wiki/sidebar.ts` is the SoT if the derived map is missing or stale.
 3. Create through the allocator with that parent — never invent directory ids.
 4. Prefer updating an existing topic page over adding a parallel overview (editorial policy: skill `pm-content-placement`).
 

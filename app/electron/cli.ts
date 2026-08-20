@@ -41,10 +41,12 @@ import {
 import {
   createWikiNode,
   deleteWikiNode,
+  flattenWikiContents,
   getWikiSnapshot,
   moveWikiNodeToSidebarPosition,
   type WikiSidebarNode,
 } from "./core/domain/wiki.js";
+import { rebuildIndex } from "./core/workspace/rebuild-index.js";
 import {
   countDescendants,
   formatDescendantCost,
@@ -171,41 +173,6 @@ Options:
 `;
 }
 
-type WikiListRow = {
-  id: string;
-  title: string;
-  depth: number;
-  parentId: string | null;
-  ref: string;
-};
-
-function flattenWikiContents(
-  nodes: WikiSidebarNode[],
-  parentId: string | null = null,
-  depth = 0,
-): WikiListRow[] {
-  const rows: WikiListRow[] = [];
-  for (const node of nodes) {
-    if (node.type === "ref") {
-      rows.push({
-        id: node.id,
-        title: node.label ?? node.id,
-        depth,
-        parentId,
-        ref: wikiLinkSyntax(node.id),
-      });
-      if (node.children?.length) {
-        rows.push(...flattenWikiContents(node.children, node.id, depth + 1));
-      }
-      continue;
-    }
-    if (node.type === "group") {
-      rows.push(...flattenWikiContents(node.children, parentId, depth));
-    }
-  }
-  return rows;
-}
-
 function sidebarChildCount(
   nodes: WikiSidebarNode[],
   parentId: string | null,
@@ -282,6 +249,7 @@ async function cmdWikiCreate(
     parentId,
     ...(description !== undefined ? { description } : {}),
   });
+  await rebuildIndex(root);
   const ref = wikiLinkSyntax(node.id);
   if (json) {
     printJson({ ...node, ref });
@@ -319,6 +287,7 @@ async function cmdWikiMove(
     parentId,
     index,
   });
+  await rebuildIndex(root);
   const placement = findWikiPlacement(snap.sidebar, id);
   const ref = wikiLinkSyntax(id);
   const parentOut = placement?.parentId ?? parentId;
@@ -340,7 +309,7 @@ async function cmdWikiMove(
 
 async function cmdWikiList(root: string, json: boolean): Promise<void> {
   const snap = await getWikiSnapshot(root);
-  const rows = flattenWikiContents(snap.sidebar);
+  const rows = flattenWikiContents(snap.sidebar, snap.nodes);
   if (json) {
     printJson(rows);
   } else {
@@ -396,6 +365,7 @@ async function cmdWikiDelete(
   if (!ok) {
     throw new Error(`Failed to delete wiki-node: ${id}`);
   }
+  await rebuildIndex(root);
   const ref = wikiLinkSyntax(id);
   if (json) {
     printJson({ ok: true, id, ref, liftedChildren: lifted });

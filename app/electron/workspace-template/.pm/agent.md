@@ -1,4 +1,4 @@
-<!-- local-pm agent.md rev 9 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/custom/ (see pm-create-skill). -->
+<!-- local-pm agent.md rev 10 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/custom/ (see pm-create-skill). -->
 # Agent rules (local-pm)
 
 ## Finding things
@@ -17,7 +17,8 @@ comes from entropy at create time — there is no shared counter. Directory name
 are ids and nothing else; **never rename one**.
 
 Directories are flat, so they tell you nothing about ancestry. For that read
-`.pm/tree.md` (derived, rebuilt by the app).
+`.pm/tree.md` (derived, rebuilt by the app and CLI). It maps the issue ladder
+and wiki Contents. Editing it changes nothing.
 
 ## Mentions (live cross-references)
 
@@ -158,6 +159,11 @@ every wiki-node must appear there. Create via the app or CLI so ids allocate
 correctly; new nodes always enter Contents (`parentId` optional, default root).
 Prefer `@wiki-<id>` for links. Home is root `README.md`, not a file under
 `wiki/`. All pages is a flat admin inventory of the same set.
+
+The derived `.pm/tree.md` **Wiki Contents** section is the readable tree
+(same file as the issue map). Read that to choose a parent; do not glob
+`wiki/` nanoid folders. `wiki/sidebar.ts` remains the hierarchy source of
+truth.
 
 ## Members
 
