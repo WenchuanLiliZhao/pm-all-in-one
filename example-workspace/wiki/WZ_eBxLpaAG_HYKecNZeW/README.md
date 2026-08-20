@@ -61,7 +61,7 @@ Workspace-wide picture:
 | **Meta + body** | Meta lives in `export const props` in a `*.ts` file; body is always sibling `README.md`. |
 | **System timestamps** | Project / issue / wiki-node / member / handoff: `created` / `updated` (ISO-8601 UTC `…Z`). `created` is written once; `updated` is bumped only by the app on a real props/body write. Patches **omit** both keys. Workspace uses `createdDate` (`YYYY-MM-DD`), also immutable. |
 | **Title in meta, not as README H1** | Do not repeat the title with `#` in `README.md`. |
-| **References by path join** | No running app / index required: `@issue-<projectId>::<issueId>`, `@wiki-<wikiNodeId>`, `@member-<memberId>`, `@handoff-<handoffId>` join directories directly. |
+| **References by path join** | No running app / index required: `@issue-<projectId>` (project), `@issue-<projectId>::<issueId>`, `@wiki-<wikiNodeId>`, `@member-<memberId>`, `@handoff-<handoffId>` join directories directly. |
 | **Create draws id locally** | No writer handle, no shared counter; concurrency relies on nanoid entropy. See @wiki-kF6sQ8ynVamZ-AL5QzTtc. |
 
 **Not nodes:** `wiki/sidebar.ts` (Contents), `.pm/*` (derived / views), `custom-props.ts` / `schema.d.ts`, markdown custom-prop files on an issue, and sidebar `group` / `link` entries. Those are navigation, config, or fields — not “a document / plan.”
@@ -96,7 +96,7 @@ Workspace-wide picture:
 | **Meta file** | `project.ts` (naming exception; content is still `export const props`) |
 | **Body** | `README.md` = **project description** (slow-changing; no campaign dates / done criteria) |
 | **Hierarchy** | Under workspace; issue dirs hang flat underneath |
-| **Reference** | No standalone `@project-…`; issue refs carry `projectId` |
+| **Reference** | `@issue-<projectId>` (no `::`; not `@project-…`). Issue refs add `::<issueId>`. |
 
 **Kind-specific:**
 

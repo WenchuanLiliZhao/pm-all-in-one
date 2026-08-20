@@ -75,11 +75,16 @@ export function WorkspaceHomeDetail({
       onNavigateIssue({ kind: "issue", projectId: p, issueId: i }),
     [onNavigateIssue],
   );
+  const navigateProject = useCallback(
+    (p: string) => onNavigateIssue({ kind: "project", projectId: p }),
+    [onNavigateIssue],
+  );
   const { plugins, mentionAutocomplete } = usePmMentions({
     issues,
     wikiNodes,
     knownIssueKeys: knownKeys,
     onNavigateIssue: navigateIssue,
+    onNavigateProject: navigateProject,
   });
   const workspaceNodeRef = useMemo(
     () => ({ kind: "workspace" as const }),

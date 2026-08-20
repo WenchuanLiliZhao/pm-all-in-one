@@ -1,4 +1,4 @@
-<!-- local-pm agent.md rev 10 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/custom/ (see pm-create-skill). -->
+<!-- local-pm agent.md rev 11 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/custom/ (see pm-create-skill). -->
 # Agent rules (local-pm)
 
 ## Finding things
@@ -6,6 +6,7 @@
 Every reference resolves by joining directory names, with no index and no running app:
 
 ```text
+@issue-<projectId>             ->  issue-hierarchy/<projectId>/   (project container)
 @issue-<projectId>::<issueId>  ->  issue-hierarchy/<projectId>/<issueId>/
 @wiki-<wikiNodeId>             ->  wiki/<wikiNodeId>/README.md
 @member-<memberId>             ->  members/<memberId>/
@@ -27,17 +28,21 @@ markdown custom-prop files), write **live** locators as bare text so the app
 turns them into chips:
 
 ```text
+Project: @issue-V1StGXR8_Z5jdHi6B-myT.
 See @issue-V1StGXR8_Z5jdHi6B-myT::abcDEF0123456789xyz01.
 Standing rule: @wiki-V1StGXR8_Z5jdHi6B-myT.
 Owner: @member-V1StGXR8_Z5jdHi6B-myT.
 Handoff: @handoff-V1StGXR8_Z5jdHi6B-myT.
 ```
 
+There is **no** `@project-…` vocabulary. The project container is `@issue-<projectId>`
+with no `::` suffix; an issue always includes `::<issueId>`.
+
 **Never** wrap a concrete locator (real nanoid tokens) in backticks. Mentions
 inside inline code or fenced code stay literal and will not become chips.
 
 Backticks are fine only when explaining the *syntax* with placeholders
-(`@issue-<projectId>::<issueId>`, `@wiki-<id>`, `@member-<id>`, `@handoff-<id>`). Derived
+(`@issue-<projectId>`, `@issue-<projectId>::<issueId>`, `@wiki-<id>`, `@member-<id>`, `@handoff-<id>`). Derived
 `.pm/tree.md` emits bare locators; copy them without adding backticks.
 
 ## Shape of the workspace

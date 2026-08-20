@@ -65,10 +65,15 @@ export function CollaborationCards() {
       openSelection({ kind: "issue", projectId: p, issueId: i }),
     [openSelection],
   );
+  const navigateProject = useCallback(
+    (p: string) => openSelection({ kind: "project", projectId: p }),
+    [openSelection],
+  );
   const { plugins, mentionAutocomplete } = usePmMentions({
     issues,
     wikiNodes,
     onNavigateIssue: navigateIssue,
+    onNavigateProject: navigateProject,
   });
   const [snap, setSnap] = useState<HandoffSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);

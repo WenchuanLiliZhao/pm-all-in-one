@@ -23,7 +23,7 @@ test("formatAiLocator project", () => {
       kind: "project",
       projectId: PROJECT,
     }),
-    PROJECT,
+    `@issue-${PROJECT}`,
   );
 });
 

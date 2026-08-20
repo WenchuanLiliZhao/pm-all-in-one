@@ -99,10 +99,15 @@ export function HandoffEditor({ handoffId }: Props) {
       openSelection({ kind: "issue", projectId: p, issueId: i }),
     [openSelection],
   );
+  const navigateProject = useCallback(
+    (p: string) => openSelection({ kind: "project", projectId: p }),
+    [openSelection],
+  );
   const { plugins, mentionAutocomplete } = usePmMentions({
     issues,
     wikiNodes,
     onNavigateIssue: navigateIssue,
+    onNavigateProject: navigateProject,
   });
   const [handoff, setHandoff] = useState<Handoff | null>(null);
   const [titleDraft, setTitleDraft] = useState("");

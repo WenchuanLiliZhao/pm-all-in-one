@@ -6,11 +6,13 @@ import {
   parseHandoffLinks,
   parseIssueLinks,
   parseMemberLinks,
+  parseProjectLinks,
   parseWikiLinks,
 } from "@pm-core/identity/links";
 
 export type ActivatePmMentionHandlers = {
   onNavigateIssue: (projectId: string, issueId: string) => void;
+  onNavigateProject?: (projectId: string) => void;
   onNavigateWikiNode: (wikiNodeId: string) => void;
   onNavigateMember?: (memberId: string) => void;
   onNavigateHandoff?: (handoffId: string) => void;
@@ -27,6 +29,11 @@ export function activatePmMention(
   const issue = parseIssueLinks(token).find((r) => r.raw === token);
   if (issue) {
     handlers.onNavigateIssue(issue.projectId, issue.issueId);
+    return true;
+  }
+  const project = parseProjectLinks(token).find((r) => r.raw === token);
+  if (project) {
+    handlers.onNavigateProject?.(project.projectId);
     return true;
   }
   const wiki = parseWikiLinks(token).find((r) => r.raw === token);

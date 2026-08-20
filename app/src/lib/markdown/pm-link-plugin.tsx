@@ -14,6 +14,8 @@ import { issueRefKey } from "@/lib/types";
 
 const ID = "[A-Za-z0-9_-]{21}";
 const ISSUE_MENTION = new RegExp(`@issue-(${ID})::(${ID})`, "g");
+/** Project container: `@issue-<projectId>` not followed by `::`. */
+const PROJECT_MENTION = new RegExp(`@issue-(${ID})(?!::)`, "g");
 const WIKI_MENTION = new RegExp(`@wiki-(${ID})`, "g");
 const MEMBER_MENTION = new RegExp(`@member-(${ID})`, "g");
 const HANDOFF_MENTION = new RegExp(`@handoff-(${ID})`, "g");
@@ -31,16 +33,20 @@ function lookupTitle(
 
 export type PmLinkPluginOptions = {
   knownIssueKeys: Set<string>;
+  knownProjectIds?: Set<string>;
   knownWikiNodeIds: Set<string>;
   knownMemberIds?: Set<string>;
   knownHandoffIds?: Set<string>;
   /** issueRefKey → display title (chip label in Reading View). */
   issueTitles?: Map<string, string>;
+  /** projectId → display title. */
+  projectTitles?: Map<string, string>;
   /** wikiNodeId → display title (chip label in Reading View). */
   wikiTitles?: Map<string, string>;
   memberTitles?: Map<string, string>;
   handoffTitles?: Map<string, string>;
   onNavigateIssue: (projectId: string, issueId: string) => void;
+  onNavigateProject?: (projectId: string) => void;
   onNavigateWikiNode: (wikiNodeId: string) => void;
   onNavigateMember?: (memberId: string) => void;
   onNavigateHandoff?: (handoffId: string) => void;
@@ -49,6 +55,7 @@ export type PmLinkPluginOptions = {
 
 /**
  * Combined Reading View chips for `@issue-` / `@wiki-` / `@member-` / `@handoff-`.
+ * Bare `@issue-<projectId>` (no `::`) is the project-container mention.
  * One plugin so `components.a` is not overwritten by Object.assign merge.
  * Chip text is the object title when provided; SoT stays the raw @mention.
  * Mentions inside inline / fenced code are left literal.
@@ -57,13 +64,15 @@ export function createPmLinkPlugin(options: PmLinkPluginOptions): MarkdownPlugin
   const classNames = options.classNames ?? linkChipStyles;
   const knownMemberIds = options.knownMemberIds ?? new Set<string>();
   const knownHandoffIds = options.knownHandoffIds ?? new Set<string>();
+  const knownProjectIds = options.knownProjectIds ?? new Set<string>();
   const issueHrefRe = new RegExp(`^issue:(${ID})::(${ID})$`);
+  const projectHrefRe = new RegExp(`^project:(${ID})$`);
   const wikiHrefRe = new RegExp(`^wiki:(${ID})$`);
   const memberHrefRe = new RegExp(`^member:(${ID})$`);
   const handoffHrefRe = new RegExp(`^handoff:(${ID})$`);
 
   return {
-    allowedUrlSchemes: ["issue", "wiki", "member", "handoff"],
+    allowedUrlSchemes: ["issue", "project", "wiki", "member", "handoff"],
     transformSource: (source) => {
       let next = replaceOutsideCode(
         source,
@@ -74,6 +83,10 @@ export function createPmLinkPlugin(options: PmLinkPluginOptions): MarkdownPlugin
           return `[${escapeLinkLabel(label)}](issue:${key})`;
         },
       );
+      next = replaceOutsideCode(next, PROJECT_MENTION, (_full, projectId) => {
+        const label = lookupTitle(options.projectTitles, projectId!);
+        return `[${escapeLinkLabel(label)}](project:${projectId})`;
+      });
       next = replaceOutsideCode(next, WIKI_MENTION, (_full, wikiNodeId) => {
         const label = lookupTitle(options.wikiTitles, wikiNodeId!);
         return `[${escapeLinkLabel(label)}](wiki:${wikiNodeId})`;
@@ -104,6 +117,24 @@ export function createPmLinkPlugin(options: PmLinkPluginOptions): MarkdownPlugin
               onClick={(e) => {
                 e.preventDefault();
                 options.onNavigateIssue(projectId, issueId);
+              }}
+            >
+              {children}
+            </a>
+          );
+        }
+        const projectMatch = href?.match(projectHrefRe);
+        if (projectMatch) {
+          const projectId = projectMatch[1]!;
+          const ok = knownProjectIds.has(projectId);
+          return (
+            <a
+              href={href}
+              className={ok ? classNames.ok : classNames.broken}
+              title={`@issue-${projectId}`}
+              onClick={(e) => {
+                e.preventDefault();
+                options.onNavigateProject?.(projectId);
               }}
             >
               {children}

@@ -83,10 +83,15 @@ export function MemberEditor({ memberId }: Props) {
       openSelection({ kind: "issue", projectId: p, issueId: i }),
     [openSelection],
   );
+  const navigateProject = useCallback(
+    (p: string) => openSelection({ kind: "project", projectId: p }),
+    [openSelection],
+  );
   const { plugins, mentionAutocomplete } = usePmMentions({
     issues,
     wikiNodes,
     onNavigateIssue: navigateIssue,
+    onNavigateProject: navigateProject,
   });
   const [member, setMember] = useState<Member | null>(null);
   const [titleDraft, setTitleDraft] = useState("");

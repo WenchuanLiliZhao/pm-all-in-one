@@ -2,6 +2,7 @@ import type {
   HandoffMeta,
   Issue,
   MemberMeta,
+  Project,
   WikiNodeMeta,
 } from "@/lib/types";
 import { issueRefKey } from "@/lib/types";
@@ -11,6 +12,12 @@ export function issueDisplayTitle(issue: Issue): string {
   const key = issueRefKey(issue.projectId, issue.id);
   const title = issue.title.trim();
   return title || `(untitled ${key})`;
+}
+
+/** Display title for a project mention chip (matches autocomplete label). */
+export function projectDisplayTitle(project: Project): string {
+  const title = project.title.trim();
+  return title || `(untitled ${project.id})`;
 }
 
 /** Display title for a wiki mention chip (matches autocomplete label). */
@@ -35,6 +42,14 @@ export function toIssueTitleMap(issues: Issue[]): Map<string, string> {
   const map = new Map<string, string>();
   for (const issue of issues) {
     map.set(issueRefKey(issue.projectId, issue.id), issueDisplayTitle(issue));
+  }
+  return map;
+}
+
+export function toProjectTitleMap(projects: Project[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const project of projects) {
+    map.set(project.id, projectDisplayTitle(project));
   }
   return map;
 }

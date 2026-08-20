@@ -11,7 +11,7 @@ import { isNodeAssetRelUrl } from "../../local-media";
 import { AttachmentCard } from "../image/preview";
 import styles from "./preview.module.scss";
 
-const MENTION_HREF = /^(issue|wiki|member|handoff):/i;
+const MENTION_HREF = /^(issue|project|wiki|member|handoff):/i;
 
 function childText(children: ReactNode): string {
   if (typeof children === "string") return children;

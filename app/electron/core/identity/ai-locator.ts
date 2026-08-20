@@ -2,6 +2,7 @@ import {
   handoffLinkSyntax,
   issueLinkSyntax,
   memberLinkSyntax,
+  projectLinkSyntax,
   wikiLinkSyntax,
 } from "./links.js";
 
@@ -16,8 +17,8 @@ export type AiLocatorInput =
 
 /**
  * Clipboard plaintext for “Copy for AI”: a single inline mention / id noun.
- * Never absolute paths. Project has no `@project-…` mention in product law —
- * copy the opaque projectId alone.
+ * Never absolute paths. Project uses `@issue-<projectId>` (no `::`) — same SoT
+ * as body mentions; there is no `@project-…` vocabulary.
  *
  * ↔ src/lib/ai-locator.ts — thin re-export via @pm-core/identity/ai-locator
  * ↔ src/components/doc-edit-shell/locator-copy-text.tsx — click-to-copy nav chrome
@@ -27,7 +28,7 @@ export function formatAiLocator(input: AiLocatorInput): string {
     return wikiLinkSyntax(input.wikiNodeId);
   }
   if (input.kind === "project") {
-    return input.projectId;
+    return projectLinkSyntax(input.projectId);
   }
   if (input.kind === "member") {
     return memberLinkSyntax(input.memberId);

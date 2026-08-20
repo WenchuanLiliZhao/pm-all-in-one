@@ -262,10 +262,15 @@ export function WikiNodeEditor({
       onNavigateIssue({ kind: "issue", projectId: p, issueId: i }),
     [onNavigateIssue],
   );
+  const navigateProject = useCallback(
+    (p: string) => onNavigateIssue({ kind: "project", projectId: p }),
+    [onNavigateIssue],
+  );
   const { plugins, mentionAutocomplete } = usePmMentions({
     issues,
     wikiNodes,
     onNavigateIssue: navigateIssue,
+    onNavigateProject: navigateProject,
   });
   const wikiNodeRef = useMemo(
     () => ({ kind: "wiki" as const, wikiNodeId }),
