@@ -11,19 +11,15 @@ export function buildFigureElement(spec: CalcKitSpec): HTMLElement {
   const figure = document.createElement("figure");
   figure.className = "ck-figure";
 
-  const head = document.createElement("div");
-  head.className = "ck-figure-head";
   if (spec.title) {
+    const head = document.createElement("div");
+    head.className = "ck-figure-head";
     const title = document.createElement("span");
     title.className = "ck-figure-title";
     setInlineMarkdown(title, spec.title);
     head.appendChild(title);
+    figure.appendChild(head);
   }
-  const readout = document.createElement("span");
-  readout.className = "ck-figure-readout";
-  readout.setAttribute("data-ck-readout", "");
-  head.appendChild(readout);
-  figure.appendChild(head);
 
   const body = document.createElement("div");
   body.className = "ck-figure-body";

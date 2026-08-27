@@ -1723,7 +1723,7 @@
     draw();
   };
 
-  /* ---- vectorfield: 2D field with divergence / curl readout ---- */
+  /* ---- vectorfield: 2D field ---- */
 
   components.vectorfield = function (fig, spec) {
     var fields = spec.fields || [{ F: spec.F, label: spec.label || spec.F }];
@@ -1863,12 +1863,11 @@
   function makeFigureApi(el) {
     var canvas = el.querySelector("[data-ck-canvas]");
     var controls = el.querySelector("[data-ck-controls]");
-    var readoutEl = el.querySelector("[data-ck-readout]");
     return {
       figure: el,
       canvas: canvas,
       controls: controls,
-      readout: function (text) { if (readoutEl) readoutEl.textContent = text || ""; }
+      readout: function () {}
     };
   }
 
