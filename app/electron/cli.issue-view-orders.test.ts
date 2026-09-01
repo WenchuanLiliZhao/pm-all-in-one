@@ -335,3 +335,54 @@ test("issue list prints parentId ancestry with status and drops leftover tree.md
     assert.equal(fs.existsSync(leftover), false);
   });
 });
+
+test("issue list sorts siblings by blockedBy then prints the deps", async () => {
+  await withTempWorkspace(async (root) => {
+    const project = await createProject(root, { title: "P" });
+    const zzz = createJson(root, [
+      "create",
+      "--project",
+      project.id,
+      "--parent",
+      "root",
+      "--title",
+      "Zzz",
+    ]);
+    const aaa = createJson(root, [
+      "create",
+      "--project",
+      project.id,
+      "--parent",
+      "root",
+      "--title",
+      "Aaa",
+    ]);
+    const aaaProps = path.join(
+      root,
+      "issue-hierarchy",
+      project.id,
+      aaa.id,
+      "props.ts",
+    );
+    const text = fs.readFileSync(aaaProps, "utf8");
+    fs.writeFileSync(
+      aaaProps,
+      text.replace(
+        `"blockedBy": []`,
+        `"blockedBy": ["${zzz.id}"]`,
+      ),
+      "utf8",
+    );
+    const listed = runIssue(root, ["list", "--project", project.id]);
+    assert.equal(listed.status, 0, listed.stderr);
+    const zzzLine = listed.stdout.indexOf(
+      `@issue-${project.id}::${zzz.id}\tepic\tdraft\tZzz`,
+    );
+    const aaaLine = listed.stdout.indexOf(
+      `@issue-${project.id}::${aaa.id}\tepic\tdraft\tAaa\tblockedBy:@issue-${project.id}::${zzz.id}`,
+    );
+    assert.ok(zzzLine >= 0, listed.stdout);
+    assert.ok(aaaLine >= 0, listed.stdout);
+    assert.ok(zzzLine < aaaLine, listed.stdout);
+  });
+});

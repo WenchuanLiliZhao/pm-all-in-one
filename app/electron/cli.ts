@@ -64,10 +64,13 @@ import { parseCliArgs } from "./cli-args.js";
 // ↔ electron/core/views/view-orders.ts — issue create/move/delete maintain view-orders
 import {
   appendIssueToStoredViewOrders,
+  getViewOrder,
   pruneIssueKeysFromStoredViewOrders,
   reparentIssueInStoredViewOrders,
   viewOrderParentKey,
 } from "./core/views/view-orders.js";
+import { sortIssueSiblings } from "./core/views/issue-list-order.js";
+// ↔ electron/core/views/issue-list-order.ts — issue list sibling order
 
 function flagStr(flags: Record<string, string | boolean>, ...keys: string[]): string | undefined {
   for (const k of keys) {
@@ -519,6 +522,7 @@ async function cmdIssueDelete(
 function formatIssueListTree(
   projects: readonly Project[],
   issues: readonly Issue[],
+  preferredFor: (projectId: string, parentId: string | null) => readonly string[],
 ): string {
   const known = new Set(issues.map((i) => i.id));
   const childrenOf = new Map<string, Issue[]>();
@@ -534,16 +538,31 @@ function formatIssueListTree(
     arr.push(issue);
     childrenOf.set(k, arr);
   }
-  for (const arr of childrenOf.values()) {
-    arr.sort((a, b) => a.title.localeCompare(b.title));
+  for (const [k, arr] of childrenOf) {
+    const sample = arr[0];
+    if (!sample) {
+      continue;
+    }
+    const orderParent =
+      sample.parentId !== null && known.has(sample.parentId)
+        ? sample.parentId
+        : null;
+    childrenOf.set(
+      k,
+      sortIssueSiblings(arr, preferredFor(sample.projectId, orderParent)),
+    );
   }
 
   const lines: string[] = [];
   const walk = (issue: Issue, depth: number): void => {
     const indent = "  ".repeat(depth);
     const flag = issue.violations.length > 0 ? " [violation]" : "";
+    const blocked =
+      issue.blockedBy.length > 0
+        ? `\tblockedBy:${issue.blockedBy.map((id) => issueLinkSyntax(issue.projectId, id)).join(",")}`
+        : "";
     lines.push(
-      `${indent}${issueLinkSyntax(issue.projectId, issue.id)}\t${issue.level}\t${issue.status}\t${issue.title}${flag}`,
+      `${indent}${issueLinkSyntax(issue.projectId, issue.id)}\t${issue.level}\t${issue.status}\t${issue.title}${flag}${blocked}`,
     );
     for (const child of childrenOf.get(
       bucketKey(issue.projectId, issue.id),
@@ -572,16 +591,22 @@ async function cmdIssueList(
   if (projectId !== undefined) {
     issues = issues.filter((i) => i.projectId === projectId);
   }
-  if (json) {
-    printJson(issues);
-    return;
-  }
   const projects = await listProjects(root);
   const shown =
     projectId === undefined
       ? projects
       : projects.filter((p) => p.id === projectId);
-  process.stdout.write(formatIssueListTree(shown, issues));
+  const roadmap = getViewOrder(root, "roadmap");
+  const preferredFor = (
+    pid: string,
+    parentId: string | null,
+  ): readonly string[] =>
+    roadmap.children[viewOrderParentKey(pid, parentId)] ?? [];
+  if (json) {
+    printJson(issues);
+    return;
+  }
+  process.stdout.write(formatIssueListTree(shown, issues, preferredFor));
 }
 
 async function cmdProjectCreate(

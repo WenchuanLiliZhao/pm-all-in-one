@@ -1,4 +1,4 @@
-<!-- local-pm agent.md rev 15 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/custom/ (see pm-create-skill). -->
+<!-- local-pm agent.md rev 16 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/custom/ (see pm-create-skill). -->
 # Agent rules (local-pm)
 
 ## Finding things
@@ -24,6 +24,19 @@ Directories are flat, so they tell you nothing about ancestry. Query it
 pm-all-in-one issue list [--project <projectId>]
 pm-all-in-one wiki list
 ```
+
+`issue list` prints the `parentId` ladder. Sibling order is **`blockedBy`
+first** (blockers before the issues that wait on them), then the stored
+roadmap order, then title. `cancel` sorts after still-open issues with the
+same deps. Lines with dependencies include a `blockedBy:` locator column.
+
+Work order for agents:
+
+1. Honor `blockedBy`. Do not start an issue whose blockers are still open.
+   `done` blockers are satisfied; `cancel` items are not work.
+2. Among currently unblocked open issues, pick by **semantic readiness** —
+   what must be true before the next thing can be learned (titles, README,
+   the parent's suggested sequence). Do not use alphabetical title order.
 
 Do not glob nanoid folders. Do not read or write `.pm/tree.md` — older
 builds used to dump a derived map there; it is not a source of truth.

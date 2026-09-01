@@ -11,5 +11,6 @@ Custom views and sparse drag-order persistence under `.pm/`.
 | `views.ts` | `.pm/views.json` custom views |
 | `view-orders.ts` | `.pm/view-orders.json` sparse orders |
 | `view-order-apply.ts` | Pure apply over title-sorted tree |
+| `issue-list-order.ts` | `issue list` sibling order: blockedBy, then roadmap, then title |
 
 Note: the category folder is named `views/`; the persist module is `views/views.ts` — import `@pm-core/views/view-order-apply` or `./views/views.js`, never a bare `core/views.js`.
