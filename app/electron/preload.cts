@@ -71,6 +71,13 @@ const pm = {
     ipcRenderer.invoke("pm:getCustomProps", projectId),
   updateCustomProps: (projectId: string, schema: Record<string, unknown>) =>
     ipcRenderer.invoke("pm:updateCustomProps", projectId, schema),
+  getWikiCustomProps: () => ipcRenderer.invoke("pm:getWikiCustomProps"),
+  updateWikiCustomProps: (schema: Record<string, unknown>) =>
+    ipcRenderer.invoke("pm:updateWikiCustomProps", schema),
+  countWikiFieldUsage: (key: string) =>
+    ipcRenderer.invoke("pm:countWikiFieldUsage", key),
+  listWikiIncomingRefs: (targetId: string) =>
+    ipcRenderer.invoke("pm:listWikiIncomingRefs", targetId),
   listViews: () => ipcRenderer.invoke("pm:listViews"),
   createView: (input?: Record<string, unknown>) =>
     ipcRenderer.invoke("pm:createView", input ?? {}),
@@ -162,6 +169,7 @@ const pm = {
       strays?: unknown;
       meta?: unknown;
       customProps?: unknown;
+      wikiCustomProps?: unknown;
     }) => void,
   ) => {
     const listener = (
@@ -173,6 +181,7 @@ const pm = {
         strays?: unknown;
         meta?: unknown;
         customProps?: unknown;
+        wikiCustomProps?: unknown;
       },
     ) => {
       handler(payload);

@@ -2,10 +2,15 @@ import chokidar, { type FSWatcher } from "chokidar";
 import path from "node:path";
 
 import { loadCustomProps } from "../domain/custom-props.js";
+import { loadWikiCustomProps } from "../domain/wiki-custom-props.js";
 import { scanWorkspace, type DoctorReport } from "./doctor.js";
 import { rebuildIndex } from "./rebuild-index.js";
 import { listIssues, listProjects } from "../domain/store.js";
-import type { CustomPropsSchema, WorkspaceMeta } from "../identity/types.js";
+import type {
+  CustomPropsSchema,
+  WikiCustomPropsSchema,
+  WorkspaceMeta,
+} from "../identity/types.js";
 import {
   readWorkspaceMeta,
   workspacePropsPath,
@@ -20,6 +25,7 @@ export type WorkspaceChangePayload = {
   meta: WorkspaceMeta;
   /** projectId → custom-props schema */
   customProps: Record<string, CustomPropsSchema>;
+  wikiCustomProps: WikiCustomPropsSchema;
 };
 
 export type WorkspaceWatchError = {
@@ -91,7 +97,16 @@ export class WorkspaceWatcher {
             for (const project of projects) {
               customProps[project.id] = await loadCustomProps(project.path);
             }
-            onChange({ projects, tree, issues, strays, meta, customProps });
+            const wikiCustomProps = await loadWikiCustomProps(workspaceRoot);
+            onChange({
+              projects,
+              tree,
+              issues,
+              strays,
+              meta,
+              customProps,
+              wikiCustomProps,
+            });
           } catch (e) {
             const message = e instanceof Error ? e.message : String(e);
             onError?.({

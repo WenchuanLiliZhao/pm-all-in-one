@@ -21,9 +21,9 @@ Common system keys on an issue (`props.ts`):
 - `id` exists only as the **directory name**; never write it into a props file
 - `created` / `updated` are maintained by the app on real writes; patches omit both keys
 
-Project / wiki-node / workspace each have their own system meta, but **not** the issue custom-field mechanism.
+Project / wiki-node / workspace each have their own system meta. Issue custom fields are **per-project**; wiki custom fields are **workspace-level** (`wiki/custom-props.ts`).
 
-### User custom fields (project-owned)
+### User custom fields (project-owned issues)
 
 One declaration per project: `issue-hierarchy/<projectId>/custom-props.ts`, keyed by ladder rank:
 
@@ -42,6 +42,18 @@ Each def: `{ key, label, type, help? }`, `type` ∈ `string` \| `number` \| `boo
 
 Runtime `Issue` splits them: system fields first-class; non-markdown → `fields`; markdown → `markdownFields`.
 
+### User custom fields (workspace-owned wiki)
+
+One declaration per workspace: `wiki/custom-props.ts` — a **single list**, not a ladder:
+
+```ts
+export const props = {
+  fields: CustomPropDef[],
+} as const;
+```
+
+Same def shape as issues. Values: scalars in `wiki/<id>/props.ts` (`satisfies WikiNodeProps`); markdown in sibling `<kebab-key>.md`. Runtime `WikiNode` uses `fields` / `markdownFields`. Missing file → empty schema (old workspaces still open). Edit the schema in Workspace Settings; edit values on the wiki-node detail. Reserved wiki keys: `id`, `title`, `description`, `created`, `updated`, `createdBy`, `body`. A markdown key must not kebab-case to `readme`.
+
 ## Disk layout
 
 ```text
@@ -52,6 +64,14 @@ issue-hierarchy/<projectId>/
     props.ts          # system + non-markdown custom (one flat object)
     README.md         # body
     updates.md        # example markdown custom field
+
+wiki/
+  custom-props.ts     # SoT for wiki custom fields (workspace-level)
+  schema.d.ts         # generated: WikiNodeProps
+  <wikiNodeId>/
+    props.ts          # system + non-markdown custom
+    README.md         # body
+    notes.md          # example markdown custom field
 ```
 
 Authority:
@@ -71,6 +91,8 @@ Authority:
 Writing `custom-props.ts` **hard-rejects** these keys (clash with system):
 
 `id`, `created`, `updated`, `title`, `level`, `parentId`, `status`, `priority`, `startDate`, `endDate`, `assignee`, `createdBy`
+
+Writing `wiki/custom-props.ts` **hard-rejects:** `id`, `title`, `description`, `created`, `updated`, `createdBy`, `body`, plus any markdown key whose kebab form is `readme`.
 
 ### 2. Generated type merge
 

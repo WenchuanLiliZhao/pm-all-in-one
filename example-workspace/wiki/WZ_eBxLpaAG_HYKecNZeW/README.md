@@ -24,9 +24,12 @@ Workspace-wide picture:
 ├── assets?/                                # optional workspace-node bag
 ├── wiki/
 │   ├── sidebar.ts                          # not a node — Contents navigation SoT
+│   ├── custom-props.ts                     # not a node — workspace wiki field schema
+│   ├── schema.d.ts                         # not a node — generated from wiki/custom-props.ts
 │   └── <wikiNodeId>/                       # ← wiki-node
 │       ├── props.ts
 │       ├── README.md
+│       ├── <markdown-custom-prop>.md       # optional; not a separate node
 │       └── assets?/
 ├── members/
 │   └── <memberId>/                         # ← member node
@@ -61,10 +64,10 @@ Workspace-wide picture:
 | **Meta + body** | Meta lives in `export const props` in a `*.ts` file; body is always sibling `README.md`. |
 | **System timestamps** | Project / issue / wiki-node / member / handoff: `created` / `updated` (ISO-8601 UTC `…Z`). `created` is written once; `updated` is bumped only by the app on a real props/body write. Patches **omit** both keys. Workspace uses `createdDate` (`YYYY-MM-DD`), also immutable. |
 | **Title in meta, not as README H1** | Do not repeat the title with `#` in `README.md`. |
-| **References by path join** | No running app / index required: `@issue-<projectId>` (project), `@issue-<projectId>::<issueId>`, `@wiki-<wikiNodeId>`, `@member-<memberId>`, `@handoff-<handoffId>` join directories directly. |
+| **References by path join** | No running app / index required: `@issue-<projectId>::<issueId>`, `@wiki-<wikiNodeId>`, `@member-<memberId>`, `@handoff-<handoffId>` join directories directly. |
 | **Create draws id locally** | No writer handle, no shared counter; concurrency relies on nanoid entropy. See @wiki-kF6sQ8ynVamZ-AL5QzTtc. |
 
-**Not nodes:** `wiki/sidebar.ts` (Contents), `.pm/*` (derived / views), `custom-props.ts` / `schema.d.ts`, markdown custom-prop files on an issue, and sidebar `group` / `link` entries. Those are navigation, config, or fields — not “a document / plan.”
+**Not nodes:** `wiki/sidebar.ts` (Contents), `wiki/custom-props.ts` / `wiki/schema.d.ts`, `.pm/*` (derived / views), project `custom-props.ts` / `schema.d.ts`, markdown custom-prop files on an issue or wiki-node, and sidebar `group` / `link` entries. Those are navigation, config, or fields — not “a document / plan.”
 
 ---
 
@@ -96,7 +99,7 @@ Workspace-wide picture:
 | **Meta file** | `project.ts` (naming exception; content is still `export const props`) |
 | **Body** | `README.md` = **project description** (slow-changing; no campaign dates / done criteria) |
 | **Hierarchy** | Under workspace; issue dirs hang flat underneath |
-| **Reference** | `@issue-<projectId>` (no `::`; not `@project-…`). Issue refs add `::<issueId>`. |
+| **Reference** | No standalone `@project-…`; issue refs carry `projectId` |
 
 **Kind-specific:**
 
@@ -130,7 +133,7 @@ Workspace-wide picture:
 | --- | --- |
 | **Gloss** | Wiki node (UI often says **page**) |
 | **Locus** | `wiki/<wikiNodeId>/` |
-| **Meta file** | `props.ts` → `{ title, description, created, updated, createdBy? }` |
+| **Meta file** | `props.ts` → `{ title, description, created, updated, createdBy? }` plus optional scalar custom fields |
 | **Body** | `README.md` = **current truth** (maintenance obligation; going stale is a defect) |
 | **Hierarchy** | **No** `parentId` on the node’s `props.ts`; Contents nesting lives only in `wiki/sidebar.ts` |
 | **Reference** | `@wiki-<wikiNodeId>` → `wiki/<id>/README.md` |
@@ -141,6 +144,7 @@ Workspace-wide picture:
 - `createWikiNode` **always** writes into Contents (`parentId` optional, default root).
 - Organize by topic; do not mirror every project / running epic with an overview page.
 - Sidebar `group` / `link` entries are navigation, **not** wiki-nodes.
+- Custom fields are workspace-level (`wiki/custom-props.ts` + generated `wiki/schema.d.ts`); scalars live in the node `props.ts`, markdown in sibling `.md`. Same coexistence rules as issues: @wiki-mzvgnLTWniBW9NTCAOjC7.
 - Placement discovery: @wiki-uDY1G0KYgYaC1AD6EVqXi.
 
 ### 5. Member

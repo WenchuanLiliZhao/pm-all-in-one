@@ -77,8 +77,17 @@
   align-items: center;
 }
 
+.rowMainWide {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(72px, 88px) auto;
+  gap: 6px;
+  align-items: center;
+}
+
 .rowMain input,
-.rowMain select {
+.rowMain select,
+.rowMainWide input,
+.rowMainWide select {
   font-size: 12px;
   min-width: 0;
 }

@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TypeConfirmDialog } from "@/components/type-confirm-dialog";
 import { getPm } from "@/lib/bridge";
+import { incomingWikiDeleteDetail } from "@/lib/wiki-incoming-refs";
 import type { WikiNodeMeta } from "@/lib/types";
 import { useWorkspace } from "@/lib/workspace/workspace-context";
 import { useWiki } from "@/lib/workspace/wiki-context";
@@ -92,13 +93,18 @@ export function WikiAllPages() {
   };
 
   const onDelete = (node: WikiNodeMeta) => {
-    setPendingDelete({
-      id: node.id,
-      detail: [
+    void (async () => {
+      const detail = [
         "This cannot be undone.",
         "It will also be removed from Contents (nested Contents items are promoted).",
-      ],
-    });
+      ];
+      try {
+        detail.push(...(await incomingWikiDeleteDetail(node.id)));
+      } catch {
+        // Incoming scan failed — still allow delete.
+      }
+      setPendingDelete({ id: node.id, detail });
+    })();
   };
 
   const confirmDelete = async () => {

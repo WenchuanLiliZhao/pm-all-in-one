@@ -42,6 +42,7 @@ import { DropdownMenu } from "@/components/ui/dropdown-menu";
 import { PageWidth } from "@/components/ui/page-width";
 import { TreeRow, treeRowStyles } from "@/components/ui/tree-row";
 import { getPm } from "@/lib/bridge";
+import { incomingWikiDeleteDetail } from "@/lib/wiki-incoming-refs";
 import type { WikiSidebarNode, WikiSnapshot } from "@/lib/types";
 import {
   canSidebarMove,
@@ -734,13 +735,18 @@ export function WikiShell({
   );
 
   const onRequestDelete = (id: string) => {
-    setPendingDelete({
-      id,
-      detail: [
+    void (async () => {
+      const detail = [
         "This cannot be undone.",
         "It will also be removed from Contents (nested Contents items are promoted).",
-      ],
-    });
+      ];
+      try {
+        detail.push(...(await incomingWikiDeleteDetail(id)));
+      } catch {
+        // Incoming scan failed — still allow delete.
+      }
+      setPendingDelete({ id, detail });
+    })();
   };
 
   const confirmDelete = async () => {

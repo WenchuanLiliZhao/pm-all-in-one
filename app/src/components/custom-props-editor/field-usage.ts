@@ -10,6 +10,9 @@ function valueIsPresent(value: unknown): boolean {
   if (typeof value === "string") {
     return value.trim() !== "";
   }
+  if (Array.isArray(value)) {
+    return value.some((item) => valueIsPresent(item));
+  }
   return true;
 }
 

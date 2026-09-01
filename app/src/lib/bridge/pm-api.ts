@@ -17,6 +17,8 @@ import type {
   CreateWikiNodeInput,
   CreateViewInput,
   CustomPropsSchema,
+  WikiCustomPropsSchema,
+  WikiIncomingRef,
   DoctorReport,
   WikiNode,
   WikiNodePatch,
@@ -134,6 +136,12 @@ export interface PmApi {
     projectId: EntityId,
     schema: CustomPropsSchema,
   ) => Promise<CustomPropsSchema>;
+  getWikiCustomProps: () => Promise<WikiCustomPropsSchema>;
+  updateWikiCustomProps: (
+    schema: WikiCustomPropsSchema,
+  ) => Promise<WikiCustomPropsSchema>;
+  countWikiFieldUsage: (key: string) => Promise<number>;
+  listWikiIncomingRefs: (targetId: EntityId) => Promise<WikiIncomingRef[]>;
   listViews: () => Promise<WorkspaceView[]>;
   createView: (input?: CreateViewInput) => Promise<WorkspaceView>;
   updateView: (
@@ -247,6 +255,7 @@ export interface PmApi {
       strays?: DoctorReport;
       meta?: WorkspaceMeta;
       customProps?: Record<string, CustomPropsSchema>;
+      wikiCustomProps?: WikiCustomPropsSchema;
     }) => void,
   ) => () => void;
   onWorkspaceOpened: (handler: (snap: WorkspaceSnapshot) => void) => () => void;

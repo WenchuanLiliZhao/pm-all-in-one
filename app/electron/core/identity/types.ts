@@ -25,7 +25,14 @@ export type {
   IssuePriorityDef,
 } from "./issue-priority.js";
 
-export type MetaFieldType = "string" | "number" | "boolean" | "date" | "markdown";
+export type MetaFieldType =
+  | "string"
+  | "number"
+  | "boolean"
+  | "date"
+  | "markdown"
+  | "wiki-node"
+  | "string-list";
 
 export interface CustomPropDef {
   key: string;
@@ -39,6 +46,11 @@ export interface CustomPropsSchema {
   epic: CustomPropDef[];
   task: CustomPropDef[];
   subtask: CustomPropDef[];
+}
+
+/** Workspace-level wiki custom fields (`wiki/custom-props.ts`). */
+export interface WikiCustomPropsSchema {
+  fields: CustomPropDef[];
 }
 
 export interface Project {
@@ -247,6 +259,10 @@ export interface WikiNode {
   /** ISO-8601 UTC; app-managed on write */
   updated: string;
   createdBy: EntityId | null;
+  /** Non-markdown custom field values */
+  fields: Record<string, unknown>;
+  /** Markdown custom fields: key → file contents (may be empty if not yet created) */
+  markdownFields: Record<string, string>;
 }
 
 export interface WikiNodeMeta {
@@ -391,6 +407,14 @@ export interface WikiNodePatch {
   title?: string;
   description?: string;
   body?: string;
+  fields?: Record<string, unknown>;
+  markdownFields?: Record<string, string>;
+}
+
+/** Derived: wiki-nodes whose wiki-node custom fields list `targetId`. */
+export interface WikiIncomingRef {
+  fromId: EntityId;
+  fieldKey: string;
 }
 
 export type WikiSidebarMove = "up" | "down" | "indent" | "outdent";

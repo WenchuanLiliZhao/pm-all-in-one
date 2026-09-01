@@ -18,7 +18,15 @@ import { countFieldUsage } from "./field-usage";
 import { RemoveFieldDialog } from "./remove-field-dialog";
 import styles from "./styles.module.scss";
 
-const TYPES: MetaFieldType[] = ["string", "number", "boolean", "date", "markdown"];
+const TYPES: MetaFieldType[] = [
+  "string",
+  "number",
+  "boolean",
+  "date",
+  "markdown",
+  "wiki-node",
+  "string-list",
+];
 const LEVELS = ["epic", "task", "subtask"] as const;
 
 interface CustomPropsEditorProps {

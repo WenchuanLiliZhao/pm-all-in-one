@@ -29,6 +29,12 @@ import {
   type NodeRef,
 } from "./core/domain/node-assets.js";
 import {
+  countWikiFieldUsage,
+  listWikiIncomingRefs,
+  loadWikiCustomProps,
+  writeWikiCustomProps,
+} from "./core/domain/wiki-custom-props.js";
+import {
   createWikiNode,
   deleteWikiNode,
   ensureWiki,
@@ -98,6 +104,7 @@ import type {
   CreateHandoffInput,
   CreateMemberInput,
   CustomPropsSchema,
+  WikiCustomPropsSchema,
   HandoffPatch,
   IssueCreateInput,
   IssuePatch,
@@ -917,6 +924,23 @@ function registerIpc(): void {
     "pm:updateCustomProps",
     (_event, projectId: string, schema: CustomPropsSchema) =>
       updateCustomPropsForProject(requireWorkspace(), projectId, schema),
+  );
+  ipcMain.handle("pm:getWikiCustomProps", () =>
+    loadWikiCustomProps(requireWorkspace()),
+  );
+  ipcMain.handle(
+    "pm:updateWikiCustomProps",
+    (_event, schema: WikiCustomPropsSchema) => {
+      const root = requireWorkspace();
+      writeWikiCustomProps(root, schema);
+      return loadWikiCustomProps(root);
+    },
+  );
+  ipcMain.handle("pm:countWikiFieldUsage", (_event, key: string) =>
+    countWikiFieldUsage(requireWorkspace(), key),
+  );
+  ipcMain.handle("pm:listWikiIncomingRefs", (_event, targetId: string) =>
+    listWikiIncomingRefs(requireWorkspace(), targetId),
   );
 
   ipcMain.handle("pm:listViews", () => listViews(requireWorkspace()));

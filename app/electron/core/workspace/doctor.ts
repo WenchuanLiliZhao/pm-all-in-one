@@ -25,6 +25,7 @@ import {
   readSidebarResultSync,
   sidebarPath,
 } from "../domain/wiki.js";
+import { listWikiNodeRefEdges } from "../domain/wiki-custom-props.js";
 import {
   isMembership,
   listInvalidMemberNames,
@@ -72,6 +73,7 @@ export type DoctorWarningKind =
   | "wiki-unlisted"
   | "wiki-invalid-name"
   | "wiki-sidebar-unreadable"
+  | "wiki-ref-missing"
   | "member-broken-ref"
   | "member-invalid-name"
   | "assignee-left-member"
@@ -135,6 +137,7 @@ export async function scanWorkspace(
   options?: { trustFenceValidators?: boolean },
 ): Promise<DoctorReport> {
   const report = scanStrays(workspaceRoot);
+  await appendWikiRefMissingWarnings(workspaceRoot, report.warnings);
   const extra = await scanFenceValidators(workspaceRoot, options);
   report.warnings.push(...extra);
   return report;
@@ -317,6 +320,29 @@ function appendWikiWarnings(
   }
 
   appendTimestampWarnings(workspaceRoot, warnings);
+}
+
+async function appendWikiRefMissingWarnings(
+  workspaceRoot: string,
+  warnings: DoctorWarning[],
+): Promise<void> {
+  const onDisk = new Set(listWikiNodeIdsOnDisk(workspaceRoot));
+  const edges = await listWikiNodeRefEdges(workspaceRoot);
+  for (const edge of edges) {
+    if (onDisk.has(edge.targetId)) {
+      continue;
+    }
+    const propsFile = path.join(
+      wikiNodeDirPath(workspaceRoot, edge.fromId),
+      "props.ts",
+    );
+    warnings.push({
+      kind: "wiki-ref-missing",
+      message: `Wiki-node ${edge.fromId} field ${edge.fieldKey} points at missing wiki-node: ${edge.targetId}`,
+      path: propsFile,
+      relPath: path.relative(workspaceRoot, propsFile),
+    });
+  }
 }
 
 function optionalMemberId(value: unknown): EntityId | null {

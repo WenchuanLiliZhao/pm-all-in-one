@@ -3,6 +3,7 @@
  * Ids are opaque nanoid(21) tokens (never renamed). Node pattern: dogfood @wiki-WZ_eBxLpaAG_HYKecNZeW.
  *
  * ↔ electron/core/sync/detail-diff.ts — OCC expected / StaleWriteError on updateWikiNode
+ * ↔ electron/core/domain/wiki-custom-props.ts — fields / markdownFields I/O
  * ↔ electron/core/workspace/rebuild-index.ts — listWikiContentsRows for derived tree.md
  * ↔ electron/main.ts — IPC encodeStaleWriteMessage on OCC
  * ↔ server/main.ts — HTTP twin PATCH /api/wiki/:id
@@ -12,13 +13,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 
-import { isValidEntityId, parseId, type EntityId } from "../identity/dir-id.js";
+import { isValidEntityId, keyToKebab, parseId, type EntityId } from "../identity/dir-id.js";
 import { wikiLinkSyntax } from "../identity/links.js";
 import { esbuild } from "../infra/esbuild-runtime.js";
 import { allocateWikiNodeId } from "../identity/ids.js";
 import { resolveActorMemberId } from "../workspace/local-config.js";
 import {
   equalsForSync,
+  normalizeStringMap,
   pickWikiEditable,
   StaleWriteError,
   type WikiEditableSlice,
@@ -28,18 +30,48 @@ import {
   loadWikiNodeProps,
   writePropsTs,
 } from "../infra/props-load.js";
+import { WIKI_PROPS_TYPE_NAME } from "../infra/schema-dts.js";
 import {
   isIsoDateTimeZ,
   nowIsoUtcZ,
   resolveTimestamps,
   stampOnWrite,
+  stripTimestampKeys,
 } from "../infra/timestamps.js";
+import {
+  applyWikiNodeFieldPatch,
+  loadWikiCustomProps,
+  splitWikiNodeCustomFields,
+  stringListDefKeys,
+  wikiMarkdownDefKeys,
+  wikiNodeDefKeys,
+  WIKI_SYSTEM_PROP_KEYS,
+} from "./wiki-custom-props.js";
 
 function optionalMemberId(value: unknown): EntityId | null {
   if (typeof value === "string" && isValidEntityId(value)) {
     return value;
   }
   return null;
+}
+
+const WIKI_NON_NODE_NAMES = new Set([
+  "sidebar.ts",
+  "custom-props.ts",
+  "schema.d.ts",
+]);
+
+function writeWikiNodePropsFile(
+  file: string,
+  props: Record<string, unknown>,
+): void {
+  const next = { ...props };
+  delete next.id;
+  fs.writeFileSync(
+    file,
+    writePropsTs(next, { satisfies: WIKI_PROPS_TYPE_NAME }),
+    "utf8",
+  );
 }
 
 /** Nav entry pointing at a wiki-node. Disk may still say `page`; normalize on read. */
@@ -93,6 +125,8 @@ export interface WikiNode {
   created: string;
   updated: string;
   createdBy: EntityId | null;
+  fields: Record<string, unknown>;
+  markdownFields: Record<string, string>;
 }
 
 export interface WikiNodeMeta {
@@ -134,6 +168,8 @@ export interface WikiNodePatch {
   title?: string;
   description?: string;
   body?: string;
+  fields?: Record<string, unknown>;
+  markdownFields?: Record<string, string>;
 }
 
 const SidebarRefZod: z.ZodType<WikiSidebarRefNode> = z.lazy(() =>
@@ -298,11 +334,12 @@ export function migrateLegacyFlatWikiNodes(workspaceRoot: string): void {
     if (!fs.existsSync(propsFile)) {
       const now = nowIsoUtcZ();
       const title = titleFromBody(body, id);
-      fs.writeFileSync(
-        propsFile,
-        writePropsTs({ title, description: "", created: now, updated: now }),
-        "utf8",
-      );
+      writeWikiNodePropsFile(propsFile, {
+        title,
+        description: "",
+        created: now,
+        updated: now,
+      });
     }
     fs.unlinkSync(flat);
   }
@@ -462,7 +499,7 @@ export function listWikiNodeIdsOnDisk(workspaceRoot: string): EntityId[] {
   }
   const out: EntityId[] = [];
   for (const name of fs.readdirSync(dir)) {
-    if (name === "sidebar.ts" || name.startsWith(".")) {
+    if (WIKI_NON_NODE_NAMES.has(name) || name.startsWith(".")) {
       continue;
     }
     if (parseId(name) === null) {
@@ -485,7 +522,7 @@ export function listInvalidWikiNodeNames(workspaceRoot: string): string[] {
   }
   const out: string[] = [];
   for (const name of fs.readdirSync(dir)) {
-    if (name === "sidebar.ts" || name.startsWith(".")) {
+    if (WIKI_NON_NODE_NAMES.has(name) || name.startsWith(".")) {
       continue;
     }
     const full = path.join(dir, name);
@@ -685,27 +722,35 @@ async function readWikiNodeMeta(
       const hadDescription = typeof record.description === "string";
       description = hadDescription ? (record.description as string) : "";
       if (ts.seeded || !hadDescription) {
-        fs.writeFileSync(
-          propsFile,
-          writePropsTs({
-            title,
-            description,
-            created,
-            updated,
-            ...(createdBy ? { createdBy } : {}),
-          }),
-          "utf8",
-        );
+        const schema = await loadWikiCustomProps(workspaceRoot);
+        const next: Record<string, unknown> = {
+          ...record,
+          title,
+          description,
+          created,
+          updated,
+        };
+        delete next.id;
+        if (createdBy) {
+          next.createdBy = createdBy;
+        } else {
+          delete next.createdBy;
+        }
+        for (const mdKey of wikiMarkdownDefKeys(schema)) {
+          delete next[mdKey];
+        }
+        writeWikiNodePropsFile(propsFile, next);
       }
     } catch {
       // Fall back to body-derived title + seeded timestamps.
     }
   } else {
-    fs.writeFileSync(
-      propsFile,
-      writePropsTs({ title, description: "", created, updated }),
-      "utf8",
-    );
+    writeWikiNodePropsFile(propsFile, {
+      title,
+      description: "",
+      created,
+      updated,
+    });
   }
   if (!fs.existsSync(readmeFile)) {
     fs.writeFileSync(readmeFile, "", "utf8");
@@ -803,9 +848,31 @@ export async function getWikiNode(
   const body = fs.existsSync(wikiNodeReadmePath(workspaceRoot, id))
     ? fs.readFileSync(wikiNodeReadmePath(workspaceRoot, id), "utf8")
     : "";
+  let fields: Record<string, unknown> = {};
+  let markdownFields: Record<string, string> = {};
+  const propsFile = wikiNodePropsPath(workspaceRoot, id);
+  if (fs.existsSync(propsFile)) {
+    try {
+      const props = (await loadWikiNodeProps(
+        fs.readFileSync(propsFile, "utf8"),
+      )) as Record<string, unknown>;
+      const schema = await loadWikiCustomProps(workspaceRoot);
+      const split = splitWikiNodeCustomFields(
+        wikiNodeDirPath(workspaceRoot, id),
+        props,
+        schema,
+      );
+      fields = split.fields;
+      markdownFields = split.markdownFields;
+    } catch {
+      // Keep empty custom maps when props fail to parse.
+    }
+  }
   return {
     ...meta,
     body,
+    fields,
+    markdownFields,
   };
 }
 
@@ -822,17 +889,13 @@ export async function createWikiNode(
   const createdBy = resolveActorMemberId(workspaceRoot, input.actorMemberId);
   const dir = wikiNodeDirPath(workspaceRoot, id);
   fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(
-    wikiNodePropsPath(workspaceRoot, id),
-    writePropsTs({
-      title,
-      description,
-      created: now,
-      updated: now,
-      ...(createdBy ? { createdBy } : {}),
-    }),
-    "utf8",
-  );
+  writeWikiNodePropsFile(wikiNodePropsPath(workspaceRoot, id), {
+    title,
+    description,
+    created: now,
+    updated: now,
+    ...(createdBy ? { createdBy } : {}),
+  });
   fs.writeFileSync(wikiNodeReadmePath(workspaceRoot, id), body, "utf8");
 
   const sidebar = await requireReadableSidebar(workspaceRoot);
@@ -877,6 +940,24 @@ export async function updateWikiNode(
     ) {
       conflicts.push("body");
     }
+    if (patch.fields !== undefined) {
+      for (const key of Object.keys(patch.fields)) {
+        if (
+          !equalsForSync(disk.fields[key], options.expected.fields[key])
+        ) {
+          conflicts.push(`fields.${key}`);
+        }
+      }
+    }
+    if (patch.markdownFields !== undefined) {
+      const curMd = normalizeStringMap(disk.markdownFields);
+      const expMd = normalizeStringMap(options.expected.markdownFields);
+      for (const key of Object.keys(patch.markdownFields)) {
+        if (!equalsForSync(curMd[key] ?? "", expMd[key] ?? "")) {
+          conflicts.push(`markdownFields.${key}`);
+        }
+      }
+    }
     if (conflicts.length > 0) {
       throw new StaleWriteError(
         `Wiki-node changed on disk (${conflicts.join(", ")}). Reload or keep editing.`,
@@ -886,6 +967,7 @@ export async function updateWikiNode(
   }
   const propsFile = wikiNodePropsPath(workspaceRoot, id);
   const readmeFile = wikiNodeReadmePath(workspaceRoot, id);
+  const nodeDir = wikiNodeDirPath(workspaceRoot, id);
   let props: Record<string, unknown> = {
     title: meta.title,
     description: meta.description,
@@ -908,10 +990,21 @@ export async function updateWikiNode(
   const nextCreatedBy =
     optionalMemberId(props.createdBy) ?? meta.createdBy;
 
+  const schema = await loadWikiCustomProps(workspaceRoot);
+  const safeFields = stripTimestampKeys(patch.fields);
+  if (safeFields) {
+    for (const key of WIKI_SYSTEM_PROP_KEYS) {
+      delete safeFields[key];
+    }
+  }
+
   const contentWrite =
     patch.title !== undefined ||
     patch.description !== undefined ||
-    patch.body !== undefined;
+    patch.body !== undefined ||
+    (safeFields !== undefined && Object.keys(safeFields).length > 0) ||
+    (patch.markdownFields !== undefined &&
+      Object.keys(patch.markdownFields).length > 0);
   if (!contentWrite) {
     return getWikiNode(workspaceRoot, id);
   }
@@ -931,6 +1024,17 @@ export async function updateWikiNode(
   } else if (typeof props.description !== "string") {
     props.description = meta.description;
   }
+  if (safeFields) {
+    applyWikiNodeFieldPatch(
+      props,
+      safeFields,
+      new Set(wikiNodeDefKeys(schema)),
+      new Set(stringListDefKeys(schema)),
+    );
+  }
+  for (const mdKey of wikiMarkdownDefKeys(schema)) {
+    delete props[mdKey];
+  }
 
   // Ignore any hand-set created/updated on disk for the stamp; keep disk created.
   const stamped = stampOnWrite({
@@ -945,7 +1049,17 @@ export async function updateWikiNode(
   } else {
     delete props.createdBy;
   }
-  fs.writeFileSync(propsFile, writePropsTs(props), "utf8");
+  writeWikiNodePropsFile(propsFile, props);
+
+  if (patch.markdownFields) {
+    for (const [key, mdBody] of Object.entries(patch.markdownFields)) {
+      const file = path.join(nodeDir, `${keyToKebab(key)}.md`);
+      if (mdBody === "" && !fs.existsSync(file)) {
+        continue;
+      }
+      fs.writeFileSync(file, mdBody, "utf8");
+    }
+  }
 
   // Keep sidebar label in sync when title changes (if listed in Contents).
   if (patch.title !== undefined) {

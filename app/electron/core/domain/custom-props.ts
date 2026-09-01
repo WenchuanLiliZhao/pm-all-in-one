@@ -10,7 +10,15 @@ const PropDefZod = z
   .object({
     key: z.string().min(1),
     label: z.string().min(1),
-    type: z.enum(["string", "number", "boolean", "date", "markdown"]),
+    type: z.enum([
+      "string",
+      "number",
+      "boolean",
+      "date",
+      "markdown",
+      "wiki-node",
+      "string-list",
+    ]),
     help: z.string().optional(),
   })
   .transform((def) => {

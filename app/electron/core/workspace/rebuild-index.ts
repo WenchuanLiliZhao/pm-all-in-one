@@ -5,8 +5,9 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { loadCustomProps } from "../domain/custom-props.js";
+import { loadWikiCustomProps } from "../domain/wiki-custom-props.js";
 import { ensureDirWithGitkeep, hierarchyRoot } from "../identity/ids.js";
-import { writeSchemaDts } from "../infra/schema-dts.js";
+import { writeSchemaDts, writeWikiSchemaDts } from "../infra/schema-dts.js";
 import { listIssues, listProjects } from "../domain/store.js";
 import {
   listWikiContentsRows,
@@ -179,6 +180,7 @@ export async function rebuildIndex(workspaceRoot: string): Promise<IssueTree> {
   for (const project of await listProjects(workspaceRoot)) {
     writeSchemaDts(project.path, await loadCustomProps(project.path));
   }
+  writeWikiSchemaDts(workspaceRoot, await loadWikiCustomProps(workspaceRoot));
   return tree;
 }
 

@@ -104,6 +104,11 @@ export function formatFieldValue(
       return String(value);
     case "markdown":
       return truncateMarkdown(String(value));
+    case "wiki-node":
+    case "string-list":
+      return Array.isArray(value)
+        ? value.map((id) => String(id)).join(", ")
+        : String(value);
     default: {
       const _exhaustive: never = type;
       void _exhaustive;

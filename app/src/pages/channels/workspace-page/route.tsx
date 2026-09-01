@@ -11,6 +11,7 @@ import {
 } from "react-router-dom";
 import {
   CustomPropsEditor,
+  WikiCustomPropsEditor,
   IssueDetail,
   ProjectDetail,
   TerminalPanel,
@@ -28,7 +29,7 @@ import {
 } from "@/components";
 import { GitSyncPanel } from "@/components/git-sync-panel";
 import { getPm, isWebPm } from "@/lib/bridge";
-import type { WikiNodeMeta, WorkspaceView } from "@/lib/types";
+import type { WikiCustomPropsSchema, WikiNodeMeta, WorkspaceView } from "@/lib/types";
 import { issueRefKey } from "@/lib/types";
 import {
   useWorkspace,
@@ -47,6 +48,7 @@ import {
   isFillViewportPath,
   needsFillDetailScroll,
 } from "./is-fill-viewport-path";
+import { CopyDoctorPromptButton } from "./copy-doctor-prompt-button";
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -551,8 +553,20 @@ export function WorkspaceLayout() {
           </span>
           <ul className={styles.strayList}>
             {warnings.map((w) => (
-              <li key={`${w.kind}:${w.relPath ?? w.message}`}>
-                <span className={styles.strayKind}>{w.kind}</span> {w.message}
+              <li
+                key={`${w.kind}:${w.relPath ?? w.message}`}
+                className={styles.strayItem}
+              >
+                <span className={styles.strayMeta}>
+                  <span className={styles.strayKind}>{w.kind}</span>
+                  <span>{w.message}</span>
+                </span>
+                <span className={styles.strayActions}>
+                  <CopyDoctorPromptButton
+                    warning={w}
+                    workspaceRoot={root ?? ""}
+                  />
+                </span>
               </li>
             ))}
           </ul>
@@ -795,6 +809,15 @@ export function SettingsGeneralView() {
     setContentsExpandDepthDraft(String(next));
   }, []);
 
+  const loadWikiSchema = useCallback(() => getPm().getWikiCustomProps(), []);
+  const saveWikiSchema = useCallback(async (schema: WikiCustomPropsSchema) => {
+    await getPm().updateWikiCustomProps(schema);
+  }, []);
+  const countWikiUsage = useCallback(
+    (key: string) => getPm().countWikiFieldUsage(key),
+    [],
+  );
+
   const saveHostSave = useCallback(() => saveDetail(), [saveDetail]);
   const saveHostHasUnsaved = useCallback(
     () =>
@@ -906,6 +929,12 @@ export function SettingsGeneralView() {
           more nesting. Manual fold/unfold is remembered on this machine. Press
           Enter or leave the field to apply.
         </p>
+        <WikiCustomPropsEditor
+          load={loadWikiSchema}
+          save={saveWikiSchema}
+          countUsage={countWikiUsage}
+          registerSaveHost={false}
+        />
         <div className={styles.settingsActions}>
           <Button
             type="button"

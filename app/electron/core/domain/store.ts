@@ -3,6 +3,14 @@ import path from "node:path";
 
 import { defsForLevel, loadCustomProps, writeCustomProps, emptyCustomProps } from "./custom-props.js";
 import {
+  applyWikiNodeFieldPatch,
+  normalizeStringList,
+  normalizeWikiNodeIdList,
+  omitEmptyListFields,
+  stringListDefKeys,
+  wikiNodeDefKeys,
+} from "./wiki-custom-props.js";
+import {
   compareIds,
   isBareNumericDir,
   isGluedLegacyId,
@@ -363,6 +371,14 @@ function toIssue(
     if (def.type === "markdown") {
       markdownFields[def.key] = readText(
         path.join(raw.dir, `${keyToKebab(def.key)}.md`),
+      );
+    } else if (def.type === "wiki-node") {
+      fields[def.key] = normalizeWikiNodeIdList(
+        (props as Record<string, unknown>)[def.key],
+      );
+    } else if (def.type === "string-list") {
+      fields[def.key] = normalizeStringList(
+        (props as Record<string, unknown>)[def.key],
       );
     } else if (def.key in props) {
       fields[def.key] = (props as Record<string, unknown>)[def.key];
@@ -907,9 +923,17 @@ export async function updateIssue(
   } else {
     delete next.createdBy;
   }
+  const custom = await loadCustomProps(
+    (await getProject(workspaceRoot, projectId)).path,
+  );
+  const levelDefs = defsForLevel(custom, issue.level);
+  const wikiNodeKeys = new Set(wikiNodeDefKeys(levelDefs));
+  const stringListKeys = new Set(stringListDefKeys(levelDefs));
   if (safeFields) {
-    Object.assign(next, safeFields);
+    applyWikiNodeFieldPatch(next, safeFields, wikiNodeKeys, stringListKeys);
   }
+  // Read path materializes missing list keys as []; never persist empty.
+  omitEmptyListFields(next, wikiNodeKeys, stringListKeys);
   // Structural, not custom fields: only create/move may set these.
   next.level = issue.level;
   next.parentId = issue.parentId;
@@ -923,9 +947,6 @@ export async function updateIssue(
     delete next.createdBy;
   }
   // Strip markdown keys from props.ts (they live in files)
-  const custom = await loadCustomProps(
-    (await getProject(workspaceRoot, projectId)).path,
-  );
   for (const def of defsForLevel(custom, issue.level)) {
     if (def.type === "markdown") {
       delete next[def.key];

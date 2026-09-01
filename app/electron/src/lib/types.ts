@@ -23,7 +23,14 @@ export type {
   IssuePriorityDef,
 } from "./issue-priority.js";
 
-export type MetaFieldType = "string" | "number" | "boolean" | "date" | "markdown";
+export type MetaFieldType =
+  | "string"
+  | "number"
+  | "boolean"
+  | "date"
+  | "markdown"
+  | "wiki-node"
+  | "string-list";
 
 export type LadderViolationKind =
   | "level-missing"
@@ -51,6 +58,11 @@ export interface CustomPropsSchema {
   epic: CustomPropDef[];
   task: CustomPropDef[];
   subtask: CustomPropDef[];
+}
+
+/** Workspace-level wiki custom fields (`wiki/custom-props.ts`). */
+export interface WikiCustomPropsSchema {
+  fields: CustomPropDef[];
 }
 
 export interface Project {
@@ -198,6 +210,7 @@ export type DoctorWarningKind =
   | "wiki-unlisted"
   | "wiki-invalid-name"
   | "wiki-sidebar-unreadable"
+  | "wiki-ref-missing"
   | "member-broken-ref"
   | "member-invalid-name"
   | "assignee-left-member"
@@ -291,9 +304,15 @@ export interface WikiNode {
   relPath: string;
   body: string;
   title: string;
+  /** Short blurb; required key, may be "". */
+  description: string;
   created: string;
   updated: string;
   createdBy: EntityId | null;
+  /** Non-markdown custom field values */
+  fields: Record<string, unknown>;
+  /** Markdown custom fields: key → file contents (may be empty if not yet created) */
+  markdownFields: Record<string, string>;
 }
 
 export interface WikiNodeMeta {
@@ -366,7 +385,16 @@ export interface CreateWikiNodeInput {
 
 export interface WikiNodePatch {
   title?: string;
+  description?: string;
   body?: string;
+  fields?: Record<string, unknown>;
+  markdownFields?: Record<string, string>;
+}
+
+/** Derived: wiki-nodes whose wiki-node custom fields list `targetId`. */
+export interface WikiIncomingRef {
+  fromId: EntityId;
+  fieldKey: string;
 }
 
 export type WikiSidebarMove = "up" | "down" | "indent" | "outdent";

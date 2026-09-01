@@ -19,6 +19,8 @@ import type {
   CreateWikiNodeInput,
   CreateViewInput,
   CustomPropsSchema,
+  WikiCustomPropsSchema,
+  WikiIncomingRef,
   DoctorReport,
   GitPullResult,
   GitSyncStatus,
@@ -60,6 +62,7 @@ type ChangedPayload = {
   strays?: DoctorReport;
   meta?: WorkspaceMeta;
   customProps?: Record<string, CustomPropsSchema>;
+  wikiCustomProps?: WikiCustomPropsSchema;
 };
 
 const API = "/api";
@@ -257,6 +260,20 @@ export function createHttpPmApi(): PmApi {
         "PUT",
         `/projects/${projectId}/custom-props`,
         schema,
+      ),
+    getWikiCustomProps: () =>
+      request<WikiCustomPropsSchema>("GET", "/wiki/custom-props"),
+    updateWikiCustomProps: (schema) =>
+      request<WikiCustomPropsSchema>("PUT", "/wiki/custom-props", schema),
+    countWikiFieldUsage: (key) =>
+      request<number>(
+        "GET",
+        `/wiki/custom-props/usage?key=${encodeURIComponent(key)}`,
+      ),
+    listWikiIncomingRefs: (targetId) =>
+      request<WikiIncomingRef[]>(
+        "GET",
+        `/wiki/incoming-refs?targetId=${encodeURIComponent(targetId)}`,
       ),
 
     listViews: () => request<WorkspaceView[]>("GET", "/views"),

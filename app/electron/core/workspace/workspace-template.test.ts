@@ -49,6 +49,8 @@ test("scaffold copies template files including .gitkeep", () => {
       assert.ok(fs.existsSync(path.join(root, ".pm", "view-orders.json")));
       assert.ok(fs.existsSync(path.join(root, ".pm", "views.json")));
       assert.ok(fs.existsSync(path.join(root, "wiki", "sidebar.ts")));
+      assert.ok(fs.existsSync(path.join(root, "wiki", "custom-props.ts")));
+      assert.ok(fs.existsSync(path.join(root, "wiki", "schema.d.ts")));
       assert.ok(fs.existsSync(path.join(root, ".gitignore")));
       const gitignore = fs.readFileSync(path.join(root, ".gitignore"), "utf8");
       assert.ok(gitignore.includes(".pm/local.json"));
@@ -116,9 +118,10 @@ test("scaffold copies template files including .gitkeep", () => {
       assert.equal(agent, templateAgent);
       assert.match(
         agent,
-        /^<!-- local-pm agent\.md rev 10 — product-owned;/,
+        /^<!-- local-pm agent\.md rev 13 — product-owned;/,
       );
       assert.ok(agent.includes("Wiki Contents"));
+      assert.ok(agent.includes("wiki/custom-props.ts"));
       assert.ok(agent.includes("Install Command Line Tool"));
       assert.ok(agent.includes("npx pm-all-in-one"));
       assert.ok(agent.includes("**When no CLI is reachable, stop and say so.**"));

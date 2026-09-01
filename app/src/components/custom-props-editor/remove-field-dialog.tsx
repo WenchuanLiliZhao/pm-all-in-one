@@ -10,6 +10,10 @@ type Props = {
   fieldKey: string;
   level: string;
   usageCount: number;
+  /** Singular noun in usage copy. Default: “issue of this level”. */
+  usageSingular?: string;
+  usagePlural?: string;
+  settingsSurface?: string;
   onCancel: () => void;
   onConfirm: () => void;
 };
@@ -20,6 +24,9 @@ export function RemoveFieldDialog({
   fieldKey,
   level,
   usageCount,
+  usageSingular = "issue of this level",
+  usagePlural = "issues of this level",
+  settingsSurface = "Project settings",
   onCancel,
   onConfirm,
 }: Props) {
@@ -73,10 +80,10 @@ export function RemoveFieldDialog({
           Remove <strong>{fieldLabel}</strong> (<code>{fieldKey}</code>) from{" "}
           <code>{level}</code>?{" "}
           {usageCount === 1
-            ? "1 issue of this level still has a saved value for it."
-            : `${usageCount} issues of this level still have a saved value for it.`}{" "}
+            ? `1 ${usageSingular} still has a saved value for it.`
+            : `${usageCount} ${usagePlural} still have a saved value for it.`}{" "}
           Those values become orphaned (schema only — data is not auto-cleared).
-          This cannot be undone from Project settings.
+          This cannot be undone from {settingsSurface}.
         </p>
         <label className={styles.ack}>
           <span>

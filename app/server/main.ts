@@ -4,6 +4,12 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { adoptStray, scanWorkspace } from "../electron/core/workspace/doctor.js";
 import {
+  countWikiFieldUsage,
+  listWikiIncomingRefs,
+  loadWikiCustomProps,
+  writeWikiCustomProps,
+} from "../electron/core/domain/wiki-custom-props.js";
+import {
   createWikiNode,
   deleteWikiNode,
   ensureWiki,
@@ -62,6 +68,7 @@ import type {
   CreateHandoffInput,
   CreateMemberInput,
   CustomPropsSchema,
+  WikiCustomPropsSchema,
   HandoffPatch,
   IssueCreateInput,
   IssuePatch,
@@ -495,6 +502,26 @@ async function handleApi(
       200,
       await moveWikiNodeToSidebarPosition(root, body.id, body.placement),
     );
+    return;
+  }
+  if (method === "GET" && pathname === "/api/wiki/custom-props") {
+    sendJson(res, 200, await loadWikiCustomProps(root));
+    return;
+  }
+  if (method === "PUT" && pathname === "/api/wiki/custom-props") {
+    const schema = (await readJson(req)) as WikiCustomPropsSchema;
+    writeWikiCustomProps(root, schema);
+    sendJson(res, 200, await loadWikiCustomProps(root));
+    return;
+  }
+  if (method === "GET" && pathname === "/api/wiki/custom-props/usage") {
+    const key = url.searchParams.get("key") ?? "";
+    sendJson(res, 200, await countWikiFieldUsage(root, key));
+    return;
+  }
+  if (method === "GET" && pathname === "/api/wiki/incoming-refs") {
+    const targetId = url.searchParams.get("targetId") ?? "";
+    sendJson(res, 200, await listWikiIncomingRefs(root, targetId));
     return;
   }
   {

@@ -1,4 +1,4 @@
-<!-- local-pm agent.md rev 11 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/custom/ (see pm-create-skill). -->
+<!-- local-pm agent.md rev 14 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/custom/ (see pm-create-skill). -->
 # Agent rules (local-pm)
 
 ## Finding things
@@ -57,9 +57,12 @@ Backticks are fine only when explaining the *syntax* with placeholders
     custom/                    # user conventions (see pm-create-skill)
   wiki/
     sidebar.ts                 # Contents SoT (export const props = [...])
+    custom-props.ts            # workspace wiki field schema (not a node)
+    schema.d.ts                # generated from wiki/custom-props.ts
     <nanoid>/                  # wiki-node dirs (ids never renamed)
-      props.ts                 # title, description, created, updated, createdBy?
+      props.ts                 # title, description, created, updated, createdBy?, custom scalars
       README.md                # body
+      <kebab-key>.md           # optional markdown custom field
   members/
     <nanoid>/                  # member dirs (ids never renamed)
       props.ts                 # title, membership, created, updated
@@ -164,6 +167,19 @@ every wiki-node must appear there. Create via the app or CLI so ids allocate
 correctly; new nodes always enter Contents (`parentId` optional, default root).
 Prefer `@wiki-<id>` for links. Home is root `README.md`, not a file under
 `wiki/`. All pages is a flat admin inventory of the same set.
+
+Wiki custom fields are workspace-level, not per-project: `wiki/custom-props.ts`
+exports `{ fields: CustomPropDef[] }`. Generated `wiki/schema.d.ts` is
+`WikiNodeProps`. Non-markdown values sit flat in the node `props.ts` (keep
+`satisfies WikiNodeProps`); markdown values are sibling `<kebab-key>.md`,
+never in props.ts. Missing `wiki/custom-props.ts` means an empty schema.
+Do not declare reserved keys (`id`, `title`, `description`, `created`,
+`updated`, `createdBy`, `body`) or a markdown key that kebab-cases to `readme`.
+`type: "wiki-node"` stores `string[]` of wiki-node ids in props.ts (omit when
+empty). Those ids are not Contents parents. A `@wiki-<id>` in README.md is a
+prose mention, not membership in the field.
+`type: "string-list"` stores `string[]` of free-text tokens in props.ts (omit
+when empty). Tokens are not wiki-node ids — use this for keywords / aliases.
 
 The derived `.pm/tree.md` **Wiki Contents** section is the readable tree
 (same file as the issue map). Read that to choose a parent; do not glob
@@ -272,9 +288,9 @@ Hand-created directories under a project are **not** issues until adopted
 ## Editing by hand
 
 Fine to edit: workspace / issue / project / member `README.md`, `wiki/*/README.md`,
-markdown prop files, and the non-structural fields of `workspace.ts`,
-`project.ts`, and `props.ts` (title, `startDate`/`endDate`, `blockedBy`,
-`assignee`, custom props, member `membership`).
+markdown prop files (issue or wiki-node), and the non-structural fields of
+`workspace.ts`, `project.ts`, and `props.ts` (title, `startDate`/`endDate`,
+`blockedBy`, `assignee`, custom props, member `membership`).
 
 **Title vs body.** Title lives in `workspace.ts` / `project.ts` / issue, wiki-node,
 or member `props.ts`. The matching `README.md` is body only — do **not** start
@@ -291,9 +307,11 @@ or member `props.ts`.** They are system fields: `created` is set once at create;
 - Prefer the app (or CLI) for `wiki/sidebar.ts` structure changes.
 - Never write an `id` field into `workspace.ts`, `project.ts`, `props.ts`, or
   `custom-props.ts`. Do not declare `created`/`updated`/`createdBy`/`assignee`
-  as custom props.
+  as issue custom props, or `created`/`updated`/`createdBy`/`title`/
+  `description`/`body` as wiki custom props.
 - Keep the `satisfies` clause: `<project>/schema.d.ts` is generated from
-  `custom-props.ts` and catches misspelled fields. It checks shape only — it
+  that project's `custom-props.ts`; `wiki/schema.d.ts` is generated from
+  `wiki/custom-props.ts` (`satisfies WikiNodeProps`). Shape only — it
   cannot tell whether a `parentId` is a legal parent.
 - `.pm/index.json` and `.pm/tree.md` are derived. Editing them changes nothing.
 - `.pm/local.json` is machine-local (gitignored) — current `me` member id

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   MarkdownEditor,
   type MarkdownEditorHandle,
@@ -45,6 +46,14 @@ import { usePmMentions } from "@/lib/markdown/use-pm-mentions";
 import { useNodeLocalMedia } from "@/lib/markdown/node-local-media";
 import { keyToKebab } from "@pm-core/identity/dir-id";
 import type { WikiNodeMeta } from "@/lib/types";
+import {
+  WikiNodeLinksField,
+  wikiNodeFieldIds,
+} from "@/components/wiki-node-links-field";
+import {
+  StringListField,
+  stringListFieldValues,
+} from "@/components/string-list-field";
 import styles from "./styles.module.scss";
 
 interface IssueDetailProps {
@@ -78,9 +87,11 @@ const CHILD_LABEL: Record<Issue["level"], string | null> = {
 /** Key/value orientation inside one prop. Props themselves always stack. */
 type PropFieldLayout = "inline" | "stack";
 
-/** Custom MetaFieldType → layout. markdown is tall → stack; scalars → inline. */
+/** Custom MetaFieldType → layout. markdown and lists stack; scalars stay inline. */
 function propLayoutForCustomType(type: MetaFieldType): PropFieldLayout {
-  return type === "markdown" ? "stack" : "inline";
+  return type === "markdown" || type === "wiki-node" || type === "string-list"
+    ? "stack"
+    : "inline";
 }
 
 function PropField({
@@ -230,6 +241,7 @@ export function IssueDetail({
   issues,
   wikiNodes = [],
 }: IssueDetailProps) {
+  const navigate = useNavigate();
   const { refreshCustomProps, persistIssueBlockedBy, setError } = useWorkspace();
   const { members } = useMember();
   const [propDefs, setPropDefs] = useState<CustomPropDef[]>([]);
@@ -746,6 +758,38 @@ export function IssueDetail({
               {propDefs.map((def) => {
                 const layout = propLayoutForCustomType(def.type);
                 const label = fieldLabel(def);
+
+                if (def.type === "wiki-node") {
+                  return (
+                    <PropField key={def.key} layout={layout} label={label}>
+                      <WikiNodeLinksField
+                        ids={wikiNodeFieldIds(issue.fields[def.key])}
+                        wikiNodes={wikiNodes}
+                        listAriaLabel={def.label?.trim() || def.key}
+                        addAriaLabel={`Add ${def.label?.trim() || def.key}`}
+                        onOpen={(id) => navigate(`/w/wiki/${id}`)}
+                        onChange={(ids) =>
+                          onChange({ fields: { [def.key]: ids } })
+                        }
+                      />
+                    </PropField>
+                  );
+                }
+
+                if (def.type === "string-list") {
+                  return (
+                    <PropField key={def.key} layout={layout} label={label}>
+                      <StringListField
+                        values={stringListFieldValues(issue.fields[def.key])}
+                        listAriaLabel={def.label?.trim() || def.key}
+                        addAriaLabel={`Add ${def.label?.trim() || def.key}`}
+                        onChange={(values) =>
+                          onChange({ fields: { [def.key]: values } })
+                        }
+                      />
+                    </PropField>
+                  );
+                }
 
                 if (def.type === "markdown") {
                   return (

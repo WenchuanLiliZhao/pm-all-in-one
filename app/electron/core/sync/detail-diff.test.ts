@@ -179,3 +179,44 @@ test("classifyProject title conflict", () => {
   assert.equal(r.hasConflict, true);
   assert.deepEqual(r.conflictPaths, ["title"]);
 });
+
+function wikiSlice(
+  partial: Partial<{
+    title: string;
+    description: string;
+    body: string;
+    fields: Record<string, unknown>;
+    markdownFields: Record<string, string>;
+  }> = {},
+) {
+  return {
+    title: "T",
+    description: "",
+    body: "body",
+    fields: {},
+    markdownFields: {},
+    ...partial,
+  };
+}
+
+test("classifyWiki: per-key custom field conflict", async () => {
+  const { classifyWiki } = await import("./detail-diff.js");
+  const base = wikiSlice({ fields: { audience: "a" } });
+  const draft = wikiSlice({ fields: { audience: "local" } });
+  const disk = wikiSlice({ fields: { audience: "disk" } });
+  const r = classifyWiki(base, draft, disk);
+  assert.equal(r.hasConflict, true);
+  assert.deepEqual(r.conflictPaths, ["fields.audience"]);
+  assert.equal(r.mergedDraft.fields.audience, "local");
+});
+
+test("classifyWiki: disk-only markdown is taken", async () => {
+  const { classifyWiki } = await import("./detail-diff.js");
+  const base = wikiSlice();
+  const draft = wikiSlice();
+  const disk = wikiSlice({ markdownFields: { notes: "from disk" } });
+  const r = classifyWiki(base, draft, disk);
+  assert.equal(r.hasConflict, false);
+  assert.equal(r.hasLocalEdits, false);
+  assert.equal(r.mergedDraft.markdownFields.notes, "from disk");
+});

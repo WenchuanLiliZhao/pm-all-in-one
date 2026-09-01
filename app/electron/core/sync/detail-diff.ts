@@ -69,6 +69,8 @@ export type WikiEditableSlice = {
   title: string;
   description: string;
   body: string;
+  fields: Record<string, unknown>;
+  markdownFields: Record<string, string>;
 };
 
 export type MemberEditableSlice = {
@@ -169,11 +171,15 @@ export function pickWikiEditable(node: {
   title: string;
   description: string;
   body: string;
+  fields?: Record<string, unknown>;
+  markdownFields?: Record<string, string>;
 }): WikiEditableSlice {
   return {
     title: node.title,
     description: node.description,
     body: node.body,
+    fields: { ...(node.fields ?? {}) },
+    markdownFields: { ...(node.markdownFields ?? {}) },
   };
 }
 
@@ -592,9 +598,127 @@ export function classifyWiki(
   baseline: WikiEditableSlice,
   draft: WikiEditableSlice,
   disk: WikiEditableSlice,
-): SimpleClassifyResult<WikiEditableSlice> {
-  return classifySimple(baseline, draft, disk, ["title", "description", "body"]);
+): WikiClassifyResult {
+  const scalars = {
+    title: classifyScalar(baseline.title, draft.title, disk.title),
+    description: classifyScalar(
+      baseline.description,
+      draft.description,
+      disk.description,
+    ),
+    body: classifyScalar(baseline.body, draft.body, disk.body),
+  };
+  const fields = classifyFieldsMap(baseline.fields, draft.fields, disk.fields);
+  const markdownFields = classifyStringMap(
+    baseline.markdownFields,
+    draft.markdownFields,
+    disk.markdownFields,
+  );
+
+  const conflictPaths: string[] = [];
+  let hasLocalEdits = false;
+  for (const [key, v] of Object.entries(scalars) as Array<
+    [keyof typeof scalars, FieldVerdict]
+  >) {
+    if (v === "conflict") {
+      conflictPaths.push(key);
+    }
+    if (v === "local-only" || v === "conflict") {
+      hasLocalEdits = true;
+    }
+  }
+  for (const [key, v] of Object.entries(fields)) {
+    if (v === "conflict") {
+      conflictPaths.push(`fields.${key}`);
+    }
+    if (v === "local-only" || v === "conflict") {
+      hasLocalEdits = true;
+    }
+  }
+  for (const [key, v] of Object.entries(markdownFields)) {
+    if (v === "conflict") {
+      conflictPaths.push(`markdownFields.${key}`);
+    }
+    if (v === "local-only" || v === "conflict") {
+      hasLocalEdits = true;
+    }
+  }
+
+  const pickScalar = <T,>(
+    key: keyof typeof scalars,
+    b: T,
+    d: T,
+    k: T,
+  ): { merged: T; nextBase: T } => {
+    const v = scalars[key];
+    if (v === "disk-only" || v === "converged" || v === "unchanged") {
+      return { merged: k, nextBase: k };
+    }
+    if (v === "local-only") {
+      return { merged: d, nextBase: b };
+    }
+    return { merged: d, nextBase: b };
+  };
+
+  const title = pickScalar("title", baseline.title, draft.title, disk.title);
+  const description = pickScalar(
+    "description",
+    baseline.description,
+    draft.description,
+    disk.description,
+  );
+  const body = pickScalar("body", baseline.body, draft.body, disk.body);
+  const fieldsMerge = applyFieldsMerge(
+    baseline.fields,
+    draft.fields,
+    disk.fields,
+    fields,
+  );
+  const mdMerge = applyMapMerge(
+    baseline.markdownFields,
+    draft.markdownFields,
+    disk.markdownFields,
+    markdownFields,
+  );
+
+  return {
+    scalars,
+    fields,
+    markdownFields,
+    conflictPaths,
+    hasLocalEdits,
+    hasConflict: conflictPaths.length > 0,
+    mergedDraft: {
+      title: title.merged,
+      description: description.merged,
+      body: body.merged,
+      fields: fieldsMerge.merged,
+      markdownFields: mdMerge.merged,
+    },
+    nextBaseline: {
+      title: title.nextBase,
+      description: description.nextBase,
+      body: body.nextBase,
+      fields: fieldsMerge.nextBase,
+      markdownFields: mdMerge.nextBase,
+    },
+  };
 }
+
+export type WikiClassifyResult = {
+  scalars: {
+    title: FieldVerdict;
+    description: FieldVerdict;
+    body: FieldVerdict;
+  };
+  fields: Record<string, FieldVerdict>;
+  markdownFields: Record<string, FieldVerdict>;
+  conflictPaths: string[];
+  hasLocalEdits: boolean;
+  hasConflict: boolean;
+  mergedDraft: WikiEditableSlice;
+  nextBaseline: WikiEditableSlice;
+};
 
 export function classifyMember(
   baseline: MemberEditableSlice,
@@ -637,6 +761,22 @@ export function issueSlicesEqual(
     equalsForSync(a.blockedBy, b.blockedBy) &&
     equalsForSync(a.description, b.description) &&
     equalsForSync(a.assignee, b.assignee) &&
+    equalsForSync(normalizeFieldsMap(a.fields), normalizeFieldsMap(b.fields)) &&
+    equalsForSync(
+      normalizeStringMap(a.markdownFields),
+      normalizeStringMap(b.markdownFields),
+    )
+  );
+}
+
+export function wikiSlicesEqual(
+  a: WikiEditableSlice,
+  b: WikiEditableSlice,
+): boolean {
+  return (
+    equalsForSync(a.title, b.title) &&
+    equalsForSync(a.description, b.description) &&
+    equalsForSync(a.body, b.body) &&
     equalsForSync(normalizeFieldsMap(a.fields), normalizeFieldsMap(b.fields)) &&
     equalsForSync(
       normalizeStringMap(a.markdownFields),

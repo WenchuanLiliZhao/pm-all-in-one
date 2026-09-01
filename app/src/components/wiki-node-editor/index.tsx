@@ -7,7 +7,7 @@
  * ↔ dogfood @wiki-n8_7zg25NlxwdV6nIBVcD — ExplicitDoc
  * ↔ electron/core/domain/wiki.ts — updateWikiNode OCC
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { DetailConflictBanner } from "@/components/detail-conflict-banner";
 import {
@@ -25,9 +25,18 @@ import { MemberPerson } from "@/components/member-person";
 import { NodeAssetsSection } from "@/components/node-assets-section";
 import { TypeConfirmDialog } from "@/components/type-confirm-dialog";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { Lucide } from "@/components/ui/lucide";
 import { getPm } from "@/lib/bridge";
-import type { WikiNode, WikiNodeMeta, Issue } from "@/lib/types";
+import type {
+  CustomPropDef,
+  WikiIncomingRef,
+  WikiNode,
+  WikiNodeMeta,
+  Issue,
+  MetaFieldType,
+} from "@/lib/types";
 import { usePmMentions } from "@/lib/markdown/use-pm-mentions";
 import { useNodeLocalMedia } from "@/lib/markdown/node-local-media";
 import type { Selection } from "@/lib/workspace/workspace-context";
@@ -41,8 +50,22 @@ import {
 import {
   classifyWiki,
   pickWikiEditable,
+  wikiSlicesEqual,
   type WikiEditableSlice,
 } from "@pm-core/sync/detail-diff";
+import { keyToKebab } from "@pm-core/identity/dir-id";
+import {
+  WikiNodeLinksField,
+  wikiNodeFieldIds,
+} from "@/components/wiki-node-links-field";
+import {
+  StringListField,
+  stringListFieldValues,
+} from "@/components/string-list-field";
+import {
+  groupIncomingWikiRefs,
+  incomingWikiDeleteDetail,
+} from "@/lib/wiki-incoming-refs";
 import styles from "./styles.module.scss";
 
 type Props = {
@@ -54,6 +77,41 @@ type Props = {
 
 function titleDirty(draft: string, baseline: string): boolean {
   return draft.trim() !== baseline.trim();
+}
+
+type PropFieldLayout = "inline" | "stack";
+
+function propLayoutForCustomType(type: MetaFieldType): PropFieldLayout {
+  return type === "markdown" || type === "wiki-node" || type === "string-list"
+    ? "stack"
+    : "inline";
+}
+
+function PropField({
+  layout,
+  label,
+  children,
+}: {
+  layout: PropFieldLayout;
+  label: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className={styles.propField} data-layout={layout}>
+      <span className={styles.propFieldKey}>{label}</span>
+      <div className={styles.propFieldValue}>{children}</div>
+    </div>
+  );
+}
+
+function emptyDraft(): WikiEditableSlice {
+  return {
+    title: "",
+    description: "",
+    body: "",
+    fields: {},
+    markdownFields: {},
+  };
 }
 
 function isTitleInputFocused(): boolean {
@@ -79,6 +137,11 @@ export function WikiNodeEditor({
   const [draft, setDraft] = useState("");
   const [titleDraft, setTitleDraft] = useState("");
   const [descriptionDraft, setDescriptionDraft] = useState("");
+  const [fieldsDraft, setFieldsDraft] = useState<Record<string, unknown>>({});
+  const [markdownDraft, setMarkdownDraft] = useState<Record<string, string>>(
+    {},
+  );
+  const [propDefs, setPropDefs] = useState<CustomPropDef[]>([]);
   const [status, setStatus] = useState<DetailSaveStatus>("clean");
   const [error, setError] = useState<string | null>(null);
   const [conflictPaths, setConflictPaths] = useState<string[]>([]);
@@ -86,14 +149,21 @@ export function WikiNodeEditor({
     id: string;
     detail: string[];
   } | null>(null);
+  const [incoming, setIncoming] = useState<WikiIncomingRef[]>([]);
 
-  const draftRef = useRef({ title: "", description: "", body: "" });
+  const draftRef = useRef(emptyDraft());
   const baselineRef = useRef<WikiEditableSlice | null>(null);
   const bodyEditorRef = useRef<MarkdownEditorHandle>(null);
   const titleInputRef = useRef<HTMLTextAreaElement>(null);
   const ctrlRef = useRef<DetailSaveController | null>(null);
 
-  draftRef.current = { title: titleDraft, description: descriptionDraft, body: draft };
+  draftRef.current = {
+    title: titleDraft,
+    description: descriptionDraft,
+    body: draft,
+    fields: fieldsDraft,
+    markdownFields: markdownDraft,
+  };
 
   if (ctrlRef.current === null) {
     ctrlRef.current = new DetailSaveController({
@@ -110,7 +180,8 @@ export function WikiNodeEditor({
         if (target.kind !== "wiki") {
           return;
         }
-        const { title, description, body } = draftRef.current;
+        const { title, description, body, fields, markdownFields } =
+          draftRef.current;
         if (!title.trim()) {
           throw new Error("Wiki-node title is required.");
         }
@@ -118,16 +189,30 @@ export function WikiNodeEditor({
         const titleFocused = isTitleInputFocused();
         const saved = await getPm().updateWikiNode(
           target.wikiNodeId,
-          { title: title.trim(), description, body },
+          {
+            title: title.trim(),
+            description,
+            body,
+            fields,
+            markdownFields,
+          },
           expected ? { expected } : undefined,
         );
         setPage(saved);
         setDraft(saved.body);
         setDescriptionDraft(saved.description);
+        setFieldsDraft({ ...saved.fields });
+        setMarkdownDraft({ ...saved.markdownFields });
         if (!titleFocused) {
           setTitleDraft(saved.title);
         } else {
-          draftRef.current = { title, description: saved.description, body: saved.body };
+          draftRef.current = {
+            title,
+            description: saved.description,
+            body: saved.body,
+            fields: { ...saved.fields },
+            markdownFields: { ...saved.markdownFields },
+          };
         }
         baselineRef.current = pickWikiEditable(saved);
       },
@@ -137,9 +222,11 @@ export function WikiNodeEditor({
 
   useEffect(() => {
     let cancelled = false;
+    setIncoming([]);
     void (async () => {
       try {
         const next = await getPm().getWikiNode(wikiNodeId);
+        const schema = await getPm().getWikiCustomProps();
         if (cancelled) {
           return;
         }
@@ -147,7 +234,23 @@ export function WikiNodeEditor({
         setDraft(next.body);
         setTitleDraft(next.title);
         setDescriptionDraft(next.description);
-        draftRef.current = { title: next.title, description: next.description, body: next.body };
+        setFieldsDraft({ ...next.fields });
+        setMarkdownDraft({ ...next.markdownFields });
+        setPropDefs(schema.fields);
+        try {
+          const refs = await getPm().listWikiIncomingRefs(wikiNodeId);
+          if (!cancelled) {
+            setIncoming(refs);
+          }
+        } catch {
+          if (!cancelled) {
+            setIncoming([]);
+          }
+        }
+        if (cancelled) {
+          return;
+        }
+        draftRef.current = pickWikiEditable(next);
         baselineRef.current = pickWikiEditable(next);
         ctrl.resetClean();
         setConflictPaths([]);
@@ -173,23 +276,24 @@ export function WikiNodeEditor({
       void (async () => {
         try {
           const next = await getPm().getWikiNode(wikiNodeId);
+          const schema = await getPm().getWikiCustomProps();
           const baseline = baselineRef.current ?? pickWikiEditable(next);
-          const draftSlice: WikiEditableSlice = {
-            title: draftRef.current.title,
-            description: draftRef.current.description,
-            body: draftRef.current.body,
-          };
+          const draftSlice: WikiEditableSlice = { ...draftRef.current };
           const disk = pickWikiEditable(next);
           const result = classifyWiki(baseline, draftSlice, disk);
           setPage(next);
+          setPropDefs(schema.fields);
+          try {
+            setIncoming(await getPm().listWikiIncomingRefs(wikiNodeId));
+          } catch {
+            setIncoming([]);
+          }
           setDraft(result.mergedDraft.body);
           setTitleDraft(result.mergedDraft.title);
           setDescriptionDraft(result.mergedDraft.description);
-          draftRef.current = {
-            title: result.mergedDraft.title,
-            description: result.mergedDraft.description,
-            body: result.mergedDraft.body,
-          };
+          setFieldsDraft({ ...result.mergedDraft.fields });
+          setMarkdownDraft({ ...result.mergedDraft.markdownFields });
+          draftRef.current = result.mergedDraft;
           baselineRef.current = result.nextBaseline;
           ctrl.applySyncState(
             { kind: "wiki", wikiNodeId },
@@ -205,15 +309,17 @@ export function WikiNodeEditor({
   }, [wikiNodeId, ctrl]);
 
   const markDirty = useCallback(
-    (title: string, description: string, body: string) => {
+    (slice: WikiEditableSlice) => {
       const base = baselineRef.current;
       if (!base) {
         return;
       }
       const dirty =
-        titleDirty(title, base.title) ||
-        description !== base.description ||
-        body !== base.body;
+        titleDirty(slice.title, base.title) ||
+        !wikiSlicesEqual(
+          { ...slice, title: slice.title.trim() },
+          { ...base, title: base.title.trim() },
+        );
       ctrl.setContentDirty({ kind: "wiki", wikiNodeId }, dirty);
     },
     [ctrl, wikiNodeId],
@@ -231,11 +337,9 @@ export function WikiNodeEditor({
       setTitleDraft(base.title);
       setDescriptionDraft(base.description);
       setDraft(base.body);
-      draftRef.current = {
-        title: base.title,
-        description: base.description,
-        body: base.body,
-      };
+      setFieldsDraft({ ...base.fields });
+      setMarkdownDraft({ ...base.markdownFields });
+      draftRef.current = { ...base };
     }
     ctrl.resetClean();
     setConflictPaths([]);
@@ -286,7 +390,9 @@ export function WikiNodeEditor({
       setDraft(next.body);
       setTitleDraft(next.title);
       setDescriptionDraft(next.description);
-      draftRef.current = { title: next.title, description: next.description, body: next.body };
+      setFieldsDraft({ ...next.fields });
+      setMarkdownDraft({ ...next.markdownFields });
+      draftRef.current = pickWikiEditable(next);
       baselineRef.current = pickWikiEditable(next);
       ctrl.resetClean();
       setConflictPaths([]);
@@ -300,10 +406,19 @@ export function WikiNodeEditor({
     try {
       const next = await getPm().getWikiNode(wikiNodeId);
       baselineRef.current = pickWikiEditable(next);
-      const dirty =
-        titleDirty(titleDraft, next.title) ||
-        descriptionDraft !== next.description ||
-        draft !== next.body;
+      const dirty = !wikiSlicesEqual(
+        {
+          title: titleDraft.trim(),
+          description: descriptionDraft,
+          body: draft,
+          fields: fieldsDraft,
+          markdownFields: markdownDraft,
+        },
+        {
+          ...pickWikiEditable(next),
+          title: next.title.trim(),
+        },
+      );
       ctrl.applySyncState(
         { kind: "wiki", wikiNodeId },
         dirty,
@@ -331,15 +446,65 @@ export function WikiNodeEditor({
     );
   }
 
+  const fieldLabel = (def: CustomPropDef) => {
+    const label = def.label?.trim() || def.key;
+    const help = def.help?.trim();
+    return (
+      <span className={styles.fieldLabel}>
+        {label}
+        {help ? (
+          <abbr className={styles.helpTip} title={help} aria-label={help}>
+            ?
+          </abbr>
+        ) : null}
+      </span>
+    );
+  };
+
+  const patchFields = (key: string, value: unknown) => {
+    const next = { ...fieldsDraft, [key]: value };
+    setFieldsDraft(next);
+    const slice: WikiEditableSlice = {
+      title: titleDraft,
+      description: descriptionDraft,
+      body: draft,
+      fields: next,
+      markdownFields: markdownDraft,
+    };
+    draftRef.current = slice;
+    markDirty(slice);
+  };
+
+  const patchMarkdown = (key: string, value: string) => {
+    const next = { ...markdownDraft, [key]: value };
+    setMarkdownDraft(next);
+    const slice: WikiEditableSlice = {
+      title: titleDraft,
+      description: descriptionDraft,
+      body: draft,
+      fields: fieldsDraft,
+      markdownFields: next,
+    };
+    draftRef.current = slice;
+    markDirty(slice);
+  };
+
   const onDelete = () => {
-    const detailParts = [
-      "This cannot be undone.",
-      "It will also be removed from Contents (nested Contents items are promoted).",
-    ];
-    if (ctrl.hasUnsavedWork()) {
-      detailParts.push("Unsaved edits will be discarded.");
-    }
-    setPendingDelete({ id: page.id, detail: detailParts });
+    void (async () => {
+      const detailParts = [
+        "This cannot be undone.",
+        "It will also be removed from Contents (nested Contents items are promoted).",
+      ];
+      try {
+        detailParts.push(...(await incomingWikiDeleteDetail(page.id)));
+      } catch {
+        // Incoming scan failed — still allow delete.
+      }
+      if (ctrl.hasUnsavedWork()) {
+        detailParts.push("Unsaved edits will be discarded.");
+      }
+      setPendingDelete({ id: page.id, detail: detailParts });
+    })();
   };
 
   const confirmDelete = async () => {
@@ -412,8 +577,15 @@ export function WikiNodeEditor({
           value={titleDraft}
           onChange={(next) => {
             setTitleDraft(next);
-            draftRef.current = { title: next, description: descriptionDraft, body: draft };
-            markDirty(next, descriptionDraft, draft);
+            const slice: WikiEditableSlice = {
+              title: next,
+              description: descriptionDraft,
+              body: draft,
+              fields: fieldsDraft,
+              markdownFields: markdownDraft,
+            };
+            draftRef.current = slice;
+            markDirty(slice);
           }}
           onEnter={() => {
             bodyEditorRef.current?.focus({ at: "start" });
@@ -425,8 +597,7 @@ export function WikiNodeEditor({
         <>
         <label className={styles.descriptionField}>
           <span>Description</span>
-          <input
-            className={styles.descriptionInput}
+          <Input
             aria-label="Description"
             value={descriptionDraft}
             disabled={status === "saving"}
@@ -434,12 +605,15 @@ export function WikiNodeEditor({
             onChange={(e) => {
               const next = e.target.value;
               setDescriptionDraft(next);
-              draftRef.current = {
+              const slice: WikiEditableSlice = {
                 title: titleDraft,
                 description: next,
                 body: draft,
+                fields: fieldsDraft,
+                markdownFields: markdownDraft,
               };
-              markDirty(titleDraft, next, draft);
+              draftRef.current = slice;
+              markDirty(slice);
             }}
           />
         </label>
@@ -465,8 +639,15 @@ export function WikiNodeEditor({
           value={draft}
           onChange={(body) => {
             setDraft(body);
-            draftRef.current = { title: titleDraft, description: descriptionDraft, body };
-            markDirty(titleDraft, descriptionDraft, body);
+            const slice: WikiEditableSlice = {
+              title: titleDraft,
+              description: descriptionDraft,
+              body,
+              fields: fieldsDraft,
+              markdownFields: markdownDraft,
+            };
+            draftRef.current = slice;
+            markDirty(slice);
           }}
           plugins={plugins}
           mentionAutocomplete={mentionAutocomplete}
@@ -487,7 +668,211 @@ export function WikiNodeEditor({
         />
       }
       footer={
-        <NodeAssetsSection nodeRef={wikiNodeRef} />
+        <>
+          <NodeAssetsSection nodeRef={wikiNodeRef} />
+          {incoming.length > 0 ? (
+            <div className={styles.mdFields}>
+              <h3>Linked from</h3>
+              {groupIncomingWikiRefs(incoming).map((group) => {
+                const def = propDefs.find((d) => d.key === group.fieldKey);
+                const groupLabel = def?.label?.trim() || group.fieldKey;
+                return (
+                  <PropField
+                    key={group.fieldKey}
+                    layout="stack"
+                    label={groupLabel}
+                  >
+                    <ul className={styles.incomingList} aria-label={groupLabel}>
+                      {group.fromIds.map((id) => {
+                        const hit = wikiNodes.find((n) => n.id === id);
+                        const title = hit?.title?.trim() || id;
+                        return (
+                          <li key={id}>
+                            <button
+                              type="button"
+                              className={styles.incomingLink}
+                              title={hit ? `Open ${title}` : id}
+                              disabled={!hit}
+                              onClick={() => {
+                                if (!hit) {
+                                  return;
+                                }
+                                navigate(`/w/wiki/${id}`);
+                              }}
+                            >
+                              {title}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </PropField>
+                );
+              })}
+            </div>
+          ) : null}
+          {propDefs.length > 0 ? (
+            <div className={styles.mdFields}>
+              <h3>Custom fields</h3>
+              {propDefs.map((def) => {
+                const layout = propLayoutForCustomType(def.type);
+                const label = fieldLabel(def);
+
+                if (def.type === "wiki-node") {
+                  return (
+                    <PropField key={def.key} layout={layout} label={label}>
+                      <WikiNodeLinksField
+                        ids={wikiNodeFieldIds(fieldsDraft[def.key])}
+                        wikiNodes={wikiNodes}
+                        listAriaLabel={def.label?.trim() || def.key}
+                        addAriaLabel={`Add ${def.label?.trim() || def.key}`}
+                        onOpen={(id) => navigate(`/w/wiki/${id}`)}
+                        onChange={(ids) => patchFields(def.key, ids)}
+                      />
+                    </PropField>
+                  );
+                }
+
+                if (def.type === "string-list") {
+                  return (
+                    <PropField key={def.key} layout={layout} label={label}>
+                      <StringListField
+                        values={stringListFieldValues(fieldsDraft[def.key])}
+                        listAriaLabel={def.label?.trim() || def.key}
+                        addAriaLabel={`Add ${def.label?.trim() || def.key}`}
+                        onChange={(values) => patchFields(def.key, values)}
+                      />
+                    </PropField>
+                  );
+                }
+
+                if (def.type === "markdown") {
+                  return (
+                    <PropField key={def.key} layout={layout} label={label}>
+                      <MarkdownEditor
+                        filename={`${keyToKebab(def.key)}.md`}
+                        value={markdownDraft[def.key] ?? ""}
+                        onChange={(next) => patchMarkdown(def.key, next)}
+                        plugins={plugins}
+                        mentionAutocomplete={mentionAutocomplete}
+                        placeholder="Markdown… type @ to link an issue"
+                        rows={6}
+                      />
+                    </PropField>
+                  );
+                }
+
+                if (def.type === "boolean") {
+                  const raw = fieldsDraft[def.key];
+                  const value =
+                    raw === true ? "true" : raw === false ? "false" : "";
+                  const boolLabel =
+                    value === "true"
+                      ? "true"
+                      : value === "false"
+                        ? "false"
+                        : "—";
+                  return (
+                    <PropField key={def.key} layout={layout} label={label}>
+                      <DropdownMenu>
+                        <DropdownMenu.Trigger asChild>
+                          <Button
+                            type="button"
+                            variant="outlined"
+                            size="small"
+                            endIcon={<Lucide.ChevronDown />}
+                            aria-label={def.label?.trim() || def.key}
+                            className={styles.fieldControl}
+                          >
+                            {boolLabel}
+                          </Button>
+                        </DropdownMenu.Trigger>
+                        <DropdownMenu.Content align="start" side="bottom">
+                          {(
+                            [
+                              { id: "", label: "—" },
+                              { id: "true", label: "true" },
+                              { id: "false", label: "false" },
+                            ] as const
+                          ).map((opt) => (
+                            <DropdownMenu.ItemButton
+                              key={opt.id || "empty"}
+                              label={opt.label}
+                              active={value === opt.id}
+                              onSelect={() => {
+                                patchFields(
+                                  def.key,
+                                  opt.id === "true"
+                                    ? true
+                                    : opt.id === "false"
+                                      ? false
+                                      : null,
+                                );
+                              }}
+                            />
+                          ))}
+                        </DropdownMenu.Content>
+                      </DropdownMenu>
+                    </PropField>
+                  );
+                }
+
+                if (def.type === "number") {
+                  const raw = fieldsDraft[def.key];
+                  const value =
+                    typeof raw === "number" && Number.isFinite(raw)
+                      ? String(raw)
+                      : raw === null || raw === undefined
+                        ? ""
+                        : String(raw);
+                  return (
+                    <PropField key={def.key} layout={layout} label={label}>
+                      <Input
+                        type="number"
+                        size="small"
+                        value={value}
+                        onChange={(e) => {
+                          const t = e.target.value;
+                          patchFields(def.key, t === "" ? null : Number(t));
+                        }}
+                      />
+                    </PropField>
+                  );
+                }
+
+                if (def.type === "date") {
+                  const raw = fieldsDraft[def.key];
+                  const value = typeof raw === "string" ? raw : "";
+                  return (
+                    <PropField key={def.key} layout={layout} label={label}>
+                      <Input
+                        type="date"
+                        size="small"
+                        value={value}
+                        onChange={(e) =>
+                          patchFields(def.key, e.target.value || null)
+                        }
+                      />
+                    </PropField>
+                  );
+                }
+
+                const raw = fieldsDraft[def.key];
+                const value =
+                  raw === null || raw === undefined ? "" : String(raw);
+                return (
+                  <PropField key={def.key} layout={layout} label={label}>
+                    <Input
+                      size="small"
+                      value={value}
+                      onChange={(e) => patchFields(def.key, e.target.value)}
+                    />
+                  </PropField>
+                );
+              })}
+            </div>
+          ) : null}
+        </>
       }
     />
     <TypeConfirmDialog

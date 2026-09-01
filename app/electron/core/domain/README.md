@@ -12,6 +12,7 @@ Entity CRUD against the workspace tree: projects/issues, wiki, members, handoffs
 | --- | --- |
 | `store.ts` | Project / issue CRUD, ladder moves |
 | `wiki.ts` | Wiki nodes + `sidebar.ts` SoT |
+| `wiki-custom-props.ts` | Workspace `wiki/custom-props.ts` |
 | `members.ts` | Members + avatars |
 | `handoffs.ts` | Handoffs CRUD |
 | `custom-props.ts` | Per-project `custom-props.ts` |

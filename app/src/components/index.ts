@@ -4,6 +4,7 @@ export { ProjectDetail } from "./project-detail";
 export { WorkspaceHomeDetail } from "./workspace-home-detail";
 export { CreateWorkspaceWizard } from "./create-workspace-wizard";
 export { CustomPropsEditor } from "./custom-props-editor";
+export { WikiCustomPropsEditor } from "./wiki-custom-props-editor";
 export { WikiShell, isWikiShellPath } from "./wiki-shell";
 export { WikiNodeEditor } from "./wiki-node-editor";
 export { WikiAllPages } from "./wiki-all-pages";
