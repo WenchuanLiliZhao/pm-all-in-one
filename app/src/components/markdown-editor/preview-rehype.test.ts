@@ -150,4 +150,16 @@ describe("preview rehype HTML", () => {
     assert.deepEqual(acc.srcs, ["assets/grow-skill.png"]);
     assert.deepEqual(acc.hrefs, ["assets/grow-skill.zip"]);
   });
+
+  it("keeps nested assets/ image src", () => {
+    const acc = collect(toHast("![cover](assets/folder/grow-skill.png)"), {
+      tags: [],
+      texts: [],
+      comments: [],
+      hrefs: [],
+      srcs: [],
+      classNames: [],
+    });
+    assert.deepEqual(acc.srcs, ["assets/folder/grow-skill.png"]);
+  });
 });

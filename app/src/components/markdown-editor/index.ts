@@ -12,6 +12,8 @@ export {
   isEmbeddableImageUrl,
   isNodeAssetRelUrl,
   assetBasename,
+  assetRelPath,
+  encodeAssetRelPath,
   markdownCiteForAssetBasename,
 } from "./local-media";
 export type {

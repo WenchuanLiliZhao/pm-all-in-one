@@ -31,9 +31,14 @@ export function AttachmentCard({
   stub?: boolean;
 }) {
   const name = label.trim() || assetBasename(href) || "file";
-  const base = assetBasename(href);
-  const dot = base.lastIndexOf(".");
-  const ext = dot >= 0 ? base.slice(dot + 1).toUpperCase() : "FILE";
+  const trimmedHref = href.trim().replace(/^<|>$/g, "");
+  const ext = trimmedHref.endsWith("/")
+    ? "DIR"
+    : (() => {
+        const base = assetBasename(href);
+        const dot = base.lastIndexOf(".");
+        return dot >= 0 ? base.slice(dot + 1).toUpperCase() : "FILE";
+      })();
   const titleHtml = renderInlineMarkdownFragment(name);
   return (
     <span

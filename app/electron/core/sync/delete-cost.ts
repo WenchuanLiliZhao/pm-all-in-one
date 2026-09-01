@@ -9,14 +9,14 @@ export function emptyDescendantCounts(): DescendantCounts {
 }
 
 /**
- * Count descendants of one issue by walking `parentId`. Flat storage has no
- * subtree on disk, so "what does deleting this cost" is a graph question.
+ * Descendants of one issue by walking `parentId` (excludes `issueId` itself).
+ * Flat storage has no subtree on disk, so this is a graph question.
  */
-export function countDescendants(
+export function listDescendantIssues(
   issues: readonly Issue[],
   projectId: EntityId,
   issueId: EntityId,
-): DescendantCounts {
+): Issue[] {
   const childrenOf = new Map<EntityId, Issue[]>();
   for (const issue of issues) {
     if (issue.projectId !== projectId || issue.parentId === null) {
@@ -30,7 +30,7 @@ export function countDescendants(
     }
   }
 
-  const counts = emptyDescendantCounts();
+  const out: Issue[] = [];
   const seen = new Set<EntityId>([issueId]);
   const queue = [...(childrenOf.get(issueId) ?? [])];
   while (queue.length > 0) {
@@ -39,9 +39,25 @@ export function countDescendants(
       continue;
     }
     seen.add(current.id);
+    out.push(current);
+    queue.push(...(childrenOf.get(current.id) ?? []));
+  }
+  return out;
+}
+
+/**
+ * Count descendants of one issue by walking `parentId`. Flat storage has no
+ * subtree on disk, so "what does deleting this cost" is a graph question.
+ */
+export function countDescendants(
+  issues: readonly Issue[],
+  projectId: EntityId,
+  issueId: EntityId,
+): DescendantCounts {
+  const counts = emptyDescendantCounts();
+  for (const current of listDescendantIssues(issues, projectId, issueId)) {
     counts[current.level] += 1;
     counts.total += 1;
-    queue.push(...(childrenOf.get(current.id) ?? []));
   }
   return counts;
 }

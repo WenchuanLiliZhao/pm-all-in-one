@@ -43,7 +43,10 @@ import {
   issuePriorityToneStyles,
 } from "@/components/ui/issue-priority";
 import { usePmMentions } from "@/lib/markdown/use-pm-mentions";
-import { useNodeLocalMedia } from "@/lib/markdown/node-local-media";
+import {
+  useAssetFolderMentions,
+  useNodeLocalMedia,
+} from "@/lib/markdown/node-local-media";
 import { keyToKebab } from "@pm-core/identity/dir-id";
 import type { WikiNodeMeta } from "@/lib/types";
 import {
@@ -275,7 +278,7 @@ export function IssueDetail({
     (p: string) => onNavigateIssue({ kind: "project", projectId: p }),
     [onNavigateIssue],
   );
-  const { plugins, mentionAutocomplete } = usePmMentions({
+  const { plugins, mentionAutocomplete: pmMentions } = usePmMentions({
     issues,
     wikiNodes,
     knownIssueKeys: knownKeys,
@@ -291,8 +294,17 @@ export function IssueDetail({
       }),
     [issue.projectId, issue.id],
   );
-  const { localMedia, filenames: assetFilenames, ingestAssetFiles } =
-    useNodeLocalMedia(issueNodeRef);
+  const {
+    localMedia,
+    filenames: assetFilenames,
+    assetsDir,
+    ingestAssetFiles,
+  } = useNodeLocalMedia(issueNodeRef);
+  const mentionAutocomplete = useAssetFolderMentions(
+    pmMentions,
+    assetFilenames,
+    assetsDir,
+  );
 
   const assigneeOptions = useMemo(() => {
     const nodes = members?.nodes ?? [];

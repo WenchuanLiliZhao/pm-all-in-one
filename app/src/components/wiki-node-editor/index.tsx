@@ -38,7 +38,10 @@ import type {
   MetaFieldType,
 } from "@/lib/types";
 import { usePmMentions } from "@/lib/markdown/use-pm-mentions";
-import { useNodeLocalMedia } from "@/lib/markdown/node-local-media";
+import {
+  useAssetFolderMentions,
+  useNodeLocalMedia,
+} from "@/lib/markdown/node-local-media";
 import type { Selection } from "@/lib/workspace/workspace-context";
 import { useWiki } from "@/lib/workspace/wiki-context";
 import { useActiveSaveHost } from "@/lib/workspace/use-active-save-host";
@@ -370,7 +373,7 @@ export function WikiNodeEditor({
     (p: string) => onNavigateIssue({ kind: "project", projectId: p }),
     [onNavigateIssue],
   );
-  const { plugins, mentionAutocomplete } = usePmMentions({
+  const { plugins, mentionAutocomplete: pmMentions } = usePmMentions({
     issues,
     wikiNodes,
     onNavigateIssue: navigateIssue,
@@ -380,8 +383,17 @@ export function WikiNodeEditor({
     () => ({ kind: "wiki" as const, wikiNodeId }),
     [wikiNodeId],
   );
-  const { localMedia, filenames: assetFilenames, ingestAssetFiles } =
-    useNodeLocalMedia(wikiNodeRef);
+  const {
+    localMedia,
+    filenames: assetFilenames,
+    assetsDir,
+    ingestAssetFiles,
+  } = useNodeLocalMedia(wikiNodeRef);
+  const mentionAutocomplete = useAssetFolderMentions(
+    pmMentions,
+    assetFilenames,
+    assetsDir,
+  );
 
   const resolveConflictReload = async () => {
     try {

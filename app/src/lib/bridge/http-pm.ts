@@ -323,6 +323,7 @@ export function createHttpPmApi(): PmApi {
       message: "Git sync is not available on the web bridge.",
     }),
 
+    // Desktop-only: nested posix relpaths under assets/ (dirs end with /). Web has no write path.
     listNodeAssets: async () => [],
     addNodeAssets: async () => unsupported("addNodeAssets"),
     importNodeAssetPaths: async () => unsupported("importNodeAssetPaths"),

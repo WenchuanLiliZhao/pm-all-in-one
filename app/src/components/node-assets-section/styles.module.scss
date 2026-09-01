@@ -48,19 +48,32 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
 
-.item {
-  font-size: 12px;
+.row {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 24px;
+  padding: 1px 4px 1px calc(4px + var(--asset-indent, 0px));
+  gap: var(--space--4);
+  border-radius: 4px;
+}
+
+.row:hover {
+  background: var(--color-use--hover-overlay-hover);
+}
+
+.rowSelect {
   color: var(--color-use--text-prime);
+  font-size: 12px;
+}
+
+.rowTitle {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.item code {
   font-family: ui-monospace, monospace;
   font-size: 0.92em;
 }

@@ -3,14 +3,17 @@
 // ↔ src/components/markdown-editor/AGENTS.md — product adapters live here, not in core
 // ↔ ./activate-pm-mention.ts — Live Cmd/Ctrl+click (same navigate destinations)
 // ↔ electron/core/identity/links.ts — canonical @issue- / @wiki- / @member- / @handoff- shapes
+// ↔ ./asset-mention-completions.ts — Reading View rewrites @assets/<relpath> to assets/…/
 
 import type { MarkdownPlugin } from "@/components/markdown-editor";
 import {
+  encodeAssetRelPath,
   linkChipStyles,
   previewAnchorClassName,
   replaceOutsideCode,
 } from "@/components/markdown-editor";
 import { issueRefKey } from "@/lib/types";
+import { parseAssetFolderMentionToken } from "./asset-mention-completions";
 
 const ID = "[A-Za-z0-9_-]{21}";
 const ISSUE_MENTION = new RegExp(`@issue-(${ID})::(${ID})`, "g");
@@ -19,6 +22,8 @@ const PROJECT_MENTION = new RegExp(`@issue-(${ID})(?!::)`, "g");
 const WIKI_MENTION = new RegExp(`@wiki-(${ID})`, "g");
 const MEMBER_MENTION = new RegExp(`@member-(${ID})`, "g");
 const HANDOFF_MENTION = new RegExp(`@handoff-(${ID})`, "g");
+/** This-node folder: `@assets/<relpath>` (slashes allowed). */
+const ASSET_FOLDER_MENTION = /@assets\/[^\s@]+/g;
 
 function escapeLinkLabel(text: string): string {
   return text.replace(/\\/g, "\\\\").replace(/\[/g, "\\[").replace(/\]/g, "\\]");
@@ -98,6 +103,14 @@ export function createPmLinkPlugin(options: PmLinkPluginOptions): MarkdownPlugin
       next = replaceOutsideCode(next, HANDOFF_MENTION, (_full, handoffId) => {
         const label = lookupTitle(options.handoffTitles, handoffId!);
         return `[${escapeLinkLabel(label)}](handoff:${handoffId})`;
+      });
+      next = replaceOutsideCode(next, ASSET_FOLDER_MENTION, (full) => {
+        const rel = parseAssetFolderMentionToken(full);
+        if (!rel) return full;
+        const leaf = rel.split("/").pop() ?? rel;
+        const encoded = encodeAssetRelPath(rel);
+        const dest = encoded.endsWith("/") ? encoded : `${encoded}/`;
+        return `[${escapeLinkLabel(leaf)}](assets/${dest})`;
       });
       return next;
     },

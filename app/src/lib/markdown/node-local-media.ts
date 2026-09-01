@@ -1,15 +1,21 @@
-// ↔ src/components/markdown-editor/local-media.ts — isNodeAssetRelUrl / assetBasename
+// ↔ src/components/markdown-editor/local-media.ts — assetRelPath / markdownCiteForAssetBasename
 // ↔ src/lib/bridge/pm-api.ts — getNodeAssetsDir / openPath
+// ↔ ./asset-mention-completions.ts — @assets/<relpath> folder mentions
 // ↔ node-assets-section — Insert uses markdownForAssetInsert
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  assetBasename,
-  isNodeAssetRelUrl,
+  assetRelPath,
+  encodeAssetRelPath,
   markdownCiteForAssetBasename,
+  type MentionAutocompleteProps,
 } from "@/components/markdown-editor";
 import { getPm, isWebPm } from "@/lib/bridge";
 import type { NodeRef } from "@/lib/bridge/pm-api";
+import {
+  parseAssetFolderMentionToken,
+  toAssetFolderMentionCandidates,
+} from "./asset-mention-completions";
 
 function nodeRefKey(ref: NodeRef): string {
   switch (ref.kind) {
@@ -28,10 +34,12 @@ function nodeRefKey(ref: NodeRef): string {
   }
 }
 
-function joinDirFile(dir: string, file: string): string {
+function joinDirFile(dir: string, relPath: string): string {
   const trimmed = dir.replace(/[/\\]+$/, "");
   const sep = dir.includes("\\") && !dir.includes("/") ? "\\" : "/";
-  return `${trimmed}${sep}${file}`;
+  const rel =
+    sep === "\\" ? relPath.replace(/\//g, "\\") : relPath.replace(/\\/g, "/");
+  return `${trimmed}${sep}${rel}`;
 }
 
 /** Absolute filesystem path → privileged media URL for <img> in the renderer. */
@@ -39,13 +47,47 @@ export function absolutePathToMediaUrl(absPath: string): string {
   return `pm-asset://local/?p=${encodeURIComponent(absPath)}`;
 }
 
-/** Encode a basename for use inside Markdown `(assets/…)`. */
+/** Encode a posix relative path for use inside Markdown `(assets/…)`. */
 export function encodeAssetBasenameForUrl(name: string): string {
-  return encodeURIComponent(name.trim());
+  return encodeAssetRelPath(name);
 }
 
 export function markdownForAssetInsert(filename: string): string {
   return markdownCiteForAssetBasename(filename);
+}
+
+/** Merge this node's asset folders into `@` mention autocomplete. */
+export function withAssetFolderMentions(
+  base: MentionAutocompleteProps,
+  assetRelPaths: string[],
+  assetsDir: string | null,
+): MentionAutocompleteProps {
+  const extra = toAssetFolderMentionCandidates(assetRelPaths);
+  return {
+    ...base,
+    candidates:
+      extra.length === 0 ? base.candidates : [...base.candidates, ...extra],
+    onActivate: (token) => {
+      const rel = parseAssetFolderMentionToken(token);
+      if (rel && assetsDir) {
+        const abs = joinDirFile(assetsDir, rel);
+        void getPm().revealPath(abs);
+        return;
+      }
+      base.onActivate?.(token);
+    },
+  };
+}
+
+export function useAssetFolderMentions(
+  base: MentionAutocompleteProps,
+  assetRelPaths: string[],
+  assetsDir: string | null,
+): MentionAutocompleteProps {
+  return useMemo(
+    () => withAssetFolderMentions(base, assetRelPaths, assetsDir),
+    [base, assetRelPaths, assetsDir],
+  );
 }
 
 type ElectronFile = File & { path?: string };
@@ -74,7 +116,7 @@ function guessPasteName(file: File, index: number): string {
   return `pasted-${stamp}${index > 0 ? `-${index + 1}` : ""}.${ext}`;
 }
 
-/** Copy pasted/dropped File list into this node's assets/; return written names. */
+/** Copy pasted/dropped files or folders into this node's assets/; return cite paths. */
 export async function ingestFilesIntoNodeAssets(
   nodeRef: NodeRef,
   files: File[],
@@ -102,7 +144,9 @@ export async function ingestFilesIntoNodeAssets(
   if (buffers.length > 0) {
     written.push(...(await getPm().writeNodeAssetBuffers(nodeRef, buffers)));
   }
-  return written;
+  // Folder copies nest under `assets/<folder>/…`. Do not flood the body with
+  // one cite per nested file — only top-level files get Markdown cites.
+  return written.filter((rel) => !rel.includes("/"));
 }
 
 /** Product localMedia + asset filename list for the current node. */
@@ -143,10 +187,9 @@ export function useNodeLocalMedia(nodeRef: NodeRef) {
   const localMedia = useMemo(
     () => ({
       resolveMediaUrl: (src: string) => {
-        if (!isNodeAssetRelUrl(src) || !assetsDir) return src;
-        return absolutePathToMediaUrl(
-          joinDirFile(assetsDir, assetBasename(src)),
-        );
+        const rel = assetRelPath(src);
+        if (!rel || !assetsDir) return src;
+        return absolutePathToMediaUrl(joinDirFile(assetsDir, rel));
       },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- key + dir

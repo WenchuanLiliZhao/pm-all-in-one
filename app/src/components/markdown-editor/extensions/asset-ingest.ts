@@ -6,7 +6,7 @@ import { Facet, type Extension } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { markdownCiteForAssetBasename } from "../local-media";
 
-/** Product: copy dropped/pasted files into node assets/; return written basenames. */
+/** Product: copy dropped/pasted files into node assets/; return paths to cite. */
 export type AssetIngestFn = (files: File[]) => Promise<string[]>;
 
 export const assetIngestFacet = Facet.define<

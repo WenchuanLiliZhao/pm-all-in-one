@@ -1,9 +1,13 @@
+// ↔ electron/cli.ts — issue create/move/delete append / reparent / prune
 import fs from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 
+import { issueRefKey } from "../identity/types.js";
 import {
+  appendSiblingToEnd,
   emptyViewOrder,
+  reparentSiblingToEnd,
   type ViewOrder,
 } from "./view-order-apply.js";
 
@@ -14,6 +18,9 @@ export { emptyViewOrder };
 export const BUILTIN_VIEW_KEYS = ["home", "roadmap", "table"] as const;
 export type BuiltinViewKey = (typeof BUILTIN_VIEW_KEYS)[number];
 export type ViewKey = BuiltinViewKey | string;
+
+/** Issue-tree views CLI always maintains, even when the file has no entry yet. */
+export const ISSUE_TREE_VIEW_KEYS = ["roadmap", "table"] as const;
 
 export type ViewOrdersFile = Record<string, ViewOrder>;
 
@@ -159,4 +166,100 @@ export function pruneKeyFromOrder(order: ViewOrder, key: string): ViewOrder {
     return order;
   }
   return { roots, children };
+}
+
+/** parentId null → project key; otherwise `projectId::parentIssueId`. */
+export function viewOrderParentKey(
+  projectId: string,
+  parentIssueId: string | null,
+): string {
+  return parentIssueId === null ? projectId : issueRefKey(projectId, parentIssueId);
+}
+
+function isEmptyOrder(order: ViewOrder): boolean {
+  return order.roots.length === 0 && Object.keys(order.children).length === 0;
+}
+
+function orderSnapshot(order: ViewOrder): string {
+  return JSON.stringify(order);
+}
+
+/**
+ * Apply `mutate` to every stored view plus roadmap/table.
+ * Empty results drop the key; first CLI write may seed the builtins.
+ */
+function mapIssueViewOrders(
+  workspaceRoot: string,
+  mutate: (order: ViewOrder) => ViewOrder,
+): void {
+  const all = ensureViewOrders(workspaceRoot);
+  const keys = new Set<string>([...Object.keys(all), ...ISSUE_TREE_VIEW_KEYS]);
+  let dirty = false;
+  const next: ViewOrdersFile = { ...all };
+  for (const key of keys) {
+    const current = all[key] ?? emptyViewOrder();
+    const updated = mutate(current);
+    if (isEmptyOrder(updated)) {
+      if (key in next) {
+        delete next[key];
+        dirty = true;
+      }
+      continue;
+    }
+    if (!(key in all) || orderSnapshot(updated) !== orderSnapshot(current)) {
+      next[key] = updated;
+      dirty = true;
+    }
+  }
+  if (dirty) {
+    writeOrdersFile(workspaceRoot, next);
+  }
+}
+
+/** CLI create: append the new issue at the end of the destination sibling list. */
+export function appendIssueToStoredViewOrders(
+  workspaceRoot: string,
+  parentKey: string,
+  childKey: string,
+  liveSiblings: readonly string[],
+): void {
+  mapIssueViewOrders(workspaceRoot, (order) =>
+    appendSiblingToEnd(order, parentKey, childKey, liveSiblings),
+  );
+}
+
+/** CLI move: drop from the old parent list, append on the new parent. */
+export function reparentIssueInStoredViewOrders(
+  workspaceRoot: string,
+  childKey: string,
+  fromParentKey: string,
+  toParentKey: string,
+  liveDestSiblings: readonly string[],
+): void {
+  mapIssueViewOrders(workspaceRoot, (order) =>
+    reparentSiblingToEnd(
+      order,
+      childKey,
+      fromParentKey,
+      toParentKey,
+      liveDestSiblings,
+    ),
+  );
+}
+
+/** CLI delete: prune the issue (and cascade victims) from every view. */
+export function pruneIssueKeysFromStoredViewOrders(
+  workspaceRoot: string,
+  keys: readonly string[],
+): void {
+  if (keys.length === 0) {
+    return;
+  }
+  mapIssueViewOrders(workspaceRoot, (order) => {
+    let next = order;
+    for (const key of keys) {
+      next = pruneKeyFromOrder(next, key);
+    }
+    return next;
+  });
 }

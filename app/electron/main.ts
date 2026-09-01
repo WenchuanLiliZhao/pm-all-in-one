@@ -1010,7 +1010,7 @@ function registerIpc(): void {
       return [];
     }
     const result = await dialog.showOpenDialog(mainWindow, {
-      properties: ["openFile", "multiSelections"],
+      properties: ["openFile", "openDirectory", "multiSelections"],
       title: "Add assets",
     });
     if (result.canceled || result.filePaths.length === 0) {

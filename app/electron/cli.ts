@@ -50,10 +50,18 @@ import { rebuildIndex } from "./core/workspace/rebuild-index.js";
 import {
   countDescendants,
   formatDescendantCost,
+  listDescendantIssues,
 } from "./core/sync/delete-cost.js";
-import type { Issue, Membership } from "./core/identity/types.js";
+import { issueRefKey, type Issue, type Membership } from "./core/identity/types.js";
 import { isValidEntityId } from "./core/identity/dir-id.js";
 import { parseCliArgs } from "./cli-args.js";
+// ↔ electron/core/views/view-orders.ts — issue create/move/delete maintain view-orders
+import {
+  appendIssueToStoredViewOrders,
+  pruneIssueKeysFromStoredViewOrders,
+  reparentIssueInStoredViewOrders,
+  viewOrderParentKey,
+} from "./core/views/view-orders.js";
 
 function flagStr(flags: Record<string, string | boolean>, ...keys: string[]): string | undefined {
   for (const k of keys) {
@@ -397,6 +405,14 @@ async function cmdIssueCreate(
     parentIssueId,
     title,
   });
+  const tree = await rebuildIndex(root);
+  const parentKey = viewOrderParentKey(issue.projectId, issue.parentId);
+  appendIssueToStoredViewOrders(
+    root,
+    parentKey,
+    issueRefKey(issue.projectId, issue.id),
+    tree.children[parentKey] ?? [],
+  );
   const ref = issueLinkSyntax(issue.projectId, issue.id);
   if (json) {
     printJson({ ...issue, ref });
@@ -419,11 +435,25 @@ async function cmdIssueMove(
     throw new Error("--project, --issue, and --parent are required");
   }
   const newParentIssueId = parseParentId(parentRaw);
+  const before = await getIssue(root, projectId, issueId);
+  const fromParentKey = viewOrderParentKey(before.projectId, before.parentId);
   const issue = await moveIssue(root, {
     projectId,
     issueId,
     newParentIssueId,
   });
+  const tree = await rebuildIndex(root);
+  const toParentKey = viewOrderParentKey(issue.projectId, issue.parentId);
+  const childKey = issueRefKey(issue.projectId, issue.id);
+  if (fromParentKey !== toParentKey) {
+    reparentIssueInStoredViewOrders(
+      root,
+      childKey,
+      fromParentKey,
+      toParentKey,
+      tree.children[toParentKey] ?? [],
+    );
+  }
   const ref = issueLinkSyntax(issue.projectId, issue.id);
   if (json) {
     printJson({ ...issue, ref });
@@ -444,14 +474,23 @@ async function cmdIssueDelete(
   }
   const force = flags.force === true;
   await getIssue(root, projectId, issueId);
-  const counts = countDescendants(await listIssues(root), projectId, issueId);
+  const issues = await listIssues(root);
+  const counts = countDescendants(issues, projectId, issueId);
   if (counts.total > 0 && !force) {
     const cost = formatDescendantCost(counts);
     throw new Error(
       `Cannot delete ${issueLinkSyntax(projectId, issueId)}: has children (${cost}). Re-run with --force to cascade-delete.`,
     );
   }
+  const doomedKeys = [issueRefKey(projectId, issueId)];
+  if (force) {
+    for (const child of listDescendantIssues(issues, projectId, issueId)) {
+      doomedKeys.push(issueRefKey(projectId, child.id));
+    }
+  }
   await deleteIssue(root, projectId, issueId, { cascade: force });
+  pruneIssueKeysFromStoredViewOrders(root, doomedKeys);
+  await rebuildIndex(root);
   if (json) {
     printJson({
       ok: true,

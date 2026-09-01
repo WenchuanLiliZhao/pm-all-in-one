@@ -130,7 +130,7 @@ export type MarkdownCmViewProps = {
   autoPair?: boolean;
   mentionAutocomplete?: MentionAutocompleteProps;
   localMedia?: LocalMediaOptions;
-  /** Basenames under this node's assets/ for `assets/` autocomplete. */
+  /** Relative paths under this node's assets/ for `assets/` autocomplete. */
   assetFilenames?: string[];
   /** Paste/drop → product ingest → Markdown cites. */
   ingestAssetFiles?: (files: File[]) => Promise<string[]>;

@@ -1,6 +1,8 @@
 /**
  * Shared @ autocomplete + Reading View chip + Live Cmd/Ctrl+click wiring.
  * Kind prefixes always required; candidate set is workspace-wide.
+ * This-node folder mentions (@assets/…) are merged at node editors via
+ * withAssetFolderMentions — not here.
  */
 // ↔ ./activate-pm-mention.ts — Live mention → navigate
 // ↔ ./pm-link-plugin.tsx — Reading View chips

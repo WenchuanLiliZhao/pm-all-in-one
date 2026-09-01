@@ -4,7 +4,7 @@
 
 Custom views and sparse drag-order persistence under `.pm/`.
 
-**Who may import:** Electron main + server for persist modules; renderer may import pure `view-order-apply` via `@pm-core/views/view-order-apply`.
+**Who may import:** Electron main + server + CLI for persist modules; renderer may import pure `view-order-apply` via `@pm-core/views/view-order-apply`.
 
 | File | Role |
 | --- | --- |

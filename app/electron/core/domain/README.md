@@ -17,4 +17,4 @@ Entity CRUD against the workspace tree: projects/issues, wiki, members, handoffs
 | `handoffs.ts` | Handoffs CRUD |
 | `custom-props.ts` | Per-project `custom-props.ts` |
 | `workspace-meta.ts` | Root `workspace.ts` + README |
-| `node-assets.ts` | Per-node `assets/` (wired from Electron today) |
+| `node-assets.ts` | Per-node `assets/` (nested files ok; wired from Electron today) |

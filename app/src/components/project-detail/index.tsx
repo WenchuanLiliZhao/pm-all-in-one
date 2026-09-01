@@ -28,7 +28,10 @@ import type {
 } from "@/lib/workspace/workspace-context";
 import { useActiveSaveHost } from "@/lib/workspace/use-active-save-host";
 import { usePmMentions } from "@/lib/markdown/use-pm-mentions";
-import { useNodeLocalMedia } from "@/lib/markdown/node-local-media";
+import {
+  useAssetFolderMentions,
+  useNodeLocalMedia,
+} from "@/lib/markdown/node-local-media";
 import styles from "./styles.module.scss";
 
 interface ProjectDetailProps {
@@ -90,7 +93,7 @@ export function ProjectDetail({
     (p: string) => onNavigateIssue({ kind: "project", projectId: p }),
     [onNavigateIssue],
   );
-  const { plugins, mentionAutocomplete } = usePmMentions({
+  const { plugins, mentionAutocomplete: pmMentions } = usePmMentions({
     issues,
     wikiNodes,
     knownIssueKeys: knownKeys,
@@ -101,8 +104,17 @@ export function ProjectDetail({
     () => ({ kind: "project" as const, projectId: project.id }),
     [project.id],
   );
-  const { localMedia, filenames: assetFilenames, ingestAssetFiles } =
-    useNodeLocalMedia(projectNodeRef);
+  const {
+    localMedia,
+    filenames: assetFilenames,
+    assetsDir,
+    ingestAssetFiles,
+  } = useNodeLocalMedia(projectNodeRef);
+  const mentionAutocomplete = useAssetFolderMentions(
+    pmMentions,
+    assetFilenames,
+    assetsDir,
+  );
   const canSave =
     saveStatus === "dirty" ||
     saveStatus === "error" ||

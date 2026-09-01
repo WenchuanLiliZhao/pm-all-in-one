@@ -1,16 +1,23 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { getPm, isWebPm } from "@/lib/bridge";
 import type { NodeRef } from "@/lib/bridge/pm-api";
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
+import { Lucide } from "@/components/ui/lucide";
+import { TreeRow, treeRowStyles } from "@/components/ui/tree-row";
+import { buildAssetTree, type AssetTreeNode } from "./tree";
 import styles from "./styles.module.scss";
 
 interface NodeAssetsSectionProps {
   nodeRef: NodeRef;
 }
 
+const ROW_ICON_SIZE = 18;
+const INDENT_STEP_PX = 16;
+
 export function NodeAssetsSection({ nodeRef }: NodeAssetsSectionProps) {
   const [names, setNames] = useState<string[]>([]);
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const refKey = nodeRefKey(nodeRef);
@@ -24,6 +31,10 @@ export function NodeAssetsSection({ nodeRef }: NodeAssetsSectionProps) {
       setError(e instanceof Error ? e.message : String(e));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
+  }, [refKey]);
+
+  useEffect(() => {
+    setExpanded(new Set());
   }, [refKey]);
 
   useEffect(() => {
@@ -54,6 +65,17 @@ export function NodeAssetsSection({ nodeRef }: NodeAssetsSectionProps) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
   }, [refKey]);
+
+  const tree = useMemo(() => buildAssetTree(names), [names]);
+
+  const onToggle = useCallback((relPath: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(relPath)) next.delete(relPath);
+      else next.add(relPath);
+      return next;
+    });
+  }, []);
 
   if (isWebPm()) {
     return null;
@@ -111,8 +133,10 @@ export function NodeAssetsSection({ nodeRef }: NodeAssetsSectionProps) {
         </div>
       </div>
       <p className={styles.hint}>
-        Files live in this node&apos;s <code>assets/</code> folder. Paste or
-        drop into the body to add and cite automatically. Or type{" "}
+        Files live in this node&apos;s <code>assets/</code> folder. Add files
+        or folders (folders keep their relative tree). Paste or drop files into
+        the body to add and cite automatically. Dropping a folder copies it
+        without inserting cites. Or type{" "}
         <code>![](assets/</code> / <code>[](assets/</code> to pick a file
         (same menu as <code>@</code>).
       </p>
@@ -124,15 +148,92 @@ export function NodeAssetsSection({ nodeRef }: NodeAssetsSectionProps) {
       {names.length === 0 ? (
         <p className={styles.empty}>No assets yet.</p>
       ) : (
-        <ul className={styles.list}>
-          {names.map((name) => (
-            <li key={name} className={styles.item}>
-              <code>{name}</code>
-            </li>
-          ))}
+        <ul className={styles.list} aria-label="Asset files">
+          <AssetTreeItems
+            nodes={tree}
+            depth={0}
+            expanded={expanded}
+            onToggle={onToggle}
+          />
         </ul>
       )}
     </section>
+  );
+}
+
+function AssetTreeItems({
+  nodes,
+  depth,
+  expanded,
+  onToggle,
+}: {
+  nodes: AssetTreeNode[];
+  depth: number;
+  expanded: ReadonlySet<string>;
+  onToggle: (relPath: string) => void;
+}) {
+  return (
+    <>
+      {nodes.map((node) => {
+        const isDir = node.kind === "dir";
+        const isExpanded = isDir && expanded.has(node.relPath);
+        const showKids = isDir && isExpanded && node.children.length > 0;
+        return (
+          <li key={node.relPath}>
+            <div
+              className={`${styles.row} ${treeRowStyles.rowHoverRoot}`}
+              style={{ ["--asset-indent" as string]: `${depth * INDENT_STEP_PX}px` }}
+            >
+              <TreeRow
+                icon={
+                  isDir ? (
+                    isExpanded ? (
+                      <Lucide.FolderOpen size={ROW_ICON_SIZE} aria-hidden />
+                    ) : (
+                      <Lucide.Folder size={ROW_ICON_SIZE} aria-hidden />
+                    )
+                  ) : (
+                    <Lucide.FileText size={ROW_ICON_SIZE} aria-hidden />
+                  )
+                }
+                hasChildren={isDir && node.children.length > 0}
+                expanded={isExpanded}
+                onToggle={
+                  isDir && node.children.length > 0
+                    ? () => onToggle(node.relPath)
+                    : undefined
+                }
+                title={node.name}
+                titleClassName={styles.rowTitle}
+                className={styles.rowSelect}
+                aria-label={
+                  isDir
+                    ? `${node.name} folder, ${isExpanded ? "expanded" : "collapsed"}`
+                    : node.name
+                }
+                onClick={
+                  isDir && node.children.length > 0
+                    ? () => {
+                        onToggle(node.relPath);
+                      }
+                    : undefined
+                }
+              />
+            </div>
+            {showKids ? (
+              <ul className={styles.list}>
+                <AssetTreeItems
+                  nodes={node.children}
+                  depth={depth + 1}
+                  expanded={expanded}
+                  onToggle={onToggle}
+                />
+              </ul>
+            ) : null}
+          </li>
+        );
+      })}
+    </>
   );
 }
 

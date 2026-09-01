@@ -179,15 +179,17 @@ export interface PmApi {
    */
   pullWorkspace: () => Promise<GitPullResult>;
 
-  /** Filenames under the node's `assets/` (missing dir → []). Desktop-only write path. */
+  /** Posix relative paths under the node's `assets/` (missing dir → []). Nested files and directories (dirs end with `/`). Desktop-only write path. */
   listNodeAssets: (ref: NodeRef) => Promise<string[]>;
   /**
-   * Native multi-file picker; copies into the node's `assets/`.
-   * Returns written basenames (after conflict rename). Cancel → [].
+   * Native file/folder picker; copies into the node's `assets/`.
+   * Folders keep their relative tree. Returns written posix relative paths
+   * (after conflict rename). Cancel → [].
    */
   addNodeAssets: (ref: NodeRef) => Promise<string[]>;
   /**
-   * Copy absolute filesystem paths into the node's `assets/`.
+   * Copy absolute filesystem files or directories into the node's `assets/`.
+   * Directories keep their relative tree under `assets/<folder-name>/`.
    * Desktop-only; web stub throws unsupported.
    */
   importNodeAssetPaths: (ref: NodeRef, paths: string[]) => Promise<string[]>;

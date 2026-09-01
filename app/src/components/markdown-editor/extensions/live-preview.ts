@@ -66,7 +66,8 @@ function selectionRevealsEscape(
   return selectionOverlaps(padFrom, padTo, selFrom, selTo);
 }
 
-const MENTION_RE = /@[A-Za-z][\w:-]*/g;
+/** Includes this-node `@assets/<relpath>` (slashes and % encodings). */
+const MENTION_RE = /@[A-Za-z][\w:./%-]*/g;
 
 /** Live chip showing a resolved title while SoT stays the raw @token. */
 class MentionLabelWidget extends WidgetType {

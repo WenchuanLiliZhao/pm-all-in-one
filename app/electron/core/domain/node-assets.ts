@@ -1,5 +1,6 @@
 /**
  * Per-node optional `assets/` folder. No assets → no directory.
+ * Nested files are allowed; cites use posix relative paths under `assets/`.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -12,6 +13,12 @@ import { wikiNodeDirPath } from "./wiki.js";
 
 /** Reserved sibling directory name under a node (not an issue / wiki id). */
 export const NODE_ASSETS_DIRNAME = "assets";
+
+/** Nesting under a copied folder (the folder itself is not counted). */
+export const MAX_ASSET_COPY_DEPTH = 8;
+
+/** Files written in a single copy call (all sources combined). */
+export const MAX_ASSET_COPY_FILES = 500;
 
 export type NodeRef =
   | { kind: "workspace" }
@@ -79,7 +86,11 @@ export function getNodeAssetsDir(
   return dir;
 }
 
-/** Filenames under `assets/` (files only). Missing/empty dir → []. */
+/**
+ * Posix relative paths under `assets/` (nested ok). Missing/empty → [].
+ * Directories end with `/` (including empty folders); files have no trailing slash.
+ * Junk names are omitted.
+ */
 export function listNodeAssets(
   workspaceRoot: string,
   ref: NodeRef,
@@ -88,16 +99,17 @@ export function listNodeAssets(
   if (!dir) {
     return [];
   }
-  return fs
-    .readdirSync(dir, { withFileTypes: true })
-    .filter((d) => d.isFile())
-    .map((d) => d.name)
-    .sort((a, b) => a.localeCompare(b));
+  const out: string[] = [];
+  listFilesRecursive(dir, "", out);
+  out.sort((a, b) => a.localeCompare(b));
+  return out;
 }
 
 /**
- * Copy source files into the node's `assets/`. Creates the directory on first
- * write. Returns the final basenames written (after conflict renaming).
+ * Copy source files or directories into the node's `assets/`. Creates the
+ * directory on first write. Returns posix relative paths written (after
+ * conflict renaming). Directories keep their relative tree under
+ * `assets/<folder-name>/`.
  */
 export function copyFilesIntoNodeAssets(
   workspaceRoot: string,
@@ -111,14 +123,34 @@ export function copyFilesIntoNodeAssets(
   fs.mkdirSync(assetsDir, { recursive: true });
 
   const written: string[] = [];
+  const counter = { files: 0 };
   for (const src of sourcePaths) {
-    if (!fs.existsSync(src) || !fs.statSync(src).isFile()) {
-      throw new Error(`Not a readable file: ${JSON.stringify(src)}`);
+    if (!fs.existsSync(src)) {
+      throw new Error(`Not a readable file or directory: ${JSON.stringify(src)}`);
     }
-    const base = sanitizeAssetBasename(path.basename(src));
-    const destName = uniqueAssetName(assetsDir, base);
-    fs.copyFileSync(src, path.join(assetsDir, destName));
-    written.push(destName);
+    const st = fs.lstatSync(src);
+    if (st.isSymbolicLink()) {
+      throw new Error(`Symlinks are not copied into assets: ${JSON.stringify(src)}`);
+    }
+    if (st.isFile()) {
+      bumpFileCount(counter);
+      const base = sanitizeAssetBasename(path.basename(src));
+      const destName = uniqueAssetName(assetsDir, base);
+      fs.copyFileSync(src, path.join(assetsDir, destName));
+      written.push(destName);
+      continue;
+    }
+    if (st.isDirectory()) {
+      const folderName = uniqueAssetFolderName(
+        assetsDir,
+        sanitizeAssetBasename(path.basename(src)),
+      );
+      const destDir = path.join(assetsDir, folderName);
+      fs.mkdirSync(destDir, { recursive: true });
+      copyDirTree(src, destDir, folderName, 1, written, counter);
+      continue;
+    }
+    throw new Error(`Not a readable file or directory: ${JSON.stringify(src)}`);
   }
   return written;
 }
@@ -131,7 +163,7 @@ export type NodeAssetBufferInput = {
 
 /**
  * Write in-memory buffers into the node's `assets/` (clipboard paste / no path).
- * Returns final basenames written.
+ * Returns final basenames written (top-level only).
  */
 export function writeBuffersIntoNodeAssets(
   workspaceRoot: string,
@@ -184,6 +216,137 @@ export function uniqueAssetName(assetsDir: string, basename: string): string {
       return candidate;
     }
     n += 1;
+  }
+}
+
+/**
+ * Folder dest name: reuse an existing directory (merge); if a file already
+ * uses the name, add `-2` / `-3` like files.
+ */
+export function uniqueAssetFolderName(
+  assetsDir: string,
+  basename: string,
+): string {
+  const safe = sanitizeAssetBasename(basename);
+  const dest = path.join(assetsDir, safe);
+  if (!fs.existsSync(dest)) {
+    return safe;
+  }
+  const st = fs.lstatSync(dest);
+  if (st.isDirectory() && !st.isSymbolicLink()) {
+    return safe;
+  }
+  const parsed = path.parse(safe);
+  const stem = parsed.name || "folder";
+  const ext = parsed.ext;
+  let n = 2;
+  for (;;) {
+    const candidate = `${stem}-${n}${ext}`;
+    const candPath = path.join(assetsDir, candidate);
+    if (!fs.existsSync(candPath)) {
+      return candidate;
+    }
+    const cst = fs.lstatSync(candPath);
+    if (cst.isDirectory() && !cst.isSymbolicLink()) {
+      return candidate;
+    }
+    n += 1;
+  }
+}
+
+function skipAssetEntry(name: string): boolean {
+  if (!name || name === "." || name === "..") return true;
+  if (name.startsWith(".")) return true;
+  if (name === "Thumbs.db") return true;
+  return false;
+}
+
+function posixJoin(prefix: string, name: string): string {
+  return prefix ? `${prefix}/${name}` : name;
+}
+
+function bumpFileCount(counter: { files: number }): void {
+  counter.files += 1;
+  if (counter.files > MAX_ASSET_COPY_FILES) {
+    throw new Error(
+      `Asset copy exceeds max files (${MAX_ASSET_COPY_FILES})`,
+    );
+  }
+}
+
+function listFilesRecursive(dir: string, prefix: string, into: string[]): void {
+  let entries: fs.Dirent[];
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  for (const d of entries) {
+    if (skipAssetEntry(d.name)) continue;
+    if (d.isSymbolicLink()) continue;
+    const rel = posixJoin(prefix, d.name);
+    if (d.isDirectory()) {
+      into.push(`${rel}/`);
+      listFilesRecursive(path.join(dir, d.name), rel, into);
+      continue;
+    }
+    if (d.isFile()) {
+      into.push(rel);
+    }
+  }
+}
+
+function copyDirTree(
+  srcDir: string,
+  destDir: string,
+  relPrefix: string,
+  depth: number,
+  written: string[],
+  counter: { files: number },
+): void {
+  if (depth > MAX_ASSET_COPY_DEPTH) {
+    throw new Error(`Asset folder exceeds max depth (${MAX_ASSET_COPY_DEPTH})`);
+  }
+  let entries: fs.Dirent[];
+  try {
+    entries = fs.readdirSync(srcDir, { withFileTypes: true });
+  } catch {
+    throw new Error(`Not a readable directory: ${JSON.stringify(srcDir)}`);
+  }
+  for (const d of entries) {
+    if (skipAssetEntry(d.name)) continue;
+    const srcPath = path.join(srcDir, d.name);
+    let st: fs.Stats;
+    try {
+      st = fs.lstatSync(srcPath);
+    } catch {
+      continue;
+    }
+    if (st.isSymbolicLink()) continue;
+    if (st.isFile()) {
+      bumpFileCount(counter);
+      const base = sanitizeAssetBasename(d.name);
+      const destName = uniqueAssetName(destDir, base);
+      fs.copyFileSync(srcPath, path.join(destDir, destName));
+      written.push(posixJoin(relPrefix, destName));
+      continue;
+    }
+    if (st.isDirectory()) {
+      const folderName = uniqueAssetFolderName(
+        destDir,
+        sanitizeAssetBasename(d.name),
+      );
+      const nestedDest = path.join(destDir, folderName);
+      fs.mkdirSync(nestedDest, { recursive: true });
+      copyDirTree(
+        srcPath,
+        nestedDest,
+        posixJoin(relPrefix, folderName),
+        depth + 1,
+        written,
+        counter,
+      );
+    }
   }
 }
 

@@ -8,7 +8,9 @@ import {
   copyFilesIntoNodeAssets,
   getNodeAssetsDir,
   listNodeAssets,
+  MAX_ASSET_COPY_DEPTH,
   sanitizeAssetBasename,
+  uniqueAssetFolderName,
   uniqueAssetName,
   writeBuffersIntoNodeAssets,
 } from "./node-assets.js";
@@ -178,6 +180,245 @@ test("copy conflict renames on second add of same basename", async () => {
       fs.rmSync(staging, { recursive: true, force: true });
     }
   });
+});
+
+test("copyFilesIntoNodeAssets copies a folder tree and lists posix relpaths", async () => {
+  await withEnvUserData(async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "local-pm-assets-dir-"));
+    const staging = fs.mkdtempSync(path.join(os.tmpdir(), "local-pm-src-dir-"));
+    try {
+      scaffoldWorkspace(root, { title: "Assets dir" });
+      const project = await createProject(root, { title: "P" });
+      const folder = path.join(staging, "docs");
+      fs.mkdirSync(path.join(folder, "sub"), { recursive: true });
+      fs.writeFileSync(path.join(folder, "a.pdf"), "a");
+      fs.writeFileSync(path.join(folder, "sub", "b.png"), "b");
+      fs.writeFileSync(path.join(folder, ".DS_Store"), "junk");
+      fs.writeFileSync(path.join(folder, "Thumbs.db"), "junk");
+      fs.mkdirSync(path.join(folder, ".hidden"));
+      fs.writeFileSync(path.join(folder, ".hidden", "secret.txt"), "no");
+
+      const written = copyFilesIntoNodeAssets(
+        root,
+        { kind: "project", projectId: project.id },
+        [folder],
+      );
+      assert.deepEqual(written.sort(), ["docs/a.pdf", "docs/sub/b.png"]);
+      assert.deepEqual(
+        listNodeAssets(root, { kind: "project", projectId: project.id }),
+        ["docs/", "docs/a.pdf", "docs/sub/", "docs/sub/b.png"],
+      );
+      assert.equal(
+        fs.existsSync(path.join(project.path, "assets", "docs", ".DS_Store")),
+        false,
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+      fs.rmSync(staging, { recursive: true, force: true });
+    }
+  });
+});
+
+test("copying a folder merges into an existing directory", async () => {
+  await withEnvUserData(async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "local-pm-assets-merge-"));
+    const staging = fs.mkdtempSync(path.join(os.tmpdir(), "local-pm-src-merge-"));
+    try {
+      scaffoldWorkspace(root, { title: "Assets merge" });
+      const project = await createProject(root, { title: "P" });
+      const first = path.join(staging, "docs");
+      fs.mkdirSync(first);
+      fs.writeFileSync(path.join(first, "a.pdf"), "1");
+      copyFilesIntoNodeAssets(
+        root,
+        { kind: "project", projectId: project.id },
+        [first],
+      );
+
+      const second = path.join(staging, "docs-again");
+      fs.mkdirSync(second);
+      fs.writeFileSync(path.join(second, "a.pdf"), "2");
+      fs.writeFileSync(path.join(second, "c.txt"), "c");
+      // Upload a folder named docs again (same basename via rename of source).
+      const docs2 = path.join(staging, "docs");
+      fs.rmSync(docs2, { recursive: true, force: true });
+      fs.renameSync(second, docs2);
+
+      const written = copyFilesIntoNodeAssets(
+        root,
+        { kind: "project", projectId: project.id },
+        [docs2],
+      );
+      assert.deepEqual(written.sort(), ["docs/a-2.pdf", "docs/c.txt"]);
+      assert.deepEqual(
+        listNodeAssets(root, { kind: "project", projectId: project.id }),
+        ["docs/", "docs/a-2.pdf", "docs/a.pdf", "docs/c.txt"],
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+      fs.rmSync(staging, { recursive: true, force: true });
+    }
+  });
+});
+
+test("folder name colliding with a file is renamed", async () => {
+  await withEnvUserData(async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "local-pm-assets-coll-"));
+    const staging = fs.mkdtempSync(path.join(os.tmpdir(), "local-pm-src-coll-"));
+    try {
+      scaffoldWorkspace(root, { title: "Assets coll" });
+      const project = await createProject(root, { title: "P" });
+      const file = path.join(staging, "docs");
+      fs.writeFileSync(file, "not-a-dir");
+      copyFilesIntoNodeAssets(
+        root,
+        { kind: "project", projectId: project.id },
+        [file],
+      );
+
+      const folder = path.join(staging, "docs-folder");
+      fs.mkdirSync(folder);
+      fs.writeFileSync(path.join(folder, "x.txt"), "x");
+      const asDocs = path.join(staging, "upload", "docs");
+      fs.mkdirSync(path.dirname(asDocs), { recursive: true });
+      fs.cpSync(folder, asDocs, { recursive: true });
+
+      const written = copyFilesIntoNodeAssets(
+        root,
+        { kind: "project", projectId: project.id },
+        [asDocs],
+      );
+      assert.deepEqual(written, ["docs-2/x.txt"]);
+      assert.deepEqual(
+        listNodeAssets(root, { kind: "project", projectId: project.id }),
+        ["docs", "docs-2/", "docs-2/x.txt"],
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+      fs.rmSync(staging, { recursive: true, force: true });
+    }
+  });
+});
+
+test("copyFilesIntoNodeAssets skips symlinks and rejects a top-level symlink", async () => {
+  await withEnvUserData(async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "local-pm-assets-sym-"));
+    const staging = fs.mkdtempSync(path.join(os.tmpdir(), "local-pm-src-sym-"));
+    try {
+      scaffoldWorkspace(root, { title: "Assets sym" });
+      const project = await createProject(root, { title: "P" });
+      const target = path.join(staging, "real.txt");
+      fs.writeFileSync(target, "hi");
+      const link = path.join(staging, "link.txt");
+      fs.symlinkSync(target, link);
+      assert.throws(
+        () =>
+          copyFilesIntoNodeAssets(
+            root,
+            { kind: "project", projectId: project.id },
+            [link],
+          ),
+        /Symlinks are not copied/,
+      );
+
+      const folder = path.join(staging, "bag");
+      fs.mkdirSync(folder);
+      fs.writeFileSync(path.join(folder, "ok.txt"), "ok");
+      fs.symlinkSync(target, path.join(folder, "skip.txt"));
+      const written = copyFilesIntoNodeAssets(
+        root,
+        { kind: "project", projectId: project.id },
+        [folder],
+      );
+      assert.deepEqual(written, ["bag/ok.txt"]);
+      assert.deepEqual(
+        listNodeAssets(root, { kind: "project", projectId: project.id }),
+        ["bag/", "bag/ok.txt"],
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+      fs.rmSync(staging, { recursive: true, force: true });
+    }
+  });
+});
+
+test("listNodeAssets includes empty folders", async () => {
+  await withEnvUserData(async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "local-pm-assets-empty-"));
+    const staging = fs.mkdtempSync(path.join(os.tmpdir(), "local-pm-src-empty-"));
+    try {
+      scaffoldWorkspace(root, { title: "Assets empty" });
+      const project = await createProject(root, { title: "P" });
+      const empty = path.join(staging, "vacant");
+      fs.mkdirSync(empty);
+      fs.writeFileSync(path.join(empty, ".DS_Store"), "junk");
+      const nested = path.join(staging, "docs");
+      fs.mkdirSync(path.join(nested, "hollow"), { recursive: true });
+      fs.writeFileSync(path.join(nested, "a.pdf"), "a");
+
+      const writtenEmpty = copyFilesIntoNodeAssets(
+        root,
+        { kind: "project", projectId: project.id },
+        [empty],
+      );
+      assert.deepEqual(writtenEmpty, []);
+      const writtenNested = copyFilesIntoNodeAssets(
+        root,
+        { kind: "project", projectId: project.id },
+        [nested],
+      );
+      assert.deepEqual(writtenNested, ["docs/a.pdf"]);
+      assert.deepEqual(
+        listNodeAssets(root, { kind: "project", projectId: project.id }),
+        ["docs/", "docs/a.pdf", "docs/hollow/", "vacant/"],
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+      fs.rmSync(staging, { recursive: true, force: true });
+    }
+  });
+});
+
+test("copyFilesIntoNodeAssets rejects a folder deeper than max depth", async () => {
+  await withEnvUserData(async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "local-pm-assets-deep-"));
+    const staging = fs.mkdtempSync(path.join(os.tmpdir(), "local-pm-src-deep-"));
+    try {
+      scaffoldWorkspace(root, { title: "Assets deep" });
+      const project = await createProject(root, { title: "P" });
+      let dir = path.join(staging, "deep");
+      fs.mkdirSync(dir);
+      for (let i = 0; i < MAX_ASSET_COPY_DEPTH + 1; i += 1) {
+        dir = path.join(dir, `l${i}`);
+        fs.mkdirSync(dir);
+      }
+      fs.writeFileSync(path.join(dir, "x.txt"), "x");
+      assert.throws(
+        () =>
+          copyFilesIntoNodeAssets(
+            root,
+            { kind: "project", projectId: project.id },
+            [path.join(staging, "deep")],
+          ),
+        /max depth/,
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+      fs.rmSync(staging, { recursive: true, force: true });
+    }
+  });
+});
+
+test("uniqueAssetFolderName reuses an existing directory", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "local-pm-folder-uniq-"));
+  try {
+    fs.mkdirSync(path.join(dir, "docs"));
+    assert.equal(uniqueAssetFolderName(dir, "docs"), "docs");
+    fs.writeFileSync(path.join(dir, "taken"), "file");
+    assert.equal(uniqueAssetFolderName(dir, "taken"), "taken-2");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("writeBuffersIntoNodeAssets writes clipboard-style bytes", async () => {

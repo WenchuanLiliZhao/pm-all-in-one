@@ -105,6 +105,7 @@ const pm = {
     ipcRenderer.invoke("pm:getGitSyncStatus", options ?? {}),
   getUnsyncedChanges: () => ipcRenderer.invoke("pm:getUnsyncedChanges"),
   pullWorkspace: () => ipcRenderer.invoke("pm:pullWorkspace"),
+  // ↔ src/lib/bridge/pm-api.ts — listNodeAssets posix relpaths (dirs end with /)
   listNodeAssets: (ref: Record<string, unknown>) =>
     ipcRenderer.invoke("pm:listNodeAssets", ref),
   addNodeAssets: (ref: Record<string, unknown>) =>

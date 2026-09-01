@@ -1,3 +1,4 @@
+// ↔ electron/core/views/view-orders.ts — CLI persist uses append/reparent helpers
 import type { IssueTree } from "../identity/types.js";
 
 export interface ViewOrder {
@@ -143,6 +144,67 @@ export function reparentInOrder(
 
   insertInto(toParent);
   return { roots, children };
+}
+
+/**
+ * Place `childKey` last under `parentKey`. Stored siblings keep their order;
+ * other live siblings are materialized in tree order before the append.
+ */
+export function appendSiblingToEnd(
+  order: ViewOrder,
+  parentKey: string,
+  childKey: string,
+  liveSiblings: readonly string[],
+): ViewOrder {
+  const stored = order.children[parentKey] ?? [];
+  const liveWithout = liveSiblings.filter((k) => k !== childKey);
+  const storedWithout = stored.filter((k) => k !== childKey);
+  const merged = mergeOrdered(liveWithout, storedWithout);
+  if (!merged.includes(childKey)) {
+    merged.push(childKey);
+  }
+  const same =
+    stored.length === merged.length && stored.every((k, i) => k === merged[i]);
+  if (same) {
+    return order;
+  }
+  return {
+    ...order,
+    children: { ...order.children, [parentKey]: merged },
+  };
+}
+
+/**
+ * Remove `childKey` from every parent list, then append it on `toParentKey`.
+ * Keeps `children[childKey]` (the moved node's own subtree order).
+ */
+export function reparentSiblingToEnd(
+  order: ViewOrder,
+  childKey: string,
+  fromParentKey: string,
+  toParentKey: string,
+  liveDestSiblings: readonly string[],
+): ViewOrder {
+  if (fromParentKey === toParentKey) {
+    return order;
+  }
+  const roots = order.roots.filter((k) => k !== childKey);
+  const children: Record<string, string[]> = {};
+  for (const [parent, list] of Object.entries(order.children)) {
+    if (parent === toParentKey) {
+      continue;
+    }
+    const filtered = list.filter((k) => k !== childKey);
+    if (filtered.length > 0) {
+      children[parent] = filtered;
+    }
+  }
+  return appendSiblingToEnd(
+    { roots, children },
+    toParentKey,
+    childKey,
+    liveDestSiblings,
+  );
 }
 
 /**

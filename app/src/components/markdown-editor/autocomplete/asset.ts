@@ -8,7 +8,7 @@ import type {
   CompletionResult,
 } from "@codemirror/autocomplete";
 import { Facet } from "@codemirror/state";
-import { isEmbeddableImageUrl } from "../local-media";
+import { isEmbeddableImageUrl, encodeAssetRelPath } from "../local-media";
 
 const assetFilenamesFacet = Facet.define<string[], string[]>({
   combine: (values) => values[values.length - 1] ?? [],
@@ -16,17 +16,22 @@ const assetFilenamesFacet = Facet.define<string[], string[]>({
 
 export { assetFilenamesFacet };
 
-/** Basename query inside `](assets/…` — allow spaces / % until `)`. */
+/** Query inside `](assets/…` — allow spaces / nested `/` / % until `)`. */
 const ASSET_URL_SLOT = /!?\[[^\]]*\]\(assets\/[^)\n]*$/;
 
-function encodeBasename(name: string): string {
-  return encodeURIComponent(name.trim());
+function matchesAssetQuery(name: string, query: string): boolean {
+  if (!query) return true;
+  const n = name.toLowerCase();
+  const q = query.toLowerCase();
+  if (n.startsWith(q)) return true;
+  const base = n.slice(n.lastIndexOf("/") + 1);
+  return base.startsWith(q);
 }
 
 /**
- * Only inside `[](assets/…)` or `![](assets/…)` — complete the basename.
- * Same Codemirror autocomplete chrome as `@` mentions. Writes %-encoded names
- * so spaces work in CommonMark destinations.
+ * Only inside `[](assets/…)` or `![](assets/…)` — complete the relative path.
+ * Same Codemirror autocomplete chrome as `@` mentions. Writes %-encoded path
+ * segments so spaces work in CommonMark destinations.
  */
 export function assetCompletions(
   context: CompletionContext,
@@ -47,13 +52,17 @@ export function assetCompletions(
   }
 
   const filtered = names
-    .filter((n) => !query || n.toLowerCase().startsWith(query))
+    .filter((n) => matchesAssetQuery(n, query))
     .slice(0, 50);
 
   const options: Completion[] = filtered.map((name) => ({
     label: name,
-    detail: isEmbeddableImageUrl(name) ? "image" : "file",
-    apply: encodeBasename(name),
+    detail: name.endsWith("/")
+      ? "folder"
+      : isEmbeddableImageUrl(name)
+        ? "image"
+        : "file",
+    apply: encodeAssetRelPath(name),
     type: "text",
   }));
 

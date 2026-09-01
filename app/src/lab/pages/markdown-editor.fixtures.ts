@@ -291,8 +291,12 @@ Attachment card via link:
 [Meeting notes](assets/notes.pdf)
 
 Type \`![](assets/\` or \`[](assets/\` in a real node body to autocomplete filenames (same menu as @).
+
+Nested folder cite (resolved when localMedia is passed):
+
+![Nested shot](assets/folder/shot.png)
 `,
-    note: "Live idle: figure+figcaption (inline MD); non-images → attachment card; caret reveals source. Preview: same figure/card; assets/ resolved when localMedia is passed.",
+    note: "Live idle: figure+figcaption (inline MD); non-images → attachment card; caret reveals source. Preview: same figure/card; assets/ (including nested) resolved when localMedia is passed.",
   },
   table: {
     label: "Table",

@@ -3,7 +3,9 @@ import { test } from "node:test";
 
 import {
   applyViewOrder,
+  appendSiblingToEnd,
   materializeSiblingOrder,
+  reparentSiblingToEnd,
   reorderSiblingInOrder,
   reparentInOrder,
   emptyViewOrder,
@@ -124,4 +126,37 @@ test("materializeSiblingOrder fills sparse roots from the live tree", () => {
   const order: ViewOrder = { roots: [P2], children: {} };
   const next = materializeSiblingOrder(tree, order, null);
   assert.deepEqual(next.roots, [P2, P1]);
+});
+
+test("appendSiblingToEnd keeps stored order and puts the new key last", () => {
+  const order: ViewOrder = {
+    roots: [P1],
+    children: { [P1]: [`${P1}::${I2}`, `${P1}::${I1}`] },
+  };
+  const live = [`${P1}::${I1}`, `${P1}::${I2}`, `${P1}::${I3}`];
+  const next = appendSiblingToEnd(order, P1, `${P1}::${I3}`, live);
+  assert.deepEqual(next.children[P1], [
+    `${P1}::${I2}`,
+    `${P1}::${I1}`,
+    `${P1}::${I3}`,
+  ]);
+});
+
+test("reparentSiblingToEnd moves a key and keeps its subtree bucket", () => {
+  const child = `${P1}::${I3}`;
+  const from = `${P1}::${I1}`;
+  const to = `${P1}::${I2}`;
+  const order: ViewOrder = {
+    roots: [P1],
+    children: {
+      [P1]: [`${P1}::${I1}`, `${P1}::${I2}`],
+      [from]: [child],
+      [to]: [],
+      [child]: ["stale-grandchild"],
+    },
+  };
+  const next = reparentSiblingToEnd(order, child, from, to, [child]);
+  assert.deepEqual(next.children[from] ?? [], []);
+  assert.deepEqual(next.children[to], [child]);
+  assert.deepEqual(next.children[child], ["stale-grandchild"]);
 });

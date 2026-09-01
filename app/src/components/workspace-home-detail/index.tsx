@@ -25,7 +25,10 @@ import { NodeAssetsSection } from "@/components/node-assets-section";
 import { Button } from "@/components/ui/button";
 import { Lucide } from "@/components/ui/lucide";
 import { usePmMentions } from "@/lib/markdown/use-pm-mentions";
-import { useNodeLocalMedia } from "@/lib/markdown/node-local-media";
+import {
+  useAssetFolderMentions,
+  useNodeLocalMedia,
+} from "@/lib/markdown/node-local-media";
 import styles from "./styles.module.scss";
 
 interface WorkspaceHomeDetailProps {
@@ -79,7 +82,7 @@ export function WorkspaceHomeDetail({
     (p: string) => onNavigateIssue({ kind: "project", projectId: p }),
     [onNavigateIssue],
   );
-  const { plugins, mentionAutocomplete } = usePmMentions({
+  const { plugins, mentionAutocomplete: pmMentions } = usePmMentions({
     issues,
     wikiNodes,
     knownIssueKeys: knownKeys,
@@ -90,8 +93,17 @@ export function WorkspaceHomeDetail({
     () => ({ kind: "workspace" as const }),
     [],
   );
-  const { localMedia, filenames: assetFilenames, ingestAssetFiles } =
-    useNodeLocalMedia(workspaceNodeRef);
+  const {
+    localMedia,
+    filenames: assetFilenames,
+    assetsDir,
+    ingestAssetFiles,
+  } = useNodeLocalMedia(workspaceNodeRef);
+  const mentionAutocomplete = useAssetFolderMentions(
+    pmMentions,
+    assetFilenames,
+    assetsDir,
+  );
   const canSave =
     saveStatus === "dirty" ||
     saveStatus === "error" ||

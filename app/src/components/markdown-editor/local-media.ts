@@ -2,9 +2,20 @@
 // ↔ elements/link/live.ts — assets/ links → attachment cards
 // ↔ extensions/live-preview.ts — facet provided with Live options
 // ↔ types.ts — LocalMediaProps on MarkdownEditor + MarkdownPreview
+// ↔ ./asset-url.ts — parse / encode `assets/…` cites
 
 import { Facet } from "@codemirror/state";
 import { renderInlineMarkdownFragment } from "./inline-fragment";
+import { assetBasename } from "./asset-url";
+
+export {
+  assetBasename,
+  assetRelPath,
+  encodeAssetRelPath,
+  isEmbeddableImageUrl,
+  isNodeAssetRelUrl,
+  markdownCiteForAssetBasename,
+} from "./asset-url";
 
 /** Host-supplied media hooks (product resolves pm-asset / file URLs). */
 export type LocalMediaOptions = {
@@ -19,75 +30,6 @@ export const localMediaFacet = Facet.define<
   combine: (values) => Object.assign({}, ...values),
 });
 
-const EMBED_IMAGE_EXT =
-  /\.(png|jpe?g|gif|webp|svg|avif|bmp|ico)$/i;
-
-function unwrapAssetSrc(src: string): string {
-  let s = src.trim();
-  if (s.startsWith("<") && s.endsWith(">")) {
-    s = s.slice(1, -1).trim();
-  }
-  return s;
-}
-
-function decodeAssetPiece(raw: string): string {
-  try {
-    return decodeURIComponent(raw);
-  } catch {
-    return raw;
-  }
-}
-
-/** `assets/foo.png` or `assets/foo%20bar.png` — basename only, no traversal. */
-export function isNodeAssetRelUrl(src: string): boolean {
-  const s = unwrapAssetSrc(src);
-  if (!s.startsWith("assets/")) return false;
-  const rest = s.slice("assets/".length);
-  if (!rest) return false;
-  const decoded = decodeAssetPiece(rest);
-  if (
-    decoded.includes("/") ||
-    decoded.includes("\\") ||
-    decoded.includes("\0") ||
-    decoded === "." ||
-    decoded === ".."
-  ) {
-    return false;
-  }
-  return true;
-}
-
-export function isEmbeddableImageUrl(src: string): boolean {
-  const raw = unwrapAssetSrc(src);
-  // Remote URLs: try as image (error handler → card). Path may lack a file ext.
-  if (/^https?:\/\//i.test(raw) || raw.startsWith("data:image/")) {
-    return true;
-  }
-  const pathOnly = raw.split("?")[0]?.split("#")[0] ?? raw;
-  return EMBED_IMAGE_EXT.test(decodeAssetPiece(pathOnly));
-}
-
-export function assetBasename(src: string): string {
-  let s = unwrapAssetSrc(src);
-  if (s.startsWith("assets/")) s = s.slice("assets/".length);
-  else {
-    const i = Math.max(s.lastIndexOf("/"), s.lastIndexOf("\\"));
-    if (i >= 0) s = s.slice(i + 1);
-  }
-  return decodeAssetPiece(s);
-}
-
-/** SoT cite for a written assets/ basename (spaces → %20). */
-export function markdownCiteForAssetBasename(filename: string): string {
-  const safe = filename.trim();
-  const stem = safe.replace(/\.[^.]+$/, "") || safe;
-  const encoded = encodeURIComponent(safe);
-  if (isEmbeddableImageUrl(safe)) {
-    return `![${stem}](assets/${encoded})`;
-  }
-  return `[${stem}](assets/${encoded})`;
-}
-
 /** Build idle attachment card DOM (PDF / zip / non-embed `![]`). */
 export function createAttachmentCardEl(
   src: string,
@@ -99,6 +41,8 @@ export function createAttachmentCardEl(
 
   const name = label.trim() || assetBasename(src) || "file";
   const ext = (() => {
+    const trimmed = src.trim().replace(/^<|>$/g, "");
+    if (trimmed.endsWith("/")) return "DIR";
     const base = assetBasename(src);
     const dot = base.lastIndexOf(".");
     return dot >= 0 ? base.slice(dot + 1).toUpperCase() : "FILE";

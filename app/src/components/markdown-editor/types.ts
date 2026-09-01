@@ -119,11 +119,12 @@ export type MarkdownEditorProps = {
   localMedia?: {
     resolveMediaUrl?: (src: string) => string;
   };
-  /** Basenames for `assets/` autocomplete. */
+  /** Posix relative paths for `assets/` autocomplete (nested ok). */
   assetFilenames?: string[];
   /**
    * Paste/drop files into the editor: product copies into node `assets/` and
-   * returns written basenames; core inserts Markdown cites. Omit to disable.
+   * returns paths to cite (top-level files only; folder copies are silent).
+   * Omit to disable.
    */
   ingestAssetFiles?: (files: File[]) => Promise<string[]>;
 };
