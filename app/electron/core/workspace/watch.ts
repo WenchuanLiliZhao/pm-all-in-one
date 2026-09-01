@@ -65,7 +65,7 @@ export class WorkspaceWatcher {
       {
         ignoreInitial: true,
         awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 50 },
-        // persistIndex / persistAgentTree write unconditionally under .pm/
+        // persistIndex writes unconditionally under .pm/
         // and would self-trigger if the workspace root were watched broadly.
         ignored: (watchedPath: string) => {
           const normalized = path.resolve(watchedPath);

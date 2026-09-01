@@ -24,4 +24,4 @@ Do **not** open the product repo root as a PM workspace — only this subdirecto
 - The **v1** epic and all of its tasks / subtasks (trusted 1.0.0 / signing / later UI)
 - Other projects from the live library (e.g. eve-ask-lab)
 - Machine-local files (`.pm/local.json`, `.pm/local.md`)
-- Derived index files (`.pm/index.json`, `.pm/tree.md`)
+- Derived `.pm/index.json` (app cache). `.pm/tree.md` is no longer written.

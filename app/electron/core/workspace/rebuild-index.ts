@@ -1,6 +1,5 @@
 // ↔ electron/main.ts / server/main.ts — rebuildIndex consumers over dual bridge
-// ↔ electron/core/domain/wiki.ts — listWikiContentsRows for Wiki Contents section
-// Zone 3 core entry for derived .pm/index.json + tree.md (not a PmApi landing)
+// Zone 3 core entry for derived .pm/index.json (not a PmApi landing)
 import fs from "node:fs";
 import path from "node:path";
 
@@ -9,10 +8,6 @@ import { loadWikiCustomProps } from "../domain/wiki-custom-props.js";
 import { ensureDirWithGitkeep, hierarchyRoot } from "../identity/ids.js";
 import { writeSchemaDts, writeWikiSchemaDts } from "../infra/schema-dts.js";
 import { listIssues, listProjects } from "../domain/store.js";
-import {
-  listWikiContentsRows,
-  type WikiContentsRow,
-} from "../domain/wiki.js";
 import {
   issueRefKey,
   type IssueTree,
@@ -23,7 +18,8 @@ export function indexPath(workspaceRoot: string): string {
   return path.join(workspaceRoot, ".pm", "index.json");
 }
 
-export function agentTreePath(workspaceRoot: string): string {
+/** Leftover from when rebuild wrote a derived agent map. Not a source of truth. */
+export function legacyAgentTreePath(workspaceRoot: string): string {
   return path.join(workspaceRoot, ".pm", "tree.md");
 }
 
@@ -90,91 +86,18 @@ export function persistIndex(workspaceRoot: string, tree: IssueTree): void {
   fs.writeFileSync(indexPath(workspaceRoot), JSON.stringify(tree, null, 2) + "\n", "utf8");
 }
 
-/**
- * A one-page map for agents working in a terminal.
- *
- * Flat directories give a mechanical path for every reference but no ancestry,
- * so this file supplies the ancestry — issue ladder and wiki Contents. Derived
- * and gitignored: files stay the source of truth.
- */
-export function renderAgentTree(
-  tree: IssueTree,
-  wikiRows: readonly WikiContentsRow[] = [],
-): string {
-  const lines = [
-    "# Workspace map (derived)",
-    "",
-    "Rebuilt by pm-all-in-one; do not edit.",
-    "",
-  ];
-
-  const walk = (key: string, depth: number): void => {
-    const node = tree.byId[key];
-    if (!node) {
-      return;
-    }
-    const indent = "  ".repeat(depth);
-    const flag = node.hasViolation ? " [violation]" : "";
-    lines.push(
-      `${indent}- @issue-${node.projectId}::${node.issueId} ${node.level} — ${node.title || "(untitled)"}${flag}`,
-    );
-    for (const child of tree.children[key] ?? []) {
-      walk(child, depth + 1);
-    }
-  };
-
-  for (const projectKey of tree.roots) {
-    const project = tree.byId[projectKey];
-    if (!project) {
-      continue;
-    }
-    lines.push(
-      `## project ${project.projectId} — ${project.title || "(untitled)"}`,
-      "",
-    );
-    const children = tree.children[projectKey] ?? [];
-    if (children.length === 0) {
-      lines.push("_no issues yet_");
-    }
-    for (const child of children) {
-      walk(child, 0);
-    }
-    lines.push("");
+/** Drop a leftover `.pm/tree.md` so it cannot be mistaken for a second map. */
+export function removeLegacyAgentTree(workspaceRoot: string): void {
+  const file = legacyAgentTreePath(workspaceRoot);
+  if (fs.existsSync(file)) {
+    fs.unlinkSync(file);
   }
-
-  lines.push("## Wiki Contents", "");
-  if (wikiRows.length === 0) {
-    lines.push("_no wiki-nodes yet_");
-  } else {
-    for (const row of wikiRows) {
-      const indent = "  ".repeat(row.depth);
-      lines.push(
-        `${indent}- ${row.ref} — ${row.title || "(untitled)"}`,
-      );
-    }
-  }
-  lines.push("");
-
-  return `${lines.join("\n").trimEnd()}\n`;
-}
-
-export async function persistAgentTree(
-  workspaceRoot: string,
-  tree: IssueTree,
-): Promise<void> {
-  const wikiRows = await listWikiContentsRows(workspaceRoot);
-  fs.mkdirSync(path.join(workspaceRoot, ".pm"), { recursive: true });
-  fs.writeFileSync(
-    agentTreePath(workspaceRoot),
-    renderAgentTree(tree, wikiRows),
-    "utf8",
-  );
 }
 
 export async function rebuildIndex(workspaceRoot: string): Promise<IssueTree> {
   const tree = await buildTree(workspaceRoot);
   persistIndex(workspaceRoot, tree);
-  await persistAgentTree(workspaceRoot, tree);
+  removeLegacyAgentTree(workspaceRoot);
   // schema.d.ts is committed, so a fresh clone or a hand-edited custom-props.ts
   // could leave it stale; regenerating on open keeps it honest.
   for (const project of await listProjects(workspaceRoot)) {

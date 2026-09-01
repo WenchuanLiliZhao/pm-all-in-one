@@ -357,18 +357,14 @@ test("project assets/ is not reported as an unadopted issue", async () => {
   });
 });
 
-test("rebuilding writes the derived map and the generated types", async () => {
+test("rebuilding writes generated types and does not write tree.md", async () => {
   await withWorkspace(async (root, projectId) => {
-    const { subtask } = await seedLadder(root, projectId);
+    const leftover = path.join(root, ".pm", "tree.md");
+    fs.mkdirSync(path.join(root, ".pm"), { recursive: true });
+    fs.writeFileSync(leftover, "stale leftover map\n", "utf8");
+    await seedLadder(root, projectId);
     await rebuildIndex(root);
-    const map = fs.readFileSync(path.join(root, ".pm", "tree.md"), "utf8");
-    assert.match(map, new RegExp(`## project ${projectId} — Test`));
-    assert.match(
-      map,
-      new RegExp(`@issue-${projectId}::${subtask.id} subtask`),
-    );
-    assert.match(map, /## Wiki Contents/);
-    assert.match(map, /_no wiki-nodes yet_/);
+    assert.equal(fs.existsSync(leftover), false);
     assert.ok(
       fs.existsSync(path.join(root, "issue-hierarchy", projectId, "schema.d.ts")),
     );

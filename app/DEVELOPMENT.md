@@ -64,7 +64,7 @@ A workspace is any folder with:
 workspace.ts         # title, createdDate
 README.md            # workspace body (Home)
 wiki/                # <nanoid(21)>/{props.ts,README.md} + sidebar.ts (nav SoT)
-.pm/                 # views, derived index + tree.md
+.pm/                 # views, derived index.json (gitignored)
 issue-hierarchy/     # <projectId>/<issueId>/ — flat (props.ts + README.md)
 ```
 

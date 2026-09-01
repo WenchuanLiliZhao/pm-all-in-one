@@ -11,6 +11,7 @@ import {
   createWikiNode,
   deleteWikiNode,
   ensureWiki,
+  flattenWikiContents,
   getWikiNode,
   getWikiSnapshot,
   migrateLegacyFlatWikiNodes,
@@ -508,23 +509,23 @@ test("updateWikiNode without expected still writes (legacy)", async () => {
   });
 });
 
-test("rebuilding writes nested wiki Contents into tree.md", async () => {
+test("wiki Contents ancestry is on disk, not a derived tree.md", async () => {
   await withTempWorkspace(async (root) => {
+    const leftover = path.join(root, ".pm", "tree.md");
+    fs.mkdirSync(path.join(root, ".pm"), { recursive: true });
+    fs.writeFileSync(leftover, "stale leftover map\n", "utf8");
     const parent = await createWikiNode(root, { title: "Parent section" });
     const child = await createWikiNode(root, {
       title: "Child page",
       parentId: parent.id,
     });
     await rebuildIndex(root);
-    const map = fs.readFileSync(path.join(root, ".pm", "tree.md"), "utf8");
-    assert.match(map, /## Wiki Contents/);
-    assert.match(
-      map,
-      new RegExp(`- ${wikiLinkSyntax(parent.id)} — Parent section`),
-    );
-    assert.match(
-      map,
-      new RegExp(`  - ${wikiLinkSyntax(child.id)} — Child page`),
-    );
+    assert.equal(fs.existsSync(leftover), false);
+    const snap = await getWikiSnapshot(root);
+    const rows = flattenWikiContents(snap.sidebar, snap.nodes);
+    assert.equal(rows[0]?.id, parent.id);
+    assert.equal(rows[1]?.id, child.id);
+    assert.equal(rows[1]?.depth, 1);
+    assert.equal(rows[1]?.parentId, parent.id);
   });
 });

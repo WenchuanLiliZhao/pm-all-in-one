@@ -288,3 +288,50 @@ test("cli issue delete prunes the key from roadmap and table", async () => {
     }
   });
 });
+
+test("issue list prints parentId ancestry with status and drops leftover tree.md", async () => {
+  await withTempWorkspace(async (root) => {
+    const leftover = path.join(root, ".pm", "tree.md");
+    fs.writeFileSync(leftover, "stale leftover map\n", "utf8");
+    const project = await createProject(root, { title: "P" });
+    const epic = createJson(root, [
+      "create",
+      "--project",
+      project.id,
+      "--parent",
+      "root",
+      "--title",
+      "Epic",
+    ]);
+    const task = createJson(root, [
+      "create",
+      "--project",
+      project.id,
+      "--parent",
+      epic.id,
+      "--title",
+      "Task",
+    ]);
+    const listed = runIssue(root, ["list", "--project", project.id]);
+    assert.equal(listed.status, 0, listed.stderr);
+    assert.match(
+      listed.stdout,
+      new RegExp(`^@issue-${project.id}\\tproject\\tP$`, "m"),
+    );
+    assert.match(
+      listed.stdout,
+      new RegExp(
+        `^  @issue-${project.id}::${epic.id}\\tepic\\tdraft\\tEpic$`,
+        "m",
+      ),
+    );
+    assert.match(
+      listed.stdout,
+      new RegExp(
+        `^    @issue-${project.id}::${task.id}\\ttask\\tdraft\\tTask$`,
+        "m",
+      ),
+    );
+    assert.equal(fs.existsSync(leftover), false);
+  });
+});

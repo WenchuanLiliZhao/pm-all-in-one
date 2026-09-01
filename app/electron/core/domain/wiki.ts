@@ -4,7 +4,7 @@
  *
  * ↔ electron/core/sync/detail-diff.ts — OCC expected / StaleWriteError on updateWikiNode
  * ↔ electron/core/domain/wiki-custom-props.ts — fields / markdownFields I/O
- * ↔ electron/core/workspace/rebuild-index.ts — listWikiContentsRows for derived tree.md
+ * ↔ electron/cli.ts — wiki list uses getWikiSnapshot + flattenWikiContents
  * ↔ electron/main.ts — IPC encodeStaleWriteMessage on OCC
  * ↔ server/main.ts — HTTP twin PATCH /api/wiki/:id
  * ↔ src/lib/bridge/pm-api.ts — updateWikiNode expected option
@@ -611,8 +611,8 @@ export function flattenWikiContents(
 }
 
 /**
- * Read-only Contents rows for derived maps. Does not reconcile unlisted
- * nodes into `sidebar.ts` (unlike `getWikiSnapshot`).
+ * Read-only Contents rows. Does not reconcile unlisted nodes into
+ * `sidebar.ts` (unlike `getWikiSnapshot`).
  */
 export async function listWikiContentsRows(
   workspaceRoot: string,

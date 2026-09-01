@@ -11,6 +11,7 @@ import {
   handoffLinkSyntax,
   issueLinkSyntax,
   memberLinkSyntax,
+  projectLinkSyntax,
   wikiLinkSyntax,
 } from "./core/identity/links.js";
 import {
@@ -52,7 +53,12 @@ import {
   formatDescendantCost,
   listDescendantIssues,
 } from "./core/sync/delete-cost.js";
-import { issueRefKey, type Issue, type Membership } from "./core/identity/types.js";
+import {
+  issueRefKey,
+  type Issue,
+  type Membership,
+  type Project,
+} from "./core/identity/types.js";
 import { isValidEntityId } from "./core/identity/dir-id.js";
 import { parseCliArgs } from "./cli-args.js";
 // ↔ electron/core/views/view-orders.ts — issue create/move/delete maintain view-orders
@@ -316,6 +322,7 @@ async function cmdWikiMove(
 }
 
 async function cmdWikiList(root: string, json: boolean): Promise<void> {
+  // ↔ electron/core/domain/wiki.ts — Contents ancestry from sidebar, not a file
   const snap = await getWikiSnapshot(root);
   const rows = flattenWikiContents(snap.sidebar, snap.nodes);
   if (json) {
@@ -509,6 +516,52 @@ async function cmdIssueDelete(
   }
 }
 
+function formatIssueListTree(
+  projects: readonly Project[],
+  issues: readonly Issue[],
+): string {
+  const known = new Set(issues.map((i) => i.id));
+  const childrenOf = new Map<string, Issue[]>();
+  const bucketKey = (projectId: string, parentId: string | null): string =>
+    parentId === null ? `p:${projectId}` : `i:${projectId}::${parentId}`;
+
+  for (const issue of issues) {
+    const parentOk = issue.parentId !== null && known.has(issue.parentId);
+    const k = parentOk
+      ? bucketKey(issue.projectId, issue.parentId)
+      : bucketKey(issue.projectId, null);
+    const arr = childrenOf.get(k) ?? [];
+    arr.push(issue);
+    childrenOf.set(k, arr);
+  }
+  for (const arr of childrenOf.values()) {
+    arr.sort((a, b) => a.title.localeCompare(b.title));
+  }
+
+  const lines: string[] = [];
+  const walk = (issue: Issue, depth: number): void => {
+    const indent = "  ".repeat(depth);
+    const flag = issue.violations.length > 0 ? " [violation]" : "";
+    lines.push(
+      `${indent}${issueLinkSyntax(issue.projectId, issue.id)}\t${issue.level}\t${issue.status}\t${issue.title}${flag}`,
+    );
+    for (const child of childrenOf.get(
+      bucketKey(issue.projectId, issue.id),
+    ) ?? []) {
+      walk(child, depth + 1);
+    }
+  };
+
+  const shown = [...projects].sort((a, b) => a.title.localeCompare(b.title));
+  for (const project of shown) {
+    lines.push(`${projectLinkSyntax(project.id)}\tproject\t${project.title}`);
+    for (const child of childrenOf.get(bucketKey(project.id, null)) ?? []) {
+      walk(child, 1);
+    }
+  }
+  return lines.length === 0 ? "" : `${lines.join("\n")}\n`;
+}
+
 async function cmdIssueList(
   root: string,
   flags: Record<string, string | boolean>,
@@ -521,13 +574,14 @@ async function cmdIssueList(
   }
   if (json) {
     printJson(issues);
-  } else {
-    for (const i of issues) {
-      process.stdout.write(
-        `${issueLinkSyntax(i.projectId, i.id)}\t${i.level}\t${i.title}\t${i.relPath}\n`,
-      );
-    }
+    return;
   }
+  const projects = await listProjects(root);
+  const shown =
+    projectId === undefined
+      ? projects
+      : projects.filter((p) => p.id === projectId);
+  process.stdout.write(formatIssueListTree(shown, issues));
 }
 
 async function cmdProjectCreate(

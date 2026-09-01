@@ -118,9 +118,11 @@ test("scaffold copies template files including .gitkeep", () => {
       assert.equal(agent, templateAgent);
       assert.match(
         agent,
-        /^<!-- local-pm agent\.md rev 13 — product-owned;/,
+        /^<!-- local-pm agent\.md rev \d+ — product-owned;/,
       );
-      assert.ok(agent.includes("Wiki Contents"));
+      assert.ok(agent.includes("pm-all-in-one issue list"));
+      assert.ok(agent.includes("pm-all-in-one wiki list"));
+      assert.ok(agent.includes("Do not read or write `.pm/tree.md`"));
       assert.ok(agent.includes("wiki/custom-props.ts"));
       assert.ok(agent.includes("Install Command Line Tool"));
       assert.ok(agent.includes("npx pm-all-in-one"));

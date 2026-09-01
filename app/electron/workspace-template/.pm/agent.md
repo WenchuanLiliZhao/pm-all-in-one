@@ -1,4 +1,4 @@
-<!-- local-pm agent.md rev 14 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/custom/ (see pm-create-skill). -->
+<!-- local-pm agent.md rev 15 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/custom/ (see pm-create-skill). -->
 # Agent rules (local-pm)
 
 ## Finding things
@@ -17,9 +17,16 @@ Ids are opaque `nanoid(21)` tokens (URL-safe alphabet). Collision resistance
 comes from entropy at create time — there is no shared counter. Directory names
 are ids and nothing else; **never rename one**.
 
-Directories are flat, so they tell you nothing about ancestry. For that read
-`.pm/tree.md` (derived, rebuilt by the app and CLI). It maps the issue ladder
-and wiki Contents. Editing it changes nothing.
+Directories are flat, so they tell you nothing about ancestry. Query it
+(do not keep a second map on disk):
+
+```sh
+pm-all-in-one issue list [--project <projectId>]
+pm-all-in-one wiki list
+```
+
+Do not glob nanoid folders. Do not read or write `.pm/tree.md` — older
+builds used to dump a derived map there; it is not a source of truth.
 
 ## Mentions (live cross-references)
 
@@ -42,8 +49,8 @@ with no `::` suffix; an issue always includes `::<issueId>`.
 inside inline code or fenced code stay literal and will not become chips.
 
 Backticks are fine only when explaining the *syntax* with placeholders
-(`@issue-<projectId>`, `@issue-<projectId>::<issueId>`, `@wiki-<id>`, `@member-<id>`, `@handoff-<id>`). Derived
-`.pm/tree.md` emits bare locators; copy them without adding backticks.
+(`@issue-<projectId>`, `@issue-<projectId>::<issueId>`, `@wiki-<id>`, `@member-<id>`, `@handoff-<id>`). CLI
+`issue list` / `wiki list` print bare locators; copy them without adding backticks.
 
 ## Shape of the workspace
 
@@ -181,8 +188,7 @@ prose mention, not membership in the field.
 `type: "string-list"` stores `string[]` of free-text tokens in props.ts (omit
 when empty). Tokens are not wiki-node ids — use this for keywords / aliases.
 
-The derived `.pm/tree.md` **Wiki Contents** section is the readable tree
-(same file as the issue map). Read that to choose a parent; do not glob
+To choose a Contents parent, run `pm-all-in-one wiki list`. Do not glob
 `wiki/` nanoid folders. `wiki/sidebar.ts` remains the hierarchy source of
 truth.
 
@@ -313,7 +319,8 @@ or member `props.ts`.** They are system fields: `created` is set once at create;
   that project's `custom-props.ts`; `wiki/schema.d.ts` is generated from
   `wiki/custom-props.ts` (`satisfies WikiNodeProps`). Shape only — it
   cannot tell whether a `parentId` is a legal parent.
-- `.pm/index.json` and `.pm/tree.md` are derived. Editing them changes nothing.
+- `.pm/index.json` is a derived app cache. Editing it changes nothing.
+  `.pm/tree.md` is not written; if a leftover exists, ignore or delete it.
 - `.pm/local.json` is machine-local (gitignored) — current `me` member id
   (and, later, structured `repos` path table). Optional
   `trustFenceValidators` opts in to importing workspace fence-validator

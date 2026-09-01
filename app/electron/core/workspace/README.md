@@ -4,13 +4,13 @@
 <!-- ↔ ../README.md — category map -->
 <!-- ↔ DEVELOPMENT.md — § Workspace templates -->
 
-Workspace lifecycle: create from shipped templates, open-time health (doctor), chokidar watch, app/settings + gitignored local config, and rebuild of derived `.pm/index.json` + `tree.md`.
+Workspace lifecycle: create from shipped templates, open-time health (doctor), chokidar watch, app/settings + gitignored local config, and rebuild of derived `.pm/index.json`.
 
 **Who may import:** Electron main, server, CLI.
 
 | File | Role |
 | --- | --- |
-| `rebuild-index.ts` | Derived `.pm/index.json` + `tree.md` (issues + wiki Contents; **not** a barrel) |
+| `rebuild-index.ts` | Derived `.pm/index.json` (app cache; **not** a barrel). Does not write `.pm/tree.md`. |
 | `watch.ts` | Chokidar → rebuild + doctor payload |
 | `doctor.ts` | Filesystem-shape stray scan + `scanWorkspace` (fence validators) |
 | `fence-validators.ts` | Workspace-declared Markdown fence lint (opt-in module import) |
