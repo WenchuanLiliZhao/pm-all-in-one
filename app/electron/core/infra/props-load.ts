@@ -65,6 +65,8 @@ const WikiNodePropsZod = z
     title: z.string().min(1),
     /** Required on write; optional on read so legacy files load then seed "". */
     description: z.string().optional(),
+    /** Required on write; optional on read so legacy files load then seed todo. */
+    status: z.string().optional(),
     createdBy: OptionalMemberIdZod,
     ...SystemTimestampsZod,
   })

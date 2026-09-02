@@ -20,6 +20,7 @@ import type {
 } from "../identity/types.js";
 import { ISSUE_PRIORITY_IDS } from "../identity/issue-priority.js";
 import { ISSUE_STATUS_IDS } from "../identity/issue-status.js";
+import { WIKI_STATUS_IDS } from "../identity/wiki-status.js";
 
 const TS_TYPE: Record<CustomPropDef["type"], string> = {
   string: "string",
@@ -147,6 +148,7 @@ export function renderWikiSchemaDts(schema: WikiCustomPropsSchema): string {
     "  title: string;",
     '  /** Short blurb; required key, may be "". */',
     "  description: string;",
+    `  status: ${WIKI_STATUS_IDS.map((id) => JSON.stringify(id)).join(" | ")};`,
     "  /** System: creating member id, or null when unknown. Do not hand-edit. */",
     "  createdBy?: string | null;",
     "  /** System: set once at create. Do not hand-edit. */",

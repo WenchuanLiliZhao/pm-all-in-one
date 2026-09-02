@@ -9,6 +9,7 @@ import type { LadderViolation } from "./ladder.js";
 import type { EntityId } from "./dir-id.js";
 import type { IssuePriorityId } from "./issue-priority.js";
 import type { IssueStatusId } from "./issue-status.js";
+import type { WikiStatusId } from "./wiki-status.js";
 
 export type { EntityId } from "./dir-id.js";
 
@@ -24,6 +25,8 @@ export type {
   IssuePriorityId,
   IssuePriorityDef,
 } from "./issue-priority.js";
+
+export type { WikiStatusId, WikiStatusDef } from "./wiki-status.js";
 
 export type MetaFieldType =
   | "string"
@@ -254,6 +257,8 @@ export interface WikiNode {
   title: string;
   /** Short blurb; required key, may be "". */
   description: string;
+  /** Built-in wiki status (todo / in-progress / done). */
+  status: WikiStatusId;
   /** ISO-8601 UTC; immutable after create */
   created: string;
   /** ISO-8601 UTC; app-managed on write */
@@ -271,6 +276,8 @@ export interface WikiNodeMeta {
   relPath: string;
   title: string;
   description: string;
+  /** Built-in wiki status (todo / in-progress / done). */
+  status: WikiStatusId;
   created: string;
   updated: string;
   createdBy: EntityId | null;
@@ -399,6 +406,8 @@ export interface CreateWikiNodeInput {
   /** Insert under this Contents ref as child when found; else root append. */
   parentId?: string | null;
   body?: string;
+  /** Create default `todo`. */
+  status?: WikiStatusId;
   /** Optional create-time actor; same as WriteActorOptions.actorMemberId. */
   actorMemberId?: EntityId | null;
 }
@@ -406,6 +415,7 @@ export interface CreateWikiNodeInput {
 export interface WikiNodePatch {
   title?: string;
   description?: string;
+  status?: WikiStatusId;
   body?: string;
   fields?: Record<string, unknown>;
   markdownFields?: Record<string, string>;

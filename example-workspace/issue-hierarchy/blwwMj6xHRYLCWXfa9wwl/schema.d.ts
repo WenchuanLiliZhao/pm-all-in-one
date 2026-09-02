@@ -5,7 +5,9 @@
 //   export const props = { ... } as const satisfies TaskProps;
 //
 // Shape only. `parentId` being a legal parent is a runtime check —
-// run `pm-all-in-one doctor` for that.
+// run `pm-all-in-one doctor` for that. wiki-node custom fields are
+// string[] of wiki-node ids (existence is doctor). string-list fields
+// are string[] of free-text tokens, not wiki ids.
 
 interface BaseProps {
   title: string;

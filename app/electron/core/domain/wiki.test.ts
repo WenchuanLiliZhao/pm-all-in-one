@@ -76,6 +76,7 @@ test("createWikiNode always enters Contents at root", async () => {
     assert.match(page.created, /Z$/);
     assert.equal(page.created, page.updated);
     assert.equal(page.title, "Getting Started");
+    assert.equal(page.status, "todo");
     const snap = await getWikiSnapshot(root);
     assert.equal(snap.sidebar.length, 1);
     assert.equal(snap.sidebar[0]?.type, "ref");
@@ -527,5 +528,43 @@ test("wiki Contents ancestry is on disk, not a derived tree.md", async () => {
     assert.equal(rows[1]?.id, child.id);
     assert.equal(rows[1]?.depth, 1);
     assert.equal(rows[1]?.parentId, parent.id);
+    assert.equal(rows[0]?.status, "todo");
+    assert.equal(rows[1]?.status, "todo");
+  });
+});
+
+test("createWikiNode writes status todo; updateWikiNode changes status", async () => {
+  await withTempWorkspace(async (root) => {
+    const page = await createWikiNode(root, { title: "Draft page" });
+    assert.equal(page.status, "todo");
+    const next = await updateWikiNode(root, page.id, { status: "in-progress" });
+    assert.equal(next.status, "in-progress");
+    const done = await updateWikiNode(root, page.id, { status: "done" });
+    assert.equal(done.status, "done");
+    await assert.rejects(
+      () =>
+        updateWikiNode(root, page.id, {
+          status: "draft" as "todo",
+        }),
+      /Invalid wiki-node status/,
+    );
+  });
+});
+
+test("missing wiki status seeds todo without inventing a new id", async () => {
+  await withTempWorkspace(async (root) => {
+    const page = await createWikiNode(root, { title: "Legacy" });
+    const propsFile = path.join(root, "wiki", page.id, "props.ts");
+    const created = page.created;
+    fs.writeFileSync(
+      propsFile,
+      `export const props = {\n  "title": "Legacy",\n  "description": "",\n  "created": ${JSON.stringify(created)},\n  "updated": ${JSON.stringify(created)}\n} as const;\n`,
+      "utf8",
+    );
+    const loaded = await getWikiNode(root, page.id);
+    assert.equal(loaded.status, "todo");
+    assert.equal(loaded.created, created);
+    const text = fs.readFileSync(propsFile, "utf8");
+    assert.match(text, /"status": "todo"/);
   });
 });

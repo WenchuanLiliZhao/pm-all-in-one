@@ -54,6 +54,7 @@ export const WIKI_SYSTEM_PROP_KEYS = new Set([
   "id",
   "title",
   "description",
+  "status",
   "created",
   "updated",
   "createdBy",

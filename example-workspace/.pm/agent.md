@@ -1,4 +1,4 @@
-<!-- local-pm agent.md rev 16 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/custom/ (see pm-create-skill). -->
+<!-- local-pm agent.md rev 17 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/custom/ (see pm-create-skill). -->
 # Agent rules (local-pm)
 
 ## Finding things
@@ -181,19 +181,33 @@ a validator.
 ## Wiki
 
 Each wiki-node is `wiki/<id>/{props.ts,README.md}` where `id` is an opaque
-token. Props include `title` and `description` (required key, may be `""`).
+token. Props include `title`, `description` (required key, may be `""`), and
+`status` (`"todo"` | `"in-progress"` | `"done"`; required; create default
+`todo`).
 **Contents** (`wiki/sidebar.ts` `ref` tree) is the required hierarchy —
 every wiki-node must appear there. Create via the app or CLI so ids allocate
 correctly; new nodes always enter Contents (`parentId` optional, default root).
 Prefer `@wiki-<id>` for links. Home is root `README.md`, not a file under
 `wiki/`. All pages is a flat admin inventory of the same set.
 
+**Only `done` wiki-nodes are standing facts.** Do not cite `todo` or
+`in-progress` bodies as library truth — they are still being written. You may
+still open them to continue the work. When you create or substantially rewrite
+a wiki-node, leave it `todo` or set `in-progress` while editing, then:
+
+```sh
+pm-all-in-one wiki update --id <wikiNodeId> --status done
+```
+
+`wiki list` prints `status` next to each locator so you can see which rows are
+facts.
+
 Wiki custom fields are workspace-level, not per-project: `wiki/custom-props.ts`
 exports `{ fields: CustomPropDef[] }`. Generated `wiki/schema.d.ts` is
 `WikiNodeProps`. Non-markdown values sit flat in the node `props.ts` (keep
 `satisfies WikiNodeProps`); markdown values are sibling `<kebab-key>.md`,
 never in props.ts. Missing `wiki/custom-props.ts` means an empty schema.
-Do not declare reserved keys (`id`, `title`, `description`, `created`,
+Do not declare reserved keys (`id`, `title`, `description`, `status`, `created`,
 `updated`, `createdBy`, `body`) or a markdown key that kebab-cases to `readme`.
 `type: "wiki-node"` stores `string[]` of wiki-node ids in props.ts (omit when
 empty). Those ids are not Contents parents. A `@wiki-<id>` in README.md is a
@@ -272,6 +286,9 @@ pm-all-in-one project create --title "New Project"
 pm-all-in-one issue create --project <projectId> --parent <issueId|root> --title "…"
 pm-all-in-one issue move   --project <projectId> --issue <issueId> --parent <issueId|root>
 pm-all-in-one issue list   --project <projectId>
+pm-all-in-one wiki create  --title "…" [--parent <wikiNodeId|root>]
+pm-all-in-one wiki update  --id <wikiNodeId> --status todo|in-progress|done
+pm-all-in-one wiki list
 pm-all-in-one doctor
 pm-all-in-one adopt path/to/stray-dir
 ```
@@ -308,8 +325,10 @@ Hand-created directories under a project are **not** issues until adopted
 
 Fine to edit: workspace / issue / project / member `README.md`, `wiki/*/README.md`,
 markdown prop files (issue or wiki-node), and the non-structural fields of
-`workspace.ts`, `project.ts`, and `props.ts` (title, `startDate`/`endDate`,
-`blockedBy`, `assignee`, custom props, member `membership`).
+`workspace.ts`, `project.ts`, and `props.ts` (title, wiki-node `status`,
+`startDate`/`endDate`, `blockedBy`, `assignee`, custom props, member
+`membership`). Prefer `pm-all-in-one wiki update --id … --status …` for wiki
+status.
 
 **Title vs body.** Title lives in `workspace.ts` / `project.ts` / issue, wiki-node,
 or member `props.ts`. The matching `README.md` is body only — do **not** start
@@ -327,7 +346,7 @@ or member `props.ts`.** They are system fields: `created` is set once at create;
 - Never write an `id` field into `workspace.ts`, `project.ts`, `props.ts`, or
   `custom-props.ts`. Do not declare `created`/`updated`/`createdBy`/`assignee`
   as issue custom props, or `created`/`updated`/`createdBy`/`title`/
-  `description`/`body` as wiki custom props.
+  `description`/`status`/`body` as wiki custom props.
 - Keep the `satisfies` clause: `<project>/schema.d.ts` is generated from
   that project's `custom-props.ts`; `wiki/schema.d.ts` is generated from
   `wiki/custom-props.ts` (`satisfies WikiNodeProps`). Shape only — it

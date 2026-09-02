@@ -174,6 +174,8 @@ For vibe coding (one human + AI): treat roles as **session zones**, not packages
 | `src/lib/types.ts` (`DoctorReport` / `AdoptResult`) | `electron/src/lib/types.ts` | Orphan twin of renderer |
 | `src/lib/issue-status.ts` | `electron/core/identity/issue-status.ts` | Builtin status catalog; SoT in core |
 | `src/lib/issue-status.ts` | `electron/src/lib/issue-status.ts` | Orphan twin of renderer |
+| `src/lib/wiki-status.ts` | `electron/core/identity/wiki-status.ts` | Builtin wiki-node status catalog; SoT in core |
+| `src/lib/wiki-status.ts` | `electron/src/lib/wiki-status.ts` | Orphan twin of renderer |
 | `src/lib/issue-priority.ts` | `electron/core/identity/issue-priority.ts` | Builtin priority catalog; SoT in core |
 | `src/lib/issue-priority.ts` | `electron/src/lib/issue-priority.ts` | Orphan twin of renderer |
 | `src/lib/ai-locator.ts` | `electron/core/identity/ai-locator.ts` | Thin re-export via `@pm-core/identity/ai-locator` |

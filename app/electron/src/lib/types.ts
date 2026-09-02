@@ -7,6 +7,7 @@
 
 import type { IssuePriorityId } from "./issue-priority.js";
 import type { IssueStatusId } from "./issue-status.js";
+import type { WikiStatusId } from "./wiki-status.js";
 
 export type EntityId = string;
 
@@ -22,6 +23,8 @@ export type {
   IssuePriorityId,
   IssuePriorityDef,
 } from "./issue-priority.js";
+
+export type { WikiStatusId, WikiStatusDef } from "./wiki-status.js";
 
 export type MetaFieldType =
   | "string"
@@ -306,6 +309,8 @@ export interface WikiNode {
   title: string;
   /** Short blurb; required key, may be "". */
   description: string;
+  /** Built-in wiki status (todo / in-progress / done). */
+  status: WikiStatusId;
   created: string;
   updated: string;
   createdBy: EntityId | null;
@@ -320,6 +325,9 @@ export interface WikiNodeMeta {
   path: string;
   relPath: string;
   title: string;
+  description: string;
+  /** Built-in wiki status (todo / in-progress / done). */
+  status: WikiStatusId;
   created: string;
   updated: string;
   createdBy: EntityId | null;
@@ -377,15 +385,19 @@ export interface WikiSnapshot {
 
 export interface CreateWikiNodeInput {
   title?: string;
+  description?: string;
   /** Insert under this Contents ref as child when found; else root append. */
   parentId?: string | null;
   body?: string;
+  /** Create default `todo`. */
+  status?: WikiStatusId;
   actorMemberId?: EntityId | null;
 }
 
 export interface WikiNodePatch {
   title?: string;
   description?: string;
+  status?: WikiStatusId;
   body?: string;
   fields?: Record<string, unknown>;
   markdownFields?: Record<string, string>;

@@ -45,6 +45,7 @@ import {
   flattenWikiContents,
   getWikiSnapshot,
   moveWikiNodeToSidebarPosition,
+  updateWikiNode,
   type WikiSidebarNode,
 } from "./core/domain/wiki.js";
 import { rebuildIndex } from "./core/workspace/rebuild-index.js";
@@ -60,6 +61,7 @@ import {
   type Project,
 } from "./core/identity/types.js";
 import { isValidEntityId } from "./core/identity/dir-id.js";
+import { isWikiStatusId } from "./core/identity/wiki-status.js";
 import { parseCliArgs } from "./cli-args.js";
 // ↔ electron/core/views/view-orders.ts — issue create/move/delete maintain view-orders
 import {
@@ -172,7 +174,8 @@ Usage:
   pm-all-in-one handoff create --from <memberId> --to <memberId> --related-project <projectId> [--title <t>] [--description <d>] [--body <md>] [--body-file <path>] [--closed]
   pm-all-in-one handoff list
   pm-all-in-one handoff update <id> [--title <t>] [--description <d>] [--body <md>] [--body-file <path>] [--from <id>] [--to <id>] [--related-project <id>] [--open|--closed]
-  pm-all-in-one wiki create --title <t> [--parent <wikiNodeId|root>] [--description <d>]
+  pm-all-in-one wiki create --title <t> [--parent <wikiNodeId|root>] [--description <d>] [--status todo|in-progress|done]
+  pm-all-in-one wiki update --id <wikiNodeId> --status todo|in-progress|done
   pm-all-in-one wiki move   --id <wikiNodeId> --parent <wikiNodeId|root> [--index <n>]
   pm-all-in-one wiki delete --id <wikiNodeId>
   pm-all-in-one wiki list
@@ -261,10 +264,15 @@ async function cmdWikiCreate(
   }
   const parentId = parseParentId(flagStr(flags, "parent"));
   const description = flagStr(flags, "description");
+  const statusRaw = flagStr(flags, "status");
+  if (statusRaw !== undefined && !isWikiStatusId(statusRaw)) {
+    throw new Error("--status must be todo|in-progress|done");
+  }
   const node = await createWikiNode(root, {
     title,
     parentId,
     ...(description !== undefined ? { description } : {}),
+    ...(statusRaw !== undefined ? { status: statusRaw } : {}),
   });
   await rebuildIndex(root);
   const ref = wikiLinkSyntax(node.id);
@@ -324,6 +332,34 @@ async function cmdWikiMove(
   }
 }
 
+async function cmdWikiUpdate(
+  root: string,
+  flags: Record<string, string | boolean>,
+  json: boolean,
+): Promise<void> {
+  const id = flagId(flags, "id");
+  if (id === undefined) {
+    throw new Error("--id is required");
+  }
+  const statusRaw = flagStr(flags, "status");
+  if (statusRaw === undefined) {
+    throw new Error("--status is required");
+  }
+  if (!isWikiStatusId(statusRaw)) {
+    throw new Error("--status must be todo|in-progress|done");
+  }
+  const node = await updateWikiNode(root, id, { status: statusRaw });
+  await rebuildIndex(root);
+  const ref = wikiLinkSyntax(node.id);
+  if (json) {
+    printJson({ ...node, ref });
+  } else {
+    process.stdout.write(
+      `Updated ${ref}\n  status: ${node.status}\n  title: ${node.title}\n`,
+    );
+  }
+}
+
 async function cmdWikiList(root: string, json: boolean): Promise<void> {
   // ↔ electron/core/domain/wiki.ts — Contents ancestry from sidebar, not a file
   const snap = await getWikiSnapshot(root);
@@ -333,7 +369,7 @@ async function cmdWikiList(root: string, json: boolean): Promise<void> {
   } else {
     for (const row of rows) {
       const indent = "  ".repeat(row.depth);
-      process.stdout.write(`${indent}${row.ref}\t${row.title}\n`);
+      process.stdout.write(`${indent}${row.ref}\t${row.status}\t${row.title}\n`);
     }
   }
 }
@@ -1069,6 +1105,10 @@ async function main(): Promise<void> {
     const root = resolveWorkspace(flags);
     if (sub === "create") {
       await cmdWikiCreate(root, flags, json);
+      return;
+    }
+    if (sub === "update") {
+      await cmdWikiUpdate(root, flags, json);
       return;
     }
     if (sub === "move") {

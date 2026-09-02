@@ -15,6 +15,12 @@ import { z } from "zod";
 
 import { isValidEntityId, keyToKebab, parseId, type EntityId } from "../identity/dir-id.js";
 import { wikiLinkSyntax } from "../identity/links.js";
+import {
+  DEFAULT_WIKI_STATUS,
+  isWikiStatusId,
+  normalizeWikiStatus,
+  type WikiStatusId,
+} from "../identity/wiki-status.js";
 import { esbuild } from "../infra/esbuild-runtime.js";
 import { allocateWikiNodeId } from "../identity/ids.js";
 import { resolveActorMemberId } from "../workspace/local-config.js";
@@ -122,6 +128,8 @@ export interface WikiNode {
   title: string;
   /** Short blurb; required key, may be "". */
   description: string;
+  /** Built-in wiki status (todo / in-progress / done). */
+  status: WikiStatusId;
   created: string;
   updated: string;
   createdBy: EntityId | null;
@@ -135,6 +143,7 @@ export interface WikiNodeMeta {
   relPath: string;
   title: string;
   description: string;
+  status: WikiStatusId;
   created: string;
   updated: string;
   createdBy: EntityId | null;
@@ -160,6 +169,8 @@ export interface CreateWikiNodeInput {
   /** Insert under this Contents ref as child when found; else root append. */
   parentId?: EntityId | null;
   body?: string;
+  /** Create default `todo`. */
+  status?: WikiStatusId;
   /** Optional create-time actor; falls back to `.pm/local.json` `me`. */
   actorMemberId?: EntityId | null;
 }
@@ -167,6 +178,7 @@ export interface CreateWikiNodeInput {
 export interface WikiNodePatch {
   title?: string;
   description?: string;
+  status?: WikiStatusId;
   body?: string;
   fields?: Record<string, unknown>;
   markdownFields?: Record<string, string>;
@@ -337,6 +349,7 @@ export function migrateLegacyFlatWikiNodes(workspaceRoot: string): void {
       writeWikiNodePropsFile(propsFile, {
         title,
         description: "",
+        status: DEFAULT_WIKI_STATUS,
         created: now,
         updated: now,
       });
@@ -571,6 +584,7 @@ export function wikiContentsRefTitle(
 export type WikiContentsRow = {
   id: EntityId;
   title: string;
+  status: WikiStatusId;
   depth: number;
   parentId: EntityId | null;
   ref: string;
@@ -582,16 +596,18 @@ export type WikiContentsRow = {
  */
 export function flattenWikiContents(
   nodes: WikiSidebarNode[],
-  wikiNodes: ReadonlyArray<Pick<WikiNodeMeta, "id" | "title">>,
+  wikiNodes: ReadonlyArray<Pick<WikiNodeMeta, "id" | "title" | "status">>,
   parentId: EntityId | null = null,
   depth = 0,
 ): WikiContentsRow[] {
   const rows: WikiContentsRow[] = [];
   for (const node of nodes) {
     if (node.type === "ref") {
+      const meta = wikiNodes.find((p) => p.id === node.id);
       rows.push({
         id: node.id,
         title: wikiContentsRefTitle(node, wikiNodes),
+        status: meta?.status ?? DEFAULT_WIKI_STATUS,
         depth,
         parentId,
         ref: wikiLinkSyntax(node.id),
@@ -707,6 +723,7 @@ async function readWikiNodeMeta(
     : "";
   let title = titleFromBody(body, id);
   let description = "";
+  let status: WikiStatusId = DEFAULT_WIKI_STATUS;
   let created = nowIsoUtcZ();
   let updated = created;
   let createdBy: EntityId | null = null;
@@ -721,12 +738,15 @@ async function readWikiNodeMeta(
       createdBy = optionalMemberId(record.createdBy);
       const hadDescription = typeof record.description === "string";
       description = hadDescription ? (record.description as string) : "";
-      if (ts.seeded || !hadDescription) {
+      const hadStatus = isWikiStatusId(record.status);
+      status = normalizeWikiStatus(record.status);
+      if (ts.seeded || !hadDescription || !hadStatus) {
         const schema = await loadWikiCustomProps(workspaceRoot);
         const next: Record<string, unknown> = {
           ...record,
           title,
           description,
+          status,
           created,
           updated,
         };
@@ -748,6 +768,7 @@ async function readWikiNodeMeta(
     writeWikiNodePropsFile(propsFile, {
       title,
       description: "",
+      status: DEFAULT_WIKI_STATUS,
       created,
       updated,
     });
@@ -761,6 +782,7 @@ async function readWikiNodeMeta(
     relPath: path.relative(workspaceRoot, dir),
     title,
     description,
+    status,
     created,
     updated,
     createdBy,
@@ -883,6 +905,10 @@ export async function createWikiNode(
   await ensureWiki(workspaceRoot);
   const title = (input.title?.trim() || "Untitled").slice(0, 120);
   const description = input.description !== undefined ? input.description : "";
+  const status = input.status ?? DEFAULT_WIKI_STATUS;
+  if (!isWikiStatusId(status)) {
+    throw new Error(`Invalid wiki-node status: ${String(input.status)}`);
+  }
   const id = allocateWikiNodeId(workspaceRoot);
   const body = input.body !== undefined ? input.body : "";
   const now = nowIsoUtcZ();
@@ -892,6 +918,7 @@ export async function createWikiNode(
   writeWikiNodePropsFile(wikiNodePropsPath(workspaceRoot, id), {
     title,
     description,
+    status,
     created: now,
     updated: now,
     ...(createdBy ? { createdBy } : {}),
@@ -935,6 +962,12 @@ export async function updateWikiNode(
       conflicts.push("description");
     }
     if (
+      patch.status !== undefined &&
+      !equalsForSync(disk.status, options.expected.status)
+    ) {
+      conflicts.push("status");
+    }
+    if (
       patch.body !== undefined &&
       !equalsForSync(disk.body, options.expected.body)
     ) {
@@ -971,6 +1004,7 @@ export async function updateWikiNode(
   let props: Record<string, unknown> = {
     title: meta.title,
     description: meta.description,
+    status: meta.status,
     created: meta.created,
     updated: meta.updated,
   };
@@ -1001,6 +1035,7 @@ export async function updateWikiNode(
   const contentWrite =
     patch.title !== undefined ||
     patch.description !== undefined ||
+    patch.status !== undefined ||
     patch.body !== undefined ||
     (safeFields !== undefined && Object.keys(safeFields).length > 0) ||
     (patch.markdownFields !== undefined &&
@@ -1023,6 +1058,14 @@ export async function updateWikiNode(
     props.description = patch.description;
   } else if (typeof props.description !== "string") {
     props.description = meta.description;
+  }
+  if (patch.status !== undefined) {
+    if (!isWikiStatusId(patch.status)) {
+      throw new Error(`Invalid wiki-node status: ${String(patch.status)}`);
+    }
+    props.status = patch.status;
+  } else {
+    props.status = normalizeWikiStatus(props.status);
   }
   if (safeFields) {
     applyWikiNodeFieldPatch(

@@ -8,7 +8,9 @@ import {
 import {
   EditorSelection,
   Prec,
+  type EditorState,
   type Extension,
+  type TransactionSpec,
 } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 
@@ -18,35 +20,68 @@ const MD_PAIRS: readonly [open: string, close: string][] = [
   ["*", "*"],
 ];
 
-function wrapOrInsert(
-  view: EditorView,
+function wrapOrInsertSpec(
+  state: EditorState,
   open: string,
   close: string,
-): boolean {
-  const { state } = view;
-  view.dispatch(
-    state.changeByRange((range) => {
-      if (range.empty) {
-        return {
-          changes: { from: range.from, insert: open + close },
-          range: EditorSelection.cursor(range.from + open.length),
-        };
-      }
-      const selected = state.sliceDoc(range.from, range.to);
+): TransactionSpec {
+  return state.changeByRange((range) => {
+    if (range.empty) {
       return {
-        changes: {
-          from: range.from,
-          to: range.to,
-          insert: open + selected + close,
-        },
-        range: EditorSelection.range(
-          range.from + open.length,
-          range.from + open.length + selected.length,
-        ),
+        changes: { from: range.from, insert: open + close },
+        range: EditorSelection.cursor(range.from + open.length),
       };
-    }),
+    }
+    const selected = state.sliceDoc(range.from, range.to);
+    return {
+      changes: {
+        from: range.from,
+        to: range.to,
+        insert: open + selected + close,
+      },
+      range: EditorSelection.range(
+        range.from + open.length,
+        range.from + open.length + selected.length,
+      ),
+    };
+  });
+}
+
+/**
+ * `*` auto-pair. One key is one star: a selection wraps italic (`*text*`),
+ * not bold. Empty caret inserts `*|`*; a second `*` upgrades to `**|**`.
+ * A second `*` while the inner wrap is still selected upgrades to `**text**`.
+ */
+export function starPairTransaction(state: EditorState): TransactionSpec {
+  const range = state.selection.main;
+  if (!range.empty) {
+    return wrapOrInsertSpec(state, "*", "*");
+  }
+  const prev1 = state.sliceDoc(Math.max(0, range.from - 1), range.from);
+  const next1 = state.sliceDoc(
+    range.from,
+    Math.min(state.doc.length, range.from + 1),
   );
-  return true;
+  if (prev1 === "*") {
+    // First `*` already made `*|`* via wrapOrInsert. Second `*` must
+    // become `**|**` by adding one star on each side of the caret —
+    // NOT insert `***` (that yields *****).
+    if (next1 === "*") {
+      return {
+        changes: [
+          { from: range.from + 1, insert: "*" },
+          { from: range.from, insert: "*" },
+        ],
+        selection: EditorSelection.cursor(range.from + 1),
+      };
+    }
+    // Lone `*|` → `**|**`
+    return {
+      changes: { from: range.from, insert: "***" },
+      selection: EditorSelection.cursor(range.from + 1),
+    };
+  }
+  return wrapOrInsertSpec(state, "*", "*");
 }
 
 /**
@@ -110,39 +145,8 @@ export function createAutoPairExtensions(): Extension[] {
         {
           key: "*",
           run: (view) => {
-            const { state } = view;
-            const range = state.selection.main;
-            if (!range.empty) return wrapOrInsert(view, "**", "**");
-            const prev1 = state.sliceDoc(
-              Math.max(0, range.from - 1),
-              range.from,
-            );
-            const next1 = state.sliceDoc(
-              range.from,
-              Math.min(state.doc.length, range.from + 1),
-            );
-            if (prev1 === "*") {
-              // First `*` already made `*|`* via wrapOrInsert. Second `*` must
-              // become `**|**` by adding one star on each side of the caret —
-              // NOT insert `***` (that yields *****).
-              if (next1 === "*") {
-                view.dispatch({
-                  changes: [
-                    { from: range.from + 1, insert: "*" },
-                    { from: range.from, insert: "*" },
-                  ],
-                  selection: EditorSelection.cursor(range.from + 1),
-                });
-              } else {
-                // Lone `*|` → `**|**`
-                view.dispatch({
-                  changes: { from: range.from, insert: "***" },
-                  selection: EditorSelection.cursor(range.from + 1),
-                });
-              }
-              return true;
-            }
-            return wrapOrInsert(view, "*", "*");
+            view.dispatch(starPairTransaction(view.state));
+            return true;
           },
         },
       ]),

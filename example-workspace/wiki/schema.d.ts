@@ -12,6 +12,7 @@ export interface WikiNodeProps {
   title: string;
   /** Short blurb; required key, may be "". */
   description: string;
+  status: "todo" | "in-progress" | "done";
   /** System: creating member id, or null when unknown. Do not hand-edit. */
   createdBy?: string | null;
   /** System: set once at create. Do not hand-edit. */
@@ -21,3 +22,4 @@ export interface WikiNodeProps {
   /** Ids live in directory names only. */
   id?: never;
 }
+

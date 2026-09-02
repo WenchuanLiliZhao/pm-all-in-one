@@ -63,7 +63,8 @@ pm-all-in-one handoff create --from <memberId> --to <memberId> --related-project
 pm-all-in-one handoff list
 pm-all-in-one handoff update <id> [--title <t>] [--description <d>] [--body <md>] [--body-file <path>] [--from <id>] [--to <id>] [--related-project <id>] [--open|--closed]
 
-pm-all-in-one wiki create --title "…" [--parent <wikiNodeId|root>] [--description <d>]
+pm-all-in-one wiki create --title "…" [--parent <wikiNodeId|root>] [--description <d>] [--status todo|in-progress|done]
+pm-all-in-one wiki update --id <wikiNodeId> --status todo|in-progress|done
 pm-all-in-one wiki move   --id <wikiNodeId> --parent <wikiNodeId|root> [--index <n>]
 pm-all-in-one wiki delete --id <wikiNodeId>
 pm-all-in-one wiki list

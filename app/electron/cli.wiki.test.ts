@@ -75,11 +75,13 @@ test("cli wiki create allocates id, writes disk, and enters Contents root", asyn
     const payload = JSON.parse(result.stdout) as {
       id: string;
       title: string;
+      status: string;
       ref: string;
       relPath: string;
     };
     assert.equal(isValidEntityId(payload.id), true);
     assert.equal(payload.title, "CLI create test");
+    assert.equal(payload.status, "todo");
     assert.equal(payload.ref, wikiLinkSyntax(payload.id));
     assert.equal(
       fs.existsSync(path.join(root, "wiki", payload.id, "props.ts")),
@@ -186,5 +188,40 @@ test("cli wiki delete removes disk + Contents; promotes children", async () => {
     if (sidebar[0]?.type === "ref") {
       assert.equal(sidebar[0].id, child.id);
     }
+  });
+});
+
+test("cli wiki list prints status; wiki update --status writes done", async () => {
+  await withTempWorkspace(async (root) => {
+    const created = runWikiCreate(root, ["--title", "Fact page", "--json"]);
+    assert.equal(created.status, 0, created.stderr);
+    const payload = JSON.parse(created.stdout) as { id: string; ref: string };
+    const listed = runWiki(root, "list", []);
+    assert.equal(listed.status, 0, listed.stderr);
+    assert.match(listed.stdout, new RegExp(`${payload.ref}\\ttodo\\tFact page`));
+    const updated = runWiki(root, "update", [
+      "--id",
+      payload.id,
+      "--status",
+      "done",
+      "--json",
+    ]);
+    assert.equal(updated.status, 0, updated.stderr);
+    const next = JSON.parse(updated.stdout) as { status: string };
+    assert.equal(next.status, "done");
+    const listedAgain = runWiki(root, "list", []);
+    assert.equal(listedAgain.status, 0, listedAgain.stderr);
+    assert.match(
+      listedAgain.stdout,
+      new RegExp(`${payload.ref}\\tdone\\tFact page`),
+    );
+    const bad = runWiki(root, "update", [
+      "--id",
+      payload.id,
+      "--status",
+      "draft",
+    ]);
+    assert.notEqual(bad.status, 0);
+    assert.match(bad.stderr, /todo\|in-progress\|done/);
   });
 });

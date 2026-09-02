@@ -192,6 +192,7 @@ function wikiSlice(
   return {
     title: "T",
     description: "",
+    status: "todo" as const,
     body: "body",
     fields: {},
     markdownFields: {},

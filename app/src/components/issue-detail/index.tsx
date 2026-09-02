@@ -804,6 +804,7 @@ export function IssueDetail({
                 }
 
                 if (def.type === "markdown") {
+                  // Same node `assets/` as README body (wiki twin: wiki-node-editor).
                   return (
                     <PropField key={def.key} layout={layout} label={label}>
                       <MarkdownEditor
@@ -816,6 +817,9 @@ export function IssueDetail({
                         }
                         plugins={plugins}
                         mentionAutocomplete={mentionAutocomplete}
+                        localMedia={localMedia}
+                        assetFilenames={assetFilenames}
+                        ingestAssetFiles={ingestAssetFiles}
                         placeholder="Markdown… type @ to link an issue"
                         rows={6}
                       />

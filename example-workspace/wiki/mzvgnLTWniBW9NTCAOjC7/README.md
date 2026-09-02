@@ -52,7 +52,7 @@ export const props = {
 } as const;
 ```
 
-Same def shape as issues. Values: scalars in `wiki/<id>/props.ts` (`satisfies WikiNodeProps`); markdown in sibling `<kebab-key>.md`. Runtime `WikiNode` uses `fields` / `markdownFields`. Missing file → empty schema (old workspaces still open). Edit the schema in Workspace Settings; edit values on the wiki-node detail. Reserved wiki keys: `id`, `title`, `description`, `created`, `updated`, `createdBy`, `body`. A markdown key must not kebab-case to `readme`.
+Same def shape as issues. Values: scalars in `wiki/<id>/props.ts` (`satisfies WikiNodeProps`); markdown in sibling `<kebab-key>.md`. Runtime `WikiNode` uses `fields` / `markdownFields`. Missing file → empty schema (old workspaces still open). Edit the schema in Workspace Settings; edit values on the wiki-node detail. Reserved wiki keys: `id`, `title`, `description`, `status`, `created`, `updated`, `createdBy`, `body`. Wiki `status` is `"todo"` \| `"in-progress"` \| `"done"` (create default `todo`; only `done` is standing fact). A markdown key must not kebab-case to `readme`.
 
 ## Disk layout
 
@@ -92,7 +92,7 @@ Writing `custom-props.ts` **hard-rejects** these keys (clash with system):
 
 `id`, `created`, `updated`, `title`, `level`, `parentId`, `status`, `priority`, `startDate`, `endDate`, `assignee`, `createdBy`
 
-Writing `wiki/custom-props.ts` **hard-rejects:** `id`, `title`, `description`, `created`, `updated`, `createdBy`, `body`, plus any markdown key whose kebab form is `readme`.
+Writing `wiki/custom-props.ts` **hard-rejects:** `id`, `title`, `description`, `status`, `created`, `updated`, `createdBy`, `body`, plus any markdown key whose kebab form is `readme`.
 
 ### 2. Generated type merge
 

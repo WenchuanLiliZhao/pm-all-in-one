@@ -6,6 +6,7 @@
  * ↔ lib/workspace/use-unsaved-leave-guard.ts — Save/Discard/Cancel leave
  * ↔ dogfood @wiki-n8_7zg25NlxwdV6nIBVcD — ExplicitDoc
  * ↔ electron/core/domain/wiki.ts — updateWikiNode OCC
+ * ↔ components/issue-detail/index.tsx — custom markdown fields share node localMedia
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
@@ -28,6 +29,11 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Lucide } from "@/components/ui/lucide";
+import {
+  issueStatusIcon,
+  issueStatusLabel,
+  issueStatusToneStyles,
+} from "@/components/ui/issue-status";
 import { getPm } from "@/lib/bridge";
 import type {
   CustomPropDef,
@@ -37,6 +43,11 @@ import type {
   Issue,
   MetaFieldType,
 } from "@/lib/types";
+import {
+  BUILTIN_WIKI_STATUSES,
+  DEFAULT_WIKI_STATUS,
+  type WikiStatusId,
+} from "@/lib/wiki-status";
 import { usePmMentions } from "@/lib/markdown/use-pm-mentions";
 import {
   useAssetFolderMentions,
@@ -111,6 +122,7 @@ function emptyDraft(): WikiEditableSlice {
   return {
     title: "",
     description: "",
+    status: DEFAULT_WIKI_STATUS,
     body: "",
     fields: {},
     markdownFields: {},
@@ -140,6 +152,8 @@ export function WikiNodeEditor({
   const [draft, setDraft] = useState("");
   const [titleDraft, setTitleDraft] = useState("");
   const [descriptionDraft, setDescriptionDraft] = useState("");
+  const [wikiStatusDraft, setWikiStatusDraft] =
+    useState<WikiStatusId>(DEFAULT_WIKI_STATUS);
   const [fieldsDraft, setFieldsDraft] = useState<Record<string, unknown>>({});
   const [markdownDraft, setMarkdownDraft] = useState<Record<string, string>>(
     {},
@@ -163,6 +177,7 @@ export function WikiNodeEditor({
   draftRef.current = {
     title: titleDraft,
     description: descriptionDraft,
+    status: wikiStatusDraft,
     body: draft,
     fields: fieldsDraft,
     markdownFields: markdownDraft,
@@ -183,7 +198,7 @@ export function WikiNodeEditor({
         if (target.kind !== "wiki") {
           return;
         }
-        const { title, description, body, fields, markdownFields } =
+        const { title, description, status: wikiStatus, body, fields, markdownFields } =
           draftRef.current;
         if (!title.trim()) {
           throw new Error("Wiki-node title is required.");
@@ -195,6 +210,7 @@ export function WikiNodeEditor({
           {
             title: title.trim(),
             description,
+            status: wikiStatus,
             body,
             fields,
             markdownFields,
@@ -204,6 +220,7 @@ export function WikiNodeEditor({
         setPage(saved);
         setDraft(saved.body);
         setDescriptionDraft(saved.description);
+        setWikiStatusDraft(saved.status);
         setFieldsDraft({ ...saved.fields });
         setMarkdownDraft({ ...saved.markdownFields });
         if (!titleFocused) {
@@ -212,6 +229,7 @@ export function WikiNodeEditor({
           draftRef.current = {
             title,
             description: saved.description,
+            status: saved.status,
             body: saved.body,
             fields: { ...saved.fields },
             markdownFields: { ...saved.markdownFields },
@@ -237,6 +255,7 @@ export function WikiNodeEditor({
         setDraft(next.body);
         setTitleDraft(next.title);
         setDescriptionDraft(next.description);
+        setWikiStatusDraft(next.status);
         setFieldsDraft({ ...next.fields });
         setMarkdownDraft({ ...next.markdownFields });
         setPropDefs(schema.fields);
@@ -294,6 +313,7 @@ export function WikiNodeEditor({
           setDraft(result.mergedDraft.body);
           setTitleDraft(result.mergedDraft.title);
           setDescriptionDraft(result.mergedDraft.description);
+          setWikiStatusDraft(result.mergedDraft.status);
           setFieldsDraft({ ...result.mergedDraft.fields });
           setMarkdownDraft({ ...result.mergedDraft.markdownFields });
           draftRef.current = result.mergedDraft;
@@ -339,6 +359,7 @@ export function WikiNodeEditor({
     if (base) {
       setTitleDraft(base.title);
       setDescriptionDraft(base.description);
+      setWikiStatusDraft(base.status);
       setDraft(base.body);
       setFieldsDraft({ ...base.fields });
       setMarkdownDraft({ ...base.markdownFields });
@@ -402,6 +423,7 @@ export function WikiNodeEditor({
       setDraft(next.body);
       setTitleDraft(next.title);
       setDescriptionDraft(next.description);
+      setWikiStatusDraft(next.status);
       setFieldsDraft({ ...next.fields });
       setMarkdownDraft({ ...next.markdownFields });
       draftRef.current = pickWikiEditable(next);
@@ -422,6 +444,7 @@ export function WikiNodeEditor({
         {
           title: titleDraft.trim(),
           description: descriptionDraft,
+          status: wikiStatusDraft,
           body: draft,
           fields: fieldsDraft,
           markdownFields: markdownDraft,
@@ -479,6 +502,7 @@ export function WikiNodeEditor({
     const slice: WikiEditableSlice = {
       title: titleDraft,
       description: descriptionDraft,
+      status: wikiStatusDraft,
       body: draft,
       fields: next,
       markdownFields: markdownDraft,
@@ -493,6 +517,7 @@ export function WikiNodeEditor({
     const slice: WikiEditableSlice = {
       title: titleDraft,
       description: descriptionDraft,
+      status: wikiStatusDraft,
       body: draft,
       fields: fieldsDraft,
       markdownFields: next,
@@ -592,6 +617,7 @@ export function WikiNodeEditor({
             const slice: WikiEditableSlice = {
               title: next,
               description: descriptionDraft,
+              status: wikiStatusDraft,
               body: draft,
               fields: fieldsDraft,
               markdownFields: markdownDraft,
@@ -607,6 +633,52 @@ export function WikiNodeEditor({
       }
       propsSlot={
         <>
+        <PropField layout="inline" label="Status">
+          <DropdownMenu>
+            <DropdownMenu.Trigger asChild>
+              <Button
+                type="button"
+                variant="outlined"
+                size="small"
+                startIcon={issueStatusIcon(wikiStatusDraft)}
+                endIcon={<Lucide.ChevronDown />}
+                disabled={status === "saving"}
+                aria-label="Status"
+                className={styles.fieldControl}
+              >
+                <span
+                  className={issueStatusToneStyles.tone}
+                  data-status={wikiStatusDraft}
+                >
+                  {issueStatusLabel(wikiStatusDraft)}
+                </span>
+              </Button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align="start" side="bottom">
+              {BUILTIN_WIKI_STATUSES.map((s) => (
+                <DropdownMenu.ItemButton
+                  key={s.id}
+                  label={s.label}
+                  icon={issueStatusIcon(s.id)}
+                  active={wikiStatusDraft === s.id}
+                  onSelect={() => {
+                    setWikiStatusDraft(s.id);
+                    const slice: WikiEditableSlice = {
+                      title: titleDraft,
+                      description: descriptionDraft,
+                      status: s.id,
+                      body: draft,
+                      fields: fieldsDraft,
+                      markdownFields: markdownDraft,
+                    };
+                    draftRef.current = slice;
+                    markDirty(slice);
+                  }}
+                />
+              ))}
+            </DropdownMenu.Content>
+          </DropdownMenu>
+        </PropField>
         <label className={styles.descriptionField}>
           <span>Description</span>
           <Input
@@ -620,6 +692,7 @@ export function WikiNodeEditor({
               const slice: WikiEditableSlice = {
                 title: titleDraft,
                 description: next,
+                status: wikiStatusDraft,
                 body: draft,
                 fields: fieldsDraft,
                 markdownFields: markdownDraft,
@@ -654,6 +727,7 @@ export function WikiNodeEditor({
             const slice: WikiEditableSlice = {
               title: titleDraft,
               description: descriptionDraft,
+              status: wikiStatusDraft,
               body,
               fields: fieldsDraft,
               markdownFields: markdownDraft,
@@ -767,6 +841,9 @@ export function WikiNodeEditor({
                         onChange={(next) => patchMarkdown(def.key, next)}
                         plugins={plugins}
                         mentionAutocomplete={mentionAutocomplete}
+                        localMedia={localMedia}
+                        assetFilenames={assetFilenames}
+                        ingestAssetFiles={ingestAssetFiles}
                         placeholder="Markdown… type @ to link an issue"
                         rows={6}
                       />

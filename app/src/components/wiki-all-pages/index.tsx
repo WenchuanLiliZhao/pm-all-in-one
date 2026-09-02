@@ -17,11 +17,16 @@ import { TypeConfirmDialog } from "@/components/type-confirm-dialog";
 import { getPm } from "@/lib/bridge";
 import { incomingWikiDeleteDetail } from "@/lib/wiki-incoming-refs";
 import type { WikiNodeMeta } from "@/lib/types";
+import { wikiStatusLabel } from "@/lib/wiki-status";
+import {
+  issueStatusIcon,
+  issueStatusToneStyles,
+} from "@/components/ui/issue-status";
 import { useWorkspace } from "@/lib/workspace/workspace-context";
 import { useWiki } from "@/lib/workspace/wiki-context";
 import styles from "./styles.module.scss";
 
-type SortKey = "title" | "id" | "updated" | "created";
+type SortKey = "title" | "status" | "id" | "updated" | "created";
 
 function formatTs(iso: string): string {
   try {
@@ -61,6 +66,9 @@ export function WikiAllPages() {
         case "title":
           cmp = a.title.localeCompare(b.title);
           break;
+        case "status":
+          cmp = a.status.localeCompare(b.status);
+          break;
         case "id":
           cmp = a.id.localeCompare(b.id);
           break;
@@ -81,7 +89,7 @@ export function WikiAllPages() {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
       setSortKey(key);
-      setSortDir(key === "title" || key === "id" ? "asc" : "desc");
+      setSortDir(key === "title" || key === "id" || key === "status" ? "asc" : "desc");
     }
   };
 
@@ -179,6 +187,11 @@ export function WikiAllPages() {
                   </button>
                 </th>
                 <th>
+                  <button type="button" onClick={() => onSort("status")}>
+                    Status{sortMark("status")}
+                  </button>
+                </th>
+                <th>
                   <button type="button" onClick={() => onSort("id")}>
                     Id{sortMark("id")}
                   </button>
@@ -215,6 +228,14 @@ export function WikiAllPages() {
                     ) : (
                       <div className={styles.descriptionEmpty}>No description</div>
                     )}
+                  </td>
+                  <td>
+                    <span
+                      className={issueStatusToneStyles.tone}
+                      data-status={node.status}
+                    >
+                      {issueStatusIcon(node.status)} {wikiStatusLabel(node.status)}
+                    </span>
                   </td>
                   <td>
                     <code className={styles.id}>{node.id}</code>

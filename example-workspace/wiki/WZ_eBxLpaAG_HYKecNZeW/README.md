@@ -133,13 +133,14 @@ Workspace-wide picture:
 | --- | --- |
 | **Gloss** | Wiki node (UI often says **page**) |
 | **Locus** | `wiki/<wikiNodeId>/` |
-| **Meta file** | `props.ts` → `{ title, description, created, updated, createdBy? }` plus optional scalar custom fields |
+| **Meta file** | `props.ts` → `{ title, description, status, created, updated, createdBy? }` plus optional scalar custom fields |
 | **Body** | `README.md` = **current truth** (maintenance obligation; going stale is a defect) |
 | **Hierarchy** | **No** `parentId` on the node’s `props.ts`; Contents nesting lives only in `wiki/sidebar.ts` |
 | **Reference** | `@wiki-<wikiNodeId>` → `wiki/<id>/README.md` |
 
 **Kind-specific:**
 
+- `status`: `"todo"` \| `"in-progress"` \| `"done"` (required; create default `todo`). Only `done` wiki-nodes are standing facts — `todo` / `in-progress` pages are still being written.
 - Disk inventory (All pages) and Contents (`ref` entries in `sidebar.ts`) are two views of the same set: every wiki-node **must** appear in Contents; `unlisted` is illegal (doctor `wiki-unlisted`). `getWiki` hangs legacy orphans under the Contents root.
 - `createWikiNode` **always** writes into Contents (`parentId` optional, default root).
 - Organize by topic; do not mirror every project / running epic with an overview page.

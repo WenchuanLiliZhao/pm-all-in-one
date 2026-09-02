@@ -17,6 +17,7 @@ import type {
   IssuePriorityId,
   IssueStatusId,
   Project,
+  WikiStatusId,
   WorkspaceMeta,
 } from "../identity/types.js";
 
@@ -68,6 +69,7 @@ export type WorkspaceEditableSlice = {
 export type WikiEditableSlice = {
   title: string;
   description: string;
+  status: WikiStatusId;
   body: string;
   fields: Record<string, unknown>;
   markdownFields: Record<string, string>;
@@ -170,6 +172,7 @@ export function pickWorkspaceEditable(meta: WorkspaceMeta): WorkspaceEditableSli
 export function pickWikiEditable(node: {
   title: string;
   description: string;
+  status: WikiStatusId;
   body: string;
   fields?: Record<string, unknown>;
   markdownFields?: Record<string, string>;
@@ -177,6 +180,7 @@ export function pickWikiEditable(node: {
   return {
     title: node.title,
     description: node.description,
+    status: node.status,
     body: node.body,
     fields: { ...(node.fields ?? {}) },
     markdownFields: { ...(node.markdownFields ?? {}) },
@@ -606,6 +610,7 @@ export function classifyWiki(
       draft.description,
       disk.description,
     ),
+    status: classifyScalar(baseline.status, draft.status, disk.status),
     body: classifyScalar(baseline.body, draft.body, disk.body),
   };
   const fields = classifyFieldsMap(baseline.fields, draft.fields, disk.fields);
@@ -667,6 +672,12 @@ export function classifyWiki(
     draft.description,
     disk.description,
   );
+  const status = pickScalar(
+    "status",
+    baseline.status,
+    draft.status,
+    disk.status,
+  );
   const body = pickScalar("body", baseline.body, draft.body, disk.body);
   const fieldsMerge = applyFieldsMerge(
     baseline.fields,
@@ -691,6 +702,7 @@ export function classifyWiki(
     mergedDraft: {
       title: title.merged,
       description: description.merged,
+      status: status.merged,
       body: body.merged,
       fields: fieldsMerge.merged,
       markdownFields: mdMerge.merged,
@@ -698,6 +710,7 @@ export function classifyWiki(
     nextBaseline: {
       title: title.nextBase,
       description: description.nextBase,
+      status: status.nextBase,
       body: body.nextBase,
       fields: fieldsMerge.nextBase,
       markdownFields: mdMerge.nextBase,
@@ -709,6 +722,7 @@ export type WikiClassifyResult = {
   scalars: {
     title: FieldVerdict;
     description: FieldVerdict;
+    status: FieldVerdict;
     body: FieldVerdict;
   };
   fields: Record<string, FieldVerdict>;
@@ -776,6 +790,7 @@ export function wikiSlicesEqual(
   return (
     equalsForSync(a.title, b.title) &&
     equalsForSync(a.description, b.description) &&
+    equalsForSync(a.status, b.status) &&
     equalsForSync(a.body, b.body) &&
     equalsForSync(normalizeFieldsMap(a.fields), normalizeFieldsMap(b.fields)) &&
     equalsForSync(
