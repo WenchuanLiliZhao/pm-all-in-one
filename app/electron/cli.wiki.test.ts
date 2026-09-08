@@ -225,3 +225,70 @@ test("cli wiki list prints status; wiki update --status writes done", async () =
     assert.match(bad.stderr, /todo\|in-progress\|done/);
   });
 });
+
+test("cli wiki list defaults to standing; --column record and --all", async () => {
+  await withTempWorkspace(async (root) => {
+    const standing = runWikiCreate(root, ["--title", "Now", "--json"]);
+    assert.equal(standing.status, 0, standing.stderr);
+    const standingPayload = JSON.parse(standing.stdout) as {
+      id: string;
+      ref: string;
+    };
+    const archived = runWikiCreate(root, [
+      "--title",
+      "Then",
+      "--column",
+      "record",
+      "--json",
+    ]);
+    assert.equal(archived.status, 0, archived.stderr);
+    const archivedPayload = JSON.parse(archived.stdout) as {
+      id: string;
+      ref: string;
+    };
+
+    const listed = runWiki(root, "list", []);
+    assert.equal(listed.status, 0, listed.stderr);
+    assert.match(listed.stdout, new RegExp(`${standingPayload.ref}\\ttodo\\tNow`));
+    assert.doesNotMatch(listed.stdout, new RegExp(archivedPayload.ref));
+
+    const recordColumnList = runWiki(root, "list", ["--column", "record"]);
+    assert.equal(recordColumnList.status, 0, recordColumnList.stderr);
+    assert.match(
+      recordColumnList.stdout,
+      new RegExp(`${archivedPayload.ref}\\ttodo\\tThen`),
+    );
+    assert.doesNotMatch(recordColumnList.stdout, new RegExp(standingPayload.ref));
+
+    const all = runWiki(root, "list", ["--all"]);
+    assert.equal(all.status, 0, all.stderr);
+    assert.match(all.stdout, new RegExp(standingPayload.ref));
+    assert.match(all.stdout, new RegExp(archivedPayload.ref));
+
+    const jsonDefault = runWiki(root, "list", ["--json"]);
+    assert.equal(jsonDefault.status, 0, jsonDefault.stderr);
+    const rows = JSON.parse(jsonDefault.stdout) as Array<{
+      id: string;
+      column: string;
+    }>;
+    assert.deepEqual(
+      rows.map((r) => [r.id, r.column]),
+      [[standingPayload.id, "standing"]],
+    );
+
+    const both = runWiki(root, "list", ["--all", "--column", "record"]);
+    assert.notEqual(both.status, 0);
+    assert.match(both.stderr, /--column or --all/);
+
+    const parentAndColumn = runWikiCreate(root, [
+      "--title",
+      "Bad",
+      "--parent",
+      standingPayload.id,
+      "--column",
+      "record",
+    ]);
+    assert.notEqual(parentAndColumn.status, 0);
+    assert.match(parentAndColumn.stderr, /column when parentId/);
+  });
+});

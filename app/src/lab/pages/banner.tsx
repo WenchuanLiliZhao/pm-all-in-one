@@ -20,6 +20,15 @@ export function BannerPage() {
           Dismissible error banner
         </Banner>
       </div>
+      <div className={styles.block}>
+        <Banner tone="warn" role="status" onDismiss={() => undefined}>
+          Workspace warnings (2)
+          <ul>
+            <li>wiki/sidebar.ts: broken Contents ref</li>
+            <li>.pm/agent.md is behind the template revision</li>
+          </ul>
+        </Banner>
+      </div>
     </PageWidth>
   );
 }

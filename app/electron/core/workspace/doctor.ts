@@ -73,6 +73,8 @@ export type DoctorWarningKind =
   | "wiki-unlisted"
   | "wiki-invalid-name"
   | "wiki-sidebar-unreadable"
+  | "wiki-column-duplicate"
+  | "wiki-column-nested"
   | "wiki-ref-missing"
   | "member-broken-ref"
   | "member-invalid-name"
@@ -267,6 +269,67 @@ function appendAgentMdWarnings(
   }
 }
 
+function appendWikiColumnShapeWarnings(
+  workspaceRoot: string,
+  warnings: DoctorWarning[],
+): void {
+  const file = sidebarPath(workspaceRoot);
+  if (!fs.existsSync(file)) {
+    return;
+  }
+  let raw: unknown;
+  try {
+    raw = evaluatePropsExportSync(fs.readFileSync(file, "utf8"));
+  } catch {
+    return;
+  }
+  if (!Array.isArray(raw)) {
+    return;
+  }
+  const rel = path.relative(workspaceRoot, file);
+  const seen = new Set<string>();
+  const walk = (list: unknown[], depth: number): void => {
+    for (const item of list) {
+      if (!item || typeof item !== "object") {
+        continue;
+      }
+      const n = item as Record<string, unknown>;
+      if (n.type === "column") {
+        if (depth > 0) {
+          warnings.push({
+            kind: "wiki-column-nested",
+            message: "Contents column is nested; columns may only appear at the sidebar root.",
+            path: file,
+            relPath: rel,
+          });
+        } else {
+          const kind = n.kind;
+          if (kind === "standing" || kind === "record") {
+            if (seen.has(kind)) {
+              warnings.push({
+                kind: "wiki-column-duplicate",
+                message: `Duplicate Contents column kind: ${kind}`,
+                path: file,
+                relPath: rel,
+              });
+            }
+            seen.add(kind);
+          }
+        }
+        if (Array.isArray(n.children)) {
+          walk(n.children, depth + 1);
+        }
+      } else if (
+        (n.type === "ref" || n.type === "group" || n.type === "page") &&
+        Array.isArray(n.children)
+      ) {
+        walk(n.children, depth + 1);
+      }
+    }
+  };
+  walk(raw, 0);
+}
+
 function appendWikiWarnings(
   workspaceRoot: string,
   warnings: DoctorWarning[],
@@ -283,6 +346,7 @@ function appendWikiWarnings(
       relPath: path.relative(workspaceRoot, sidebarPath(workspaceRoot)),
     });
   }
+  appendWikiColumnShapeWarnings(workspaceRoot, warnings);
   const sidebar = sidebarResult.ok ? sidebarResult.nodes : [];
   const onDisk = listWikiNodeIdsOnDisk(workspaceRoot);
   const listed = collectSidebarWikiNodeIds(sidebar);

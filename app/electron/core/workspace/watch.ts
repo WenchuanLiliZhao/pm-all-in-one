@@ -5,6 +5,7 @@ import { loadCustomProps } from "../domain/custom-props.js";
 import { loadWikiCustomProps } from "../domain/wiki-custom-props.js";
 import { scanWorkspace, type DoctorReport } from "./doctor.js";
 import { rebuildIndex } from "./rebuild-index.js";
+import { isIgnoredWatchPath } from "./watch-ignore.js";
 import { listIssues, listProjects } from "../domain/store.js";
 import type {
   CustomPropsSchema,
@@ -47,10 +48,6 @@ export class WorkspaceWatcher {
     const wiki = path.join(workspaceRoot, "wiki");
     const members = path.join(workspaceRoot, "members");
     const handoffs = path.join(workspaceRoot, "handoffs");
-    // Workspace-root assets/ (optional; may not exist yet — chokidar picks it up).
-    const workspaceAssets = path.join(workspaceRoot, "assets");
-    const pmDir = path.join(workspaceRoot, ".pm");
-    const sep = path.sep;
 
     this.watcher = chokidar.watch(
       [
@@ -58,26 +55,17 @@ export class WorkspaceWatcher {
         wiki,
         members,
         handoffs,
-        workspaceAssets,
         workspacePropsPath(workspaceRoot),
         workspaceReadmePath(workspaceRoot),
       ],
       {
         ignoreInitial: true,
         awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 50 },
-        // persistIndex writes unconditionally under .pm/
-        // and would self-trigger if the workspace root were watched broadly.
-        ignored: (watchedPath: string) => {
-          const normalized = path.resolve(watchedPath);
-          const pm = path.resolve(pmDir);
-          return (
-            normalized === pm ||
-            normalized.startsWith(pm + sep) ||
-            // Project-local .pm dirs under issue-hierarchy
-            normalized.includes(`${sep}.pm${sep}`) ||
-            normalized.endsWith(`${sep}.pm`)
-          );
-        },
+        // persistIndex writes under .pm/; nested assets/ often hold
+        // node_modules / .next / .git (Finder maxfiles=256 → EMFILE).
+        // ↔ watch-ignore.ts — isIgnoredWatchPath
+        ignored: (watchedPath: string) =>
+          isIgnoredWatchPath(workspaceRoot, watchedPath),
       },
     );
 

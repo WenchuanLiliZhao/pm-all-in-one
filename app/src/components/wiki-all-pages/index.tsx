@@ -18,6 +18,7 @@ import { getPm } from "@/lib/bridge";
 import { incomingWikiDeleteDetail } from "@/lib/wiki-incoming-refs";
 import type { WikiNodeMeta } from "@/lib/types";
 import { wikiStatusLabel } from "@/lib/wiki-status";
+import { wikiSidebarColumnByNodeId } from "@/lib/wiki-sidebar-helpers";
 import {
   issueStatusIcon,
   issueStatusToneStyles,
@@ -26,7 +27,7 @@ import { useWorkspace } from "@/lib/workspace/workspace-context";
 import { useWiki } from "@/lib/workspace/wiki-context";
 import styles from "./styles.module.scss";
 
-type SortKey = "title" | "status" | "id" | "updated" | "created";
+type SortKey = "title" | "status" | "column" | "id" | "updated" | "created";
 
 function formatTs(iso: string): string {
   try {
@@ -49,6 +50,11 @@ export function WikiAllPages() {
     detail: string[];
   } | null>(null);
 
+  const columnById = useMemo(
+    () => wikiSidebarColumnByNodeId(wiki?.sidebar ?? []),
+    [wiki?.sidebar],
+  );
+
   const rows = useMemo(() => {
     const nodes = wiki?.nodes ?? [];
     const q = filter.trim().toLowerCase();
@@ -69,6 +75,12 @@ export function WikiAllPages() {
         case "status":
           cmp = a.status.localeCompare(b.status);
           break;
+        case "column": {
+          const ca = columnById.get(a.id)?.title ?? "";
+          const cb = columnById.get(b.id)?.title ?? "";
+          cmp = ca.localeCompare(cb);
+          break;
+        }
         case "id":
           cmp = a.id.localeCompare(b.id);
           break;
@@ -82,14 +94,14 @@ export function WikiAllPages() {
       return cmp * dir;
     });
     return filtered;
-  }, [wiki?.nodes, filter, sortKey, sortDir]);
+  }, [wiki?.nodes, columnById, filter, sortKey, sortDir]);
 
   const onSort = (key: SortKey) => {
     if (sortKey === key) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
       setSortKey(key);
-      setSortDir(key === "title" || key === "id" || key === "status" ? "asc" : "desc");
+      setSortDir(key === "title" || key === "id" || key === "status" || key === "column" ? "asc" : "desc");
     }
   };
 
@@ -192,6 +204,11 @@ export function WikiAllPages() {
                   </button>
                 </th>
                 <th>
+                  <button type="button" onClick={() => onSort("column")}>
+                    Column{sortMark("column")}
+                  </button>
+                </th>
+                <th>
                   <button type="button" onClick={() => onSort("id")}>
                     Id{sortMark("id")}
                   </button>
@@ -237,6 +254,7 @@ export function WikiAllPages() {
                       {issueStatusIcon(node.status)} {wikiStatusLabel(node.status)}
                     </span>
                   </td>
+                  <td>{columnById.get(node.id)?.title ?? "—"}</td>
                   <td>
                     <code className={styles.id}>{node.id}</code>
                   </td>

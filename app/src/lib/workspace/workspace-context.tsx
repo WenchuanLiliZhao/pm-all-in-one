@@ -28,6 +28,7 @@ import type {
   Project,
   ProjectPatch,
   StrayEntry,
+  WikiSidebarColumnKind,
   WorkspaceMeta,
   WorkspacePatch,
   WorkspaceSnapshot,
@@ -128,6 +129,7 @@ interface WorkspaceContextValue {
   createWikiNode: (opts?: {
     title?: string;
     parentId?: string | null;
+    column?: WikiSidebarColumnKind;
   }) => Promise<void>;
   createChild: () => Promise<Issue | null>;
   updateIssueDraft: (patch: IssuePatch) => void;
@@ -1272,13 +1274,18 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, [flushBeforeLeave]);
 
   const createWikiNodeFn = useCallback(
-    async (opts?: { title?: string; parentId?: string | null }) => {
+    async (opts?: {
+      title?: string;
+      parentId?: string | null;
+      column?: WikiSidebarColumnKind;
+    }) => {
       const title = opts?.title?.trim() || "Untitled";
       setError(null);
       try {
         const page = await getPm().createWikiNode({
           title,
           parentId: opts?.parentId ?? null,
+          column: opts?.column,
         });
         navigate(`/w/wiki/${page.id}`);
       } catch (e) {

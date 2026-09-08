@@ -47,7 +47,7 @@ import {
   type CreateWikiNodeInput,
   type WikiNodePatch,
   type WikiSidebarMove,
-  type WikiSidebarNode,
+  type WikiSidebarRootNode,
   type WikiSidebarPlacement,
 } from "./core/domain/wiki.js";
 import {
@@ -1084,7 +1084,7 @@ function registerIpc(): void {
     (_event, id: string, options?: { removeFile?: boolean }) =>
       deleteWikiNode(requireWorkspace(), id, options),
   );
-  ipcMain.handle("pm:setWikiSidebar", (_event, nodes: WikiSidebarNode[]) =>
+  ipcMain.handle("pm:setWikiSidebar", (_event, nodes: WikiSidebarRootNode[]) =>
     setWikiSidebar(requireWorkspace(), nodes),
   );
   ipcMain.handle(

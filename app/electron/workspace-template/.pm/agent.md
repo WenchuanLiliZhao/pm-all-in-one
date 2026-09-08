@@ -1,4 +1,4 @@
-<!-- local-pm agent.md rev 17 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/custom/ (see pm-create-skill). -->
+<!-- local-pm agent.md rev 19 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/custom/ (see pm-create-skill). -->
 # Agent rules (local-pm)
 
 ## Finding things
@@ -22,7 +22,7 @@ Directories are flat, so they tell you nothing about ancestry. Query it
 
 ```sh
 pm-all-in-one issue list [--project <projectId>]
-pm-all-in-one wiki list
+pm-all-in-one wiki list [--column standing|record|--all]
 ```
 
 `issue list` prints the `parentId` ladder. Sibling order is **`blockedBy`
@@ -190,17 +190,17 @@ correctly; new nodes always enter Contents (`parentId` optional, default root).
 Prefer `@wiki-<id>` for links. Home is root `README.md`, not a file under
 `wiki/`. All pages is a flat admin inventory of the same set.
 
-**Only `done` wiki-nodes are standing facts.** Do not cite `todo` or
-`in-progress` bodies as library truth — they are still being written. You may
-still open them to continue the work. When you create or substantially rewrite
-a wiki-node, leave it `todo` or set `in-progress` while editing, then:
+**Only `done` wiki-nodes in the standing column are standing facts.** Record-column pages are dated snapshots: cite them only via an explicit pointer from a standing page, never as library law. Do not cite `todo` or `in-progress` bodies as truth — they are still being written. You may still open them to continue the work. When you create or substantially rewrite a wiki-node, leave it `todo` or set `in-progress` while editing, then:
 
 ```sh
 pm-all-in-one wiki update --id <wikiNodeId> --status done
 ```
 
-`wiki list` prints `status` next to each locator so you can see which rows are
-facts.
+`wiki list` prints the standing column by default (`status` next to each locator). Use `--column record` or `--all` for the rest. New nodes with no `--parent` enter standing; to place a root page in the record column, pass `--column record` (illegal together with `--parent` — a parent already belongs to a column).
+
+To choose a Contents parent, run `pm-all-in-one wiki list`. Do not glob
+`wiki/` nanoid folders. `wiki/sidebar.ts` remains the hierarchy source of
+truth.
 
 Wiki custom fields are workspace-level, not per-project: `wiki/custom-props.ts`
 exports `{ fields: CustomPropDef[] }`. Generated `wiki/schema.d.ts` is
@@ -214,10 +214,6 @@ empty). Those ids are not Contents parents. A `@wiki-<id>` in README.md is a
 prose mention, not membership in the field.
 `type: "string-list"` stores `string[]` of free-text tokens in props.ts (omit
 when empty). Tokens are not wiki-node ids — use this for keywords / aliases.
-
-To choose a Contents parent, run `pm-all-in-one wiki list`. Do not glob
-`wiki/` nanoid folders. `wiki/sidebar.ts` remains the hierarchy source of
-truth.
 
 ## Members
 
@@ -286,9 +282,10 @@ pm-all-in-one project create --title "New Project"
 pm-all-in-one issue create --project <projectId> --parent <issueId|root> --title "…"
 pm-all-in-one issue move   --project <projectId> --issue <issueId> --parent <issueId|root>
 pm-all-in-one issue list   --project <projectId>
-pm-all-in-one wiki create  --title "…" [--parent <wikiNodeId|root>]
+pm-all-in-one wiki create  --title "…" [--parent <wikiNodeId|root>] [--column standing|record]
 pm-all-in-one wiki update  --id <wikiNodeId> --status todo|in-progress|done
-pm-all-in-one wiki list
+pm-all-in-one wiki move    --id <wikiNodeId> --parent <wikiNodeId|root> [--index <n>] [--column standing|record]
+pm-all-in-one wiki list    [--column standing|record|--all]
 pm-all-in-one doctor
 pm-all-in-one adopt path/to/stray-dir
 ```

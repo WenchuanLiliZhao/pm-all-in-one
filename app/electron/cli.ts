@@ -46,7 +46,9 @@ import {
   getWikiSnapshot,
   moveWikiNodeToSidebarPosition,
   updateWikiNode,
-  type WikiSidebarNode,
+  type WikiContentsColumnFilter,
+  type WikiSidebarColumnKind,
+  type WikiSidebarRootNode,
 } from "./core/domain/wiki.js";
 import { rebuildIndex } from "./core/workspace/rebuild-index.js";
 import {
@@ -174,11 +176,11 @@ Usage:
   pm-all-in-one handoff create --from <memberId> --to <memberId> --related-project <projectId> [--title <t>] [--description <d>] [--body <md>] [--body-file <path>] [--closed]
   pm-all-in-one handoff list
   pm-all-in-one handoff update <id> [--title <t>] [--description <d>] [--body <md>] [--body-file <path>] [--from <id>] [--to <id>] [--related-project <id>] [--open|--closed]
-  pm-all-in-one wiki create --title <t> [--parent <wikiNodeId|root>] [--description <d>] [--status todo|in-progress|done]
+  pm-all-in-one wiki create --title <t> [--parent <wikiNodeId|root>] [--column standing|record] [--description <d>] [--status todo|in-progress|done]
   pm-all-in-one wiki update --id <wikiNodeId> --status todo|in-progress|done
-  pm-all-in-one wiki move   --id <wikiNodeId> --parent <wikiNodeId|root> [--index <n>]
+  pm-all-in-one wiki move   --id <wikiNodeId> --parent <wikiNodeId|root> [--index <n>] [--column standing|record]
   pm-all-in-one wiki delete --id <wikiNodeId>
-  pm-all-in-one wiki list
+  pm-all-in-one wiki list   [--column standing|record|--all]
   pm-all-in-one doctor [--trust-fence-validators]
   pm-all-in-one adopt <path>
 
@@ -193,15 +195,62 @@ Options:
 `;
 }
 
+function parseWikiColumn(
+  flags: Record<string, string | boolean>,
+): WikiSidebarColumnKind | undefined {
+  const raw = flagStr(flags, "column");
+  if (raw === undefined) {
+    return undefined;
+  }
+  if (raw !== "standing" && raw !== "record") {
+    throw new Error("--column must be standing|record");
+  }
+  return raw;
+}
+
+function parseWikiListFilter(
+  flags: Record<string, string | boolean>,
+): WikiContentsColumnFilter {
+  const all = flags.all === true;
+  const column = parseWikiColumn(flags);
+  if (all && column !== undefined) {
+    throw new Error("Use --column or --all, not both");
+  }
+  if (all) {
+    return "all";
+  }
+  return column ?? "standing";
+}
+
 function sidebarChildCount(
-  nodes: WikiSidebarNode[],
+  nodes: WikiSidebarRootNode[],
   parentId: string | null,
+  column?: WikiSidebarColumnKind,
 ): number {
   if (parentId === null) {
-    return nodes.length;
+    const kind = column ?? "standing";
+    if (kind === "record") {
+      const col = nodes.find(
+        (node) => node.type === "column" && node.kind === "record",
+      );
+      return col && col.type === "column" ? col.children.length : 0;
+    }
+    const standing = nodes.find(
+      (node) => node.type === "column" && node.kind === "standing",
+    );
+    if (standing && standing.type === "column") {
+      return standing.children.length;
+    }
+    return nodes.filter((node) => node.type !== "column").length;
   }
-  const walk = (list: WikiSidebarNode[]): number | null => {
+  const walk = (list: WikiSidebarRootNode[]): number | null => {
     for (const node of list) {
+      if (node.type === "column") {
+        const found = walk(node.children);
+        if (found !== null) {
+          return found;
+        }
+      }
       if (node.type === "ref" && node.id === parentId) {
         return node.children?.length ?? 0;
       }
@@ -228,23 +277,31 @@ function sidebarChildCount(
 }
 
 function findWikiPlacement(
-  nodes: WikiSidebarNode[],
+  nodes: WikiSidebarRootNode[],
   id: string,
   parentId: string | null = null,
-): { parentId: string | null; index: number } | null {
+  column: WikiSidebarColumnKind = "standing",
+): { parentId: string | null; index: number; column: WikiSidebarColumnKind } | null {
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i]!;
+    if (node.type === "column") {
+      const found = findWikiPlacement(node.children, id, null, node.kind);
+      if (found) {
+        return found;
+      }
+      continue;
+    }
     if (node.type === "ref" && node.id === id) {
-      return { parentId, index: i };
+      return { parentId, index: i, column };
     }
     if (node.type === "ref" && node.children) {
-      const found = findWikiPlacement(node.children, id, node.id);
+      const found = findWikiPlacement(node.children, id, node.id, column);
       if (found) {
         return found;
       }
     }
     if (node.type === "group") {
-      const found = findWikiPlacement(node.children, id, parentId);
+      const found = findWikiPlacement(node.children, id, parentId, column);
       if (found) {
         return found;
       }
@@ -263,6 +320,7 @@ async function cmdWikiCreate(
     throw new Error("--title is required");
   }
   const parentId = parseParentId(flagStr(flags, "parent"));
+  const column = parseWikiColumn(flags);
   const description = flagStr(flags, "description");
   const statusRaw = flagStr(flags, "status");
   if (statusRaw !== undefined && !isWikiStatusId(statusRaw)) {
@@ -271,6 +329,7 @@ async function cmdWikiCreate(
   const node = await createWikiNode(root, {
     title,
     parentId,
+    ...(column !== undefined ? { column } : {}),
     ...(description !== undefined ? { description } : {}),
     ...(statusRaw !== undefined ? { status: statusRaw } : {}),
   });
@@ -296,11 +355,12 @@ async function cmdWikiMove(
     throw new Error("--id and --parent are required");
   }
   const parentId = parseParentId(parentRaw);
+  const column = parseWikiColumn(flags);
   const snapBefore = await getWikiSnapshot(root);
   const indexRaw = flagStr(flags, "index");
   let index: number;
   if (indexRaw === undefined) {
-    index = sidebarChildCount(snapBefore.sidebar, parentId);
+    index = sidebarChildCount(snapBefore.sidebar, parentId, column);
   } else {
     const parsed = Number(indexRaw);
     if (!Number.isFinite(parsed) || parsed < 0) {
@@ -311,6 +371,7 @@ async function cmdWikiMove(
   const snap = await moveWikiNodeToSidebarPosition(root, id, {
     parentId,
     index,
+    ...(column !== undefined ? { column } : {}),
   });
   await rebuildIndex(root);
   const placement = findWikiPlacement(snap.sidebar, id);
@@ -360,10 +421,20 @@ async function cmdWikiUpdate(
   }
 }
 
-async function cmdWikiList(root: string, json: boolean): Promise<void> {
+async function cmdWikiList(
+  root: string,
+  flags: Record<string, string | boolean>,
+  json: boolean,
+): Promise<void> {
   // ↔ electron/core/domain/wiki.ts — Contents ancestry from sidebar, not a file
   const snap = await getWikiSnapshot(root);
-  const rows = flattenWikiContents(snap.sidebar, snap.nodes);
+  const rows = flattenWikiContents(
+    snap.sidebar,
+    snap.nodes,
+    null,
+    0,
+    parseWikiListFilter(flags),
+  );
   if (json) {
     printJson(rows);
   } else {
@@ -375,11 +446,17 @@ async function cmdWikiList(root: string, json: boolean): Promise<void> {
 }
 
 function countDirectWikiChildren(
-  nodes: WikiSidebarNode[],
+  nodes: WikiSidebarRootNode[],
   id: string,
 ): number {
-  const walk = (list: WikiSidebarNode[]): number | null => {
+  const walk = (list: WikiSidebarRootNode[]): number | null => {
     for (const node of list) {
+      if (node.type === "column") {
+        const found = walk(node.children);
+        if (found !== null) {
+          return found;
+        }
+      }
       if (node.type === "ref" && node.id === id) {
         return (node.children ?? []).filter((c) => c.type === "ref").length;
       }
@@ -1120,7 +1197,7 @@ async function main(): Promise<void> {
       return;
     }
     if (sub === "list") {
-      await cmdWikiList(root, json);
+      await cmdWikiList(root, flags, json);
       return;
     }
     throw new Error(`Unknown wiki subcommand: ${sub ?? "(none)"}\n${usage()}`);

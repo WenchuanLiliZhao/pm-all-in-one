@@ -135,7 +135,11 @@ const pm = {
     ipcRenderer.invoke("pm:moveWikiNodeInSidebar", id, move),
   moveWikiNodeToSidebarPosition: (
     id: string,
-    placement: { parentId: string | null; index: number },
+    placement: {
+      parentId: string | null;
+      index: number;
+      column?: "standing" | "record";
+    },
   ) => ipcRenderer.invoke("pm:moveWikiNodeToSidebarPosition", id, placement),
   getMembers: () => ipcRenderer.invoke("pm:getMembers"),
   getMember: (id: string) => ipcRenderer.invoke("pm:getMember", id),

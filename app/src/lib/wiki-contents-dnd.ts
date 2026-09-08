@@ -1,12 +1,50 @@
-import type { WikiSidebarNode, WikiSidebarPlacement } from "@/lib/types";
+import type {
+  WikiSidebarColumnKind,
+  WikiSidebarColumnNode,
+  WikiSidebarNode,
+  WikiSidebarPlacement,
+  WikiSidebarRootNode,
+} from "@/lib/types";
 import type { DropZone } from "@/lib/tree-dnd";
 
 export type ContentsDropResult =
   | { ok: true; placement: WikiSidebarPlacement }
   | { ok: false; reason: string };
 
+/** Collapse / droppable id for a root column. Stable across title edits. */
+export function contentsColumnKey(kind: WikiSidebarColumnKind): string {
+  return `column:${kind}`;
+}
+
+export function parseContentsColumnKey(
+  key: string,
+): WikiSidebarColumnKind | null {
+  if (key === "column:standing") {
+    return "standing";
+  }
+  if (key === "column:record") {
+    return "record";
+  }
+  return null;
+}
+
+const DEFAULT_COLUMN_TITLE: Record<WikiSidebarColumnKind, string> = {
+  standing: "Standing",
+  record: "Records",
+};
+
+function findColumn(
+  nodes: WikiSidebarRootNode[],
+  kind: WikiSidebarColumnKind,
+): WikiSidebarColumnNode | null {
+  const hit = nodes.find(
+    (node) => node.type === "column" && node.kind === kind,
+  );
+  return hit && hit.type === "column" ? hit : null;
+}
+
 function findRef(
-  nodes: WikiSidebarNode[],
+  nodes: WikiSidebarRootNode[],
   id: string,
 ): Extract<WikiSidebarNode, { type: "ref" }> | null {
   for (const node of nodes) {
@@ -20,7 +58,7 @@ function findRef(
           return hit;
         }
       }
-    } else if (node.type === "group") {
+    } else if (node.type === "group" || node.type === "column") {
       const hit = findRef(node.children, id);
       if (hit) {
         return hit;
@@ -34,7 +72,7 @@ function collectDescendantRefIds(
   node: Extract<WikiSidebarNode, { type: "ref" }>,
 ): Set<string> {
   const out = new Set<string>();
-  const walk = (list: WikiSidebarNode[] | undefined) => {
+  const walk = (list: WikiSidebarRootNode[] | undefined) => {
     if (!list) {
       return;
     }
@@ -42,7 +80,7 @@ function collectDescendantRefIds(
       if (child.type === "ref") {
         out.add(child.id);
         walk(child.children);
-      } else if (child.type === "group") {
+      } else if (child.type === "group" || child.type === "column") {
         walk(child.children);
       }
     }
@@ -51,9 +89,9 @@ function collectDescendantRefIds(
   return out;
 }
 
-/** Parent ref id for `id`, or null when `id` sits at Contents root. */
+/** Parent ref id for `id`, or null when `id` sits at Contents root / column root. */
 export function parentRefIdOf(
-  nodes: WikiSidebarNode[],
+  nodes: WikiSidebarRootNode[],
   id: string,
   parentRefId: string | null = null,
 ): string | null | undefined {
@@ -68,8 +106,7 @@ export function parentRefIdOf(
           return hit;
         }
       }
-    } else if (node.type === "group") {
-      // Group children keep the nearest enclosing ref as parent for placement.
+    } else if (node.type === "group" || node.type === "column") {
       const hit = parentRefIdOf(node.children, id, parentRefId);
       if (hit !== undefined) {
         return hit;
@@ -79,9 +116,64 @@ export function parentRefIdOf(
   return undefined;
 }
 
+/** Root column kind that contains `id`. Implicit standing when not inside a column. */
+export function columnKindOfRef(
+  nodes: WikiSidebarRootNode[],
+  id: string,
+  current: WikiSidebarColumnKind = "standing",
+): WikiSidebarColumnKind | undefined {
+  for (const node of nodes) {
+    if (node.type === "column") {
+      const hit = columnKindOfRef(node.children, id, node.kind);
+      if (hit !== undefined) {
+        return hit;
+      }
+    } else if (node.type === "ref") {
+      if (node.id === id) {
+        return current;
+      }
+      if (node.children) {
+        const hit = columnKindOfRef(node.children, id, current);
+        if (hit !== undefined) {
+          return hit;
+        }
+      }
+    } else if (node.type === "group") {
+      const hit = columnKindOfRef(node.children, id, current);
+      if (hit !== undefined) {
+        return hit;
+      }
+    }
+  }
+  return undefined;
+}
+
+/**
+ * `verticalListSortingStrategy` treats every Contents ref as one list.
+ * Column headers are droppable but not sortable (`overIndex === -1`), which
+ * shoves every row above the drag source. A hit in the other column
+ * translates neighbors through the header. Freeze those transforms; drop-zone
+ * chrome still shows the landing.
+ */
+export function contentsSortShouldFreeze(
+  sidebar: WikiSidebarRootNode[],
+  activeId: string,
+  overId: string,
+): boolean {
+  if (parseContentsColumnKey(overId)) {
+    return true;
+  }
+  const activeKind = columnKindOfRef(sidebar, activeId);
+  const overKind = columnKindOfRef(sidebar, overId);
+  if (activeKind === undefined || overKind === undefined) {
+    return true;
+  }
+  return activeKind !== overKind;
+}
+
 /** Index of `id` among siblings in its parent list; -1 if missing. */
 export function indexAmongSiblings(
-  nodes: WikiSidebarNode[],
+  nodes: WikiSidebarRootNode[],
   id: string,
 ): number {
   for (let i = 0; i < nodes.length; i++) {
@@ -96,8 +188,7 @@ export function indexAmongSiblings(
       if (hit >= 0) {
         return hit;
       }
-    } else if (node.type === "group") {
-      // Prefer searching group children for the direct sibling index.
+    } else if (node.type === "group" || node.type === "column") {
       for (let i = 0; i < node.children.length; i++) {
         const child = node.children[i]!;
         if (child.type === "ref" && child.id === id) {
@@ -114,9 +205,9 @@ export function indexAmongSiblings(
 }
 
 function siblingListContaining(
-  nodes: WikiSidebarNode[],
+  nodes: WikiSidebarRootNode[],
   id: string,
-): WikiSidebarNode[] | null {
+): WikiSidebarRootNode[] | null {
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i]!;
     if (node.type === "ref" && node.id === id) {
@@ -129,7 +220,7 @@ function siblingListContaining(
       if (hit) {
         return hit;
       }
-    } else if (node.type === "group") {
+    } else if (node.type === "group" || node.type === "column") {
       const hit = siblingListContaining(node.children, id);
       if (hit) {
         return hit;
@@ -176,15 +267,22 @@ export type ContentsRow =
  * collapsed set). Depth is carried on the row so the tree can be painted as a
  * single flat list — nesting `<ul>` inside `<li>` makes dnd-kit measure
  * transformed ancestors and destroys the drag feel.
+ *
+ * Root columns are not toc rows. Standing and record both paint as Contents
+ * section chrome; their children stay at the same depth as implicit standing.
  */
 export function flattenContentsRows(
-  nodes: WikiSidebarNode[],
+  nodes: WikiSidebarRootNode[],
   collapsed: ReadonlySet<string>,
 ): ContentsRow[] {
   const out: ContentsRow[] = [];
-  const walk = (list: WikiSidebarNode[], depth: number) => {
+  const walk = (list: WikiSidebarRootNode[], depth: number) => {
     for (let i = 0; i < list.length; i++) {
       const node = list[i]!;
+      if (node.type === "column") {
+        walk(node.children, depth);
+        continue;
+      }
       if (node.type === "ref") {
         const hasChildren = (node.children?.length ?? 0) > 0;
         out.push({ kind: "ref", key: node.id, depth, node, hasChildren });
@@ -200,6 +298,9 @@ export function flattenContentsRows(
         if (hasChildren && !collapsed.has(key)) {
           walk(node.children, depth + 1);
         }
+        continue;
+      }
+      if (node.type !== "link") {
         continue;
       }
       out.push({
@@ -221,7 +322,7 @@ export function flattenContentsRows(
  * stolen by an expanded child row sitting between the two siblings.
  */
 export function desiredContentsTempCollapseKeys(
-  sidebar: WikiSidebarNode[],
+  sidebar: WikiSidebarRootNode[],
   activeId: string,
 ): string[] {
   const rows = flattenContentsRows(sidebar, new Set<string>());
@@ -242,7 +343,7 @@ export function desiredContentsTempCollapseKeys(
 
 /** Flatten visible ref ids in visual order (respecting collapsed set). */
 export function flattenVisibleRefIds(
-  nodes: WikiSidebarNode[],
+  nodes: WikiSidebarRootNode[],
   collapsed: ReadonlySet<string>,
 ): string[] {
   return flattenContentsRows(nodes, collapsed)
@@ -250,8 +351,34 @@ export function flattenVisibleRefIds(
     .map((row) => row.key);
 }
 
+function placementForColumn(
+  sidebar: WikiSidebarRootNode[],
+  kind: WikiSidebarColumnKind,
+  zone: DropZone,
+): WikiSidebarPlacement {
+  const col = findColumn(sidebar, kind);
+  const children = col?.children ?? [];
+  const index = zone === "before" ? 0 : children.length;
+  return { parentId: null, index, column: kind };
+}
+
+function rootPlacement(
+  sidebar: WikiSidebarRootNode[],
+  overId: string,
+  zone: DropZone,
+  parentId: string | null,
+  overIndex: number,
+): WikiSidebarPlacement {
+  const index = zone === "before" ? overIndex : overIndex + 1;
+  if (parentId !== null) {
+    return { parentId, index };
+  }
+  const column = columnKindOfRef(sidebar, overId) ?? "standing";
+  return { parentId: null, index, column };
+}
+
 export function resolveContentsDrop(
-  sidebar: WikiSidebarNode[],
+  sidebar: WikiSidebarRootNode[],
   activeId: string,
   overId: string,
   zone: DropZone,
@@ -259,13 +386,19 @@ export function resolveContentsDrop(
   if (activeId === overId) {
     return { ok: false, reason: "same row" };
   }
-  const over = findRef(sidebar, overId);
-  if (!over) {
-    return { ok: false, reason: "drop target must be a page" };
-  }
   const active = findRef(sidebar, activeId);
   if (!active) {
     return { ok: false, reason: "active not in Contents" };
+  }
+
+  const overColumn = parseContentsColumnKey(overId);
+  if (overColumn) {
+    return { ok: true, placement: placementForColumn(sidebar, overColumn, zone) };
+  }
+
+  const over = findRef(sidebar, overId);
+  if (!over) {
+    return { ok: false, reason: "drop target must be a page" };
   }
   if (collectDescendantRefIds(active).has(overId)) {
     return { ok: false, reason: "cannot drop into own subtree" };
@@ -297,11 +430,53 @@ export function resolveContentsDrop(
   }
   return {
     ok: true,
-    placement: {
-      parentId,
-      index: zone === "before" ? overIndex : overIndex + 1,
-    },
+    placement: rootPlacement(sidebar, overId, zone, parentId, overIndex),
   };
+}
+
+function ensureColumn(
+  nodes: WikiSidebarRootNode[],
+  kind: WikiSidebarColumnKind,
+): WikiSidebarColumnNode {
+  const existing = findColumn(nodes, kind);
+  if (existing) {
+    return existing;
+  }
+  const created: WikiSidebarColumnNode = {
+    type: "column",
+    kind,
+    title: DEFAULT_COLUMN_TITLE[kind],
+    children: [],
+  };
+  nodes.push(created);
+  return created;
+}
+
+/** Mirror of core `resolveTargetList` for optimistic Contents updates. */
+function resolveTargetList(
+  sidebar: WikiSidebarRootNode[],
+  parentId: string | null,
+  column?: WikiSidebarColumnKind,
+): WikiSidebarRootNode[] {
+  if (parentId !== null) {
+    const parent = findRef(sidebar, parentId);
+    if (!parent) {
+      throw new Error(`Contents parent not found: ${parentId}`);
+    }
+    if (!parent.children) {
+      parent.children = [];
+    }
+    return parent.children;
+  }
+  const kind = column ?? "standing";
+  if (kind === "record") {
+    return ensureColumn(sidebar, "record").children;
+  }
+  const standing = findColumn(sidebar, "standing");
+  if (standing) {
+    return standing.children;
+  }
+  return sidebar;
 }
 
 /**
@@ -311,11 +486,11 @@ export function resolveContentsDrop(
  * pre-drop index while the IPC round-trip is in flight.
  */
 export function applySidebarPlacement(
-  sidebar: WikiSidebarNode[],
+  sidebar: WikiSidebarRootNode[],
   id: string,
   placement: WikiSidebarPlacement,
-): WikiSidebarNode[] {
-  const next = JSON.parse(JSON.stringify(sidebar)) as WikiSidebarNode[];
+): WikiSidebarRootNode[] {
+  const next = JSON.parse(JSON.stringify(sidebar)) as WikiSidebarRootNode[];
   const loc = findRefSiblingLocation(next, id);
   if (!loc) {
     throw new Error(`Page not in sidebar: ${id}`);
@@ -324,19 +499,11 @@ export function applySidebarPlacement(
   if (!node || node.type !== "ref") {
     throw new Error(`Page not in sidebar: ${id}`);
   }
-  let targetList: WikiSidebarNode[];
-  if (placement.parentId === null) {
-    targetList = next;
-  } else {
-    const parent = findRef(next, placement.parentId);
-    if (!parent) {
-      throw new Error(`Contents parent not found: ${placement.parentId}`);
-    }
-    if (!parent.children) {
-      parent.children = [];
-    }
-    targetList = parent.children;
-  }
+  const targetList = resolveTargetList(
+    next,
+    placement.parentId,
+    placement.column,
+  );
   const sameParentArray = loc.siblings === targetList;
   let finalIndex = Number.isFinite(placement.index)
     ? Math.floor(placement.index)
@@ -352,7 +519,7 @@ export function applySidebarPlacement(
 export type WikiSidebarMove = "up" | "down" | "indent" | "outdent";
 
 export type RefSiblingLocation = {
-  siblings: WikiSidebarNode[];
+  siblings: WikiSidebarRootNode[];
   index: number;
   /** Nearest enclosing ref id, or null at Contents root / under a root-level group. */
   parentRefId: string | null;
@@ -360,7 +527,7 @@ export type RefSiblingLocation = {
 
 /** Locate a ref among its sibling list (mirrors core findPageLocation parent array). */
 export function findRefSiblingLocation(
-  nodes: WikiSidebarNode[],
+  nodes: WikiSidebarRootNode[],
   id: string,
   parentRefId: string | null = null,
 ): RefSiblingLocation | null {
@@ -376,7 +543,7 @@ export function findRefSiblingLocation(
           return hit;
         }
       }
-    } else if (node.type === "group") {
+    } else if (node.type === "group" || node.type === "column") {
       const hit = findRefSiblingLocation(node.children, id, parentRefId);
       if (hit) {
         return hit;
@@ -392,7 +559,7 @@ export function findRefSiblingLocation(
  * outdent needs an enclosing parent ref).
  */
 export function canSidebarMove(
-  sidebar: WikiSidebarNode[],
+  sidebar: WikiSidebarRootNode[],
   id: string,
   move: WikiSidebarMove,
 ): boolean {
@@ -421,7 +588,7 @@ export function canSidebarMove(
 
 /** Ref ids that share the sibling list containing `id` (for drop-group highlight). */
 export function contentsSiblingRefIds(
-  sidebar: WikiSidebarNode[],
+  sidebar: WikiSidebarRootNode[],
   id: string,
 ): Set<string> {
   const loc = findRefSiblingLocation(sidebar, id);
@@ -430,6 +597,26 @@ export function contentsSiblingRefIds(
     return out;
   }
   for (const node of loc.siblings) {
+    if (node.type === "ref") {
+      out.add(node.id);
+    }
+  }
+  return out;
+}
+
+/** Direct child ref ids of a root column (drop-group when over a column header). */
+export function contentsColumnChildRefIds(
+  sidebar: WikiSidebarRootNode[],
+  kind: WikiSidebarColumnKind,
+): Set<string> {
+  const out = new Set<string>();
+  const col = findColumn(sidebar, kind);
+  const list = col
+    ? col.children
+    : kind === "standing"
+      ? sidebar.filter((node) => node.type !== "column")
+      : [];
+  for (const node of list) {
     if (node.type === "ref") {
       out.add(node.id);
     }

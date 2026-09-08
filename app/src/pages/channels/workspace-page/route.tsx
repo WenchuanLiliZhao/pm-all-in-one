@@ -29,7 +29,7 @@ import {
 } from "@/components";
 import { GitSyncPanel } from "@/components/git-sync-panel";
 import { getPm, isWebPm } from "@/lib/bridge";
-import type { WikiCustomPropsSchema, WikiNodeMeta, WorkspaceView } from "@/lib/types";
+import type { WikiCustomPropsSchema, WikiNodeMeta, WikiSidebarColumnKind, WorkspaceView } from "@/lib/types";
 import { issueRefKey } from "@/lib/types";
 import {
   useWorkspace,
@@ -56,6 +56,12 @@ import {
   readWikiContentsDefaultExpandDepth,
   writeWikiContentsDefaultExpandDepth,
 } from "@/lib/wiki-contents-collapse";
+import {
+  DEFAULT_WIKI_COLUMN_TITLE,
+  setWikiColumnTitle,
+  standingRailTitle,
+  wikiColumnTitle,
+} from "@/lib/wiki-sidebar-helpers";
 import styles from "./styles.module.scss";
 import roadmapStyles from "./sub-components/roadmap/styles.module.scss";
 
@@ -785,10 +791,64 @@ export function SettingsGeneralView() {
     updateWorkspaceDraft,
     saveDetail,
   } = useWorkspace();
+  const { wiki, refresh: refreshWiki } = useWiki();
   const { members, localMe, localMeError, setLocalMe } = useMember();
   const [meSaving, setMeSaving] = useState(false);
   const [contentsExpandDepthDraft, setContentsExpandDepthDraft] = useState(
     () => String(readWikiContentsDefaultExpandDepth()),
+  );
+  const [standingTitleDraft, setStandingTitleDraft] = useState("");
+  const [recordColumnTitleDraft, setRecordColumnTitleDraft] = useState("");
+  const [columnTitleError, setColumnTitleError] = useState<string | null>(null);
+  const standingTitleFocused = useRef(false);
+  const recordColumnTitleFocused = useRef(false);
+
+  useEffect(() => {
+    if (!wiki) {
+      return;
+    }
+    if (!standingTitleFocused.current) {
+      setStandingTitleDraft(standingRailTitle(wiki.sidebar));
+    }
+    if (!recordColumnTitleFocused.current) {
+      setRecordColumnTitleDraft(wikiColumnTitle(wiki.sidebar, "record"));
+    }
+  }, [wiki]);
+
+  const commitColumnTitle = useCallback(
+    async (kind: WikiSidebarColumnKind, raw: string) => {
+      if (!wiki) {
+        return;
+      }
+      const nextTitle = raw.trim() || DEFAULT_WIKI_COLUMN_TITLE[kind];
+      const diskTitle =
+        kind === "standing"
+          ? standingRailTitle(wiki.sidebar)
+          : wikiColumnTitle(wiki.sidebar, kind);
+      if (nextTitle === diskTitle) {
+        if (kind === "standing") {
+          setStandingTitleDraft(diskTitle);
+        } else {
+          setRecordColumnTitleDraft(diskTitle);
+        }
+        return;
+      }
+      try {
+        setColumnTitleError(null);
+        await getPm().setWikiSidebar(
+          setWikiColumnTitle(wiki.sidebar, kind, nextTitle),
+        );
+        await refreshWiki();
+      } catch (e) {
+        setColumnTitleError(e instanceof Error ? e.message : String(e));
+        if (kind === "standing") {
+          setStandingTitleDraft(diskTitle);
+        } else {
+          setRecordColumnTitleDraft(diskTitle);
+        }
+      }
+    },
+    [wiki, refreshWiki],
   );
 
   const commitContentsExpandDepth = useCallback((raw: string) => {
@@ -929,6 +989,56 @@ export function SettingsGeneralView() {
           more nesting. Manual fold/unfold is remembered on this machine. Press
           Enter or leave the field to apply.
         </p>
+        <label className={styles.settingsField}>
+          <span>Standing column title</span>
+          <Input
+            value={standingTitleDraft}
+            disabled={!wiki}
+            onChange={(e) => setStandingTitleDraft(e.target.value)}
+            onFocus={() => {
+              standingTitleFocused.current = true;
+            }}
+            onBlur={() => {
+              standingTitleFocused.current = false;
+              void commitColumnTitle("standing", standingTitleDraft);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.currentTarget.blur();
+              }
+            }}
+          />
+        </label>
+        <label className={styles.settingsField}>
+          <span>Records column title</span>
+          <Input
+            value={recordColumnTitleDraft}
+            disabled={!wiki}
+            onChange={(e) => setRecordColumnTitleDraft(e.target.value)}
+            onFocus={() => {
+              recordColumnTitleFocused.current = true;
+            }}
+            onBlur={() => {
+              recordColumnTitleFocused.current = false;
+              void commitColumnTitle("record", recordColumnTitleDraft);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.currentTarget.blur();
+              }
+            }}
+          />
+        </label>
+        <p className={styles.settingsHint}>
+          The standing title is the Contents heading in the rail. The Records
+          title is the section under it. Saving a new standing title writes that
+          column on disk if it is still implicit. Leave the field to apply.
+        </p>
+        {columnTitleError ? (
+          <p className={`${styles.settingsHint} ${styles.settingsHintError}`}>
+            {columnTitleError}
+          </p>
+        ) : null}
         <WikiCustomPropsEditor
           load={loadWikiSchema}
           save={saveWikiSchema}

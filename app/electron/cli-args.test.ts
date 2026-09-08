@@ -74,3 +74,16 @@ test("--index is a value flag", () => {
   assert.equal(flags.id, "V1StGXR8_Z5jdHi6B-myT");
   assert.equal(flags.parent, "root");
 });
+
+test("--column is a value flag and --all stays boolean", () => {
+  const column = parseCliArgs([
+    "wiki",
+    "list",
+    "--column",
+    "record",
+  ]);
+  assert.equal(column.flags.column, "record");
+  const all = parseCliArgs(["wiki", "list", "--all", "--json"]);
+  assert.equal(all.flags.all, true);
+  assert.equal(all.flags.json, true);
+});

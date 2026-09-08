@@ -149,7 +149,7 @@ function isInsideWorkspace(workspaceRoot: string, abs: string): boolean {
 }
 
 function skipName(name: string): boolean {
-  // `assets` matches NODE_ASSETS_DIRNAME — keep in sync.
+  // `assets` matches NODE_ASSETS_DIRNAME — keep in sync with watch-ignore.ts.
   return (
     name === ".pm" ||
     name === "assets" ||

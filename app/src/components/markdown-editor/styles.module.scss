@@ -146,6 +146,18 @@
     font-size: 0.95em;
   }
 
+  // Global reset uses `font: inherit` / `text-decoration: none`. Restore
+  // emphasis to match Live (`.cm-md-strong` / emphasis / strikethrough).
+  :global(strong),
+  :global(b) {
+    font-weight: 700;
+  }
+
+  :global(em),
+  :global(i) {
+    font-style: italic;
+  }
+
   :global(del) {
     text-decoration: line-through;
     color: var(--color-use--text-secondary);

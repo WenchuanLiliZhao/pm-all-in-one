@@ -37,6 +37,7 @@ export const CLI_VALUE_FLAGS = new Set([
   "body-file",
   "bodyFile",
   "index",
+  "column",
 ]);
 
 function takesValue(key: string): boolean {

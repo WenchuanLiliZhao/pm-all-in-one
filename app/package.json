@@ -1,7 +1,7 @@
 {
   "name": "local-pm",
   "private": true,
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "Local-first project manager (Vite + React + Electron)",
   "author": "local-pm contributors",
   "license": "MIT",
@@ -10,7 +10,8 @@
   "scripts": {
     "postinstall": "electron-rebuild -f -w node-pty",
     "kill:dev-port": "lsof -tiTCP:5173 -sTCP:LISTEN | xargs kill 2>/dev/null || true",
-    "dev": "npm run build:electron && node ./node_modules/concurrently/dist/bin/concurrently.js -k \"node ./node_modules/vite/bin/vite.js\" \"node ./node_modules/typescript/bin/tsc -b tsconfig.electron.json --watch\" \"node ./node_modules/typescript/bin/tsc -b tsconfig.electron-preload.json --watch\" \"node ./node_modules/wait-on/bin/wait-on -l -t 120000 http-get://127.0.0.1:5173/ && node ./node_modules/cross-env/src/bin/cross-env.js NODE_ENV=development node ./node_modules/electron/cli.js .\"",
+    "dev": "npm run compile:electron && node ./node_modules/concurrently/dist/bin/concurrently.js -k \"node ./node_modules/vite/bin/vite.js\" \"node ./node_modules/typescript/bin/tsc -b tsconfig.electron.json --watch\" \"node ./node_modules/typescript/bin/tsc -b tsconfig.electron-preload.json --watch\" \"node ./node_modules/wait-on/bin/wait-on -l -t 120000 http-get://127.0.0.1:5173/ && node ./node_modules/cross-env/src/bin/cross-env.js NODE_ENV=development node ./node_modules/electron/cli.js .\"",
+    "compile:electron": "node ./node_modules/typescript/bin/tsc -b tsconfig.electron.json && node ./node_modules/typescript/bin/tsc -b tsconfig.electron-preload.json && node ./scripts/copy-templates.mjs dist-electron",
     "build:electron": "node ./node_modules/typescript/bin/tsc -b tsconfig.electron.json --force && node ./node_modules/typescript/bin/tsc -b tsconfig.electron-preload.json --force && node ./scripts/copy-templates.mjs dist-electron",
     "build:server": "node ./node_modules/typescript/bin/tsc -p tsconfig.server.json && node ./scripts/copy-templates.mjs dist-server/electron",
     "dev:web": "npm run build:server && node ./node_modules/concurrently/dist/bin/concurrently.js -k \"node ./node_modules/vite/bin/vite.js\" \"node ./node_modules/typescript/bin/tsc -p tsconfig.server.json --watch --preserveWatchOutput\" \"node --watch ./dist-server/server/main.js\"",

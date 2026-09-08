@@ -8,7 +8,7 @@ export type BannerProps = {
   children: ReactNode;
   onDismiss?: () => void;
   dismissLabel?: string;
-} & Omit<HTMLAttributes<HTMLParagraphElement>, "children">;
+} & Omit<HTMLAttributes<HTMLDivElement>, "children">;
 
 export function Banner({
   tone = "error",
@@ -24,8 +24,8 @@ export function Banner({
     .join(" ");
 
   return (
-    <p className={merged} role={role} {...rest}>
-      <span className={styles.body}>{children}</span>
+    <div className={merged} role={role} {...rest}>
+      <div className={styles.body}>{children}</div>
       {onDismiss ? (
         <button
           type="button"
@@ -35,6 +35,6 @@ export function Banner({
           {dismissLabel}
         </button>
       ) : null}
-    </p>
+    </div>
   );
 }

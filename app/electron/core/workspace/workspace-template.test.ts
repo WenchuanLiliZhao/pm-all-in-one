@@ -123,7 +123,11 @@ test("scaffold copies template files including .gitkeep", () => {
       assert.ok(agent.includes("pm-all-in-one issue list"));
       assert.ok(agent.includes("pm-all-in-one wiki list"));
       assert.ok(agent.includes("pm-all-in-one wiki update"));
-      assert.ok(agent.includes("Only `done` wiki-nodes are standing facts"));
+      assert.ok(
+        agent.includes(
+          "Only `done` wiki-nodes in the standing column are standing facts",
+        ),
+      );
       assert.ok(agent.includes("Honor `blockedBy`"));
       assert.ok(agent.includes("semantic readiness"));
       assert.ok(agent.includes("wiki/custom-props.ts"));

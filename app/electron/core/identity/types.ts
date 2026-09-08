@@ -249,6 +249,18 @@ export type WikiSidebarNode =
   | WikiSidebarGroupNode
   | WikiSidebarLinkNode;
 
+export type WikiSidebarColumnKind = "standing" | "record";
+
+export type WikiSidebarColumnNode = {
+  type: "column";
+  kind: WikiSidebarColumnKind;
+  title: string;
+  children: WikiSidebarNode[];
+};
+
+/** Root of `wiki/sidebar.ts`. `column` is legal here only — not in `WikiSidebarNode`. */
+export type WikiSidebarRootNode = WikiSidebarColumnNode | WikiSidebarNode;
+
 export interface WikiNode {
   id: string;
   path: string;
@@ -389,7 +401,7 @@ export interface HandoffPatch {
 }
 
 export interface WikiSnapshot {
-  sidebar: WikiSidebarNode[];
+  sidebar: WikiSidebarRootNode[];
   nodes: WikiNodeMeta[];
   /**
    * Ids on disk not in Contents. After getWiki reconcile this is always [];
@@ -403,8 +415,10 @@ export interface WikiSnapshot {
 export interface CreateWikiNodeInput {
   title?: string;
   description?: string;
-  /** Insert under this Contents ref as child when found; else root append. */
+  /** Insert under this Contents ref as child when found; else standing root. */
   parentId?: string | null;
+  /** Root column when `parentId` is null. Illegal together with `parentId`. */
+  column?: WikiSidebarColumnKind;
   body?: string;
   /** Create default `todo`. */
   status?: WikiStatusId;
@@ -437,6 +451,8 @@ export interface WikiSidebarPlacement {
   /** null = Contents root */
   parentId: string | null;
   index: number;
+  /** Root column when `parentId` is null. Illegal together with `parentId`. */
+  column?: WikiSidebarColumnKind;
 }
 
 /** @deprecated Prefer WikiSidebarPlacement */

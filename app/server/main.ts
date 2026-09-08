@@ -22,7 +22,7 @@ import {
   type CreateWikiNodeInput,
   type WikiNodePatch,
   type WikiSidebarMove,
-  type WikiSidebarNode,
+  type WikiSidebarRootNode,
   type WikiSidebarPlacement,
 } from "../electron/core/domain/wiki.js";
 import {
@@ -474,7 +474,7 @@ async function handleApi(
     return;
   }
   if (method === "PUT" && pathname === "/api/wiki/sidebar") {
-    const body = (await readJson(req)) as { nodes?: WikiSidebarNode[] };
+    const body = (await readJson(req)) as { nodes?: WikiSidebarRootNode[] };
     sendJson(res, 200, await setWikiSidebar(root, body?.nodes ?? []));
     return;
   }

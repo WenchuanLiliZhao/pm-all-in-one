@@ -8,6 +8,7 @@ import { isValidEntityId } from "../identity/dir-id.js";
 import { scanStrays } from "../workspace/doctor.js";
 import { rebuildIndex } from "../workspace/rebuild-index.js";
 import {
+  collectSidebarWikiNodeIds,
   createWikiNode,
   deleteWikiNode,
   ensureWiki,
@@ -566,5 +567,220 @@ test("missing wiki status seeds todo without inventing a new id", async () => {
     assert.equal(loaded.created, created);
     const text = fs.readFileSync(propsFile, "utf8");
     assert.match(text, /"status": "todo"/);
+  });
+});
+
+test("implicit standing sidebar round-trips without wrapping a column", async () => {
+  await withTempWorkspace(async (root) => {
+    const a = await createWikiNode(root, { title: "A" });
+    const b = await createWikiNode(root, { title: "B" });
+    const before = fs.readFileSync(path.join(root, "wiki", "sidebar.ts"), "utf8");
+    const snap = await getWikiSnapshot(root);
+    assert.equal(snap.sidebar.length, 2);
+    assert.equal(snap.sidebar[0]?.type, "ref");
+    assert.equal(snap.sidebar[1]?.type, "ref");
+    assert.equal(
+      fs.readFileSync(path.join(root, "wiki", "sidebar.ts"), "utf8"),
+      before,
+    );
+    const rows = flattenWikiContents(snap.sidebar, snap.nodes);
+    assert.deepEqual(
+      rows.map((r) => [r.id, r.column]),
+      [
+        [a.id, "standing"],
+        [b.id, "standing"],
+      ],
+    );
+  });
+});
+
+test("mixed root (bare refs + record column) round-trips", async () => {
+  await withTempWorkspace(async (root) => {
+    const standing = await createWikiNode(root, { title: "Standing" });
+    const archived = await createWikiNode(root, { title: "Archived" });
+    const nested = await createWikiNode(root, {
+      title: "Nested archive",
+      parentId: archived.id,
+    });
+    const mixed = await setWikiSidebar(root, [
+      { type: "ref", id: standing.id, label: "Standing" },
+      {
+        type: "column",
+        kind: "record",
+        title: "Records",
+        children: [
+          {
+            type: "ref",
+            id: archived.id,
+            label: "Archived",
+            children: [{ type: "ref", id: nested.id, label: "Nested archive" }],
+          },
+        ],
+      },
+    ]);
+    assert.equal(mixed[0]?.type, "ref");
+    assert.equal(mixed[1]?.type, "column");
+    if (mixed[1]?.type === "column") {
+      assert.equal(mixed[1].kind, "record");
+    }
+    const snap = await getWikiSnapshot(root);
+    assert.deepEqual(snap.sidebar, mixed);
+    assert.deepEqual(
+      collectSidebarWikiNodeIds(snap.sidebar).sort(),
+      [standing.id, archived.id, nested.id].sort(),
+    );
+    const standingRows = flattenWikiContents(snap.sidebar, snap.nodes);
+    assert.deepEqual(
+      standingRows.map((r) => r.id),
+      [standing.id],
+    );
+    const recordColumnRows = flattenWikiContents(
+      snap.sidebar,
+      snap.nodes,
+      null,
+      0,
+      "record",
+    );
+    assert.deepEqual(
+      recordColumnRows.map((r) => [r.id, r.column, r.depth]),
+      [
+        [archived.id, "record", 0],
+        [nested.id, "record", 1],
+      ],
+    );
+    const allRows = flattenWikiContents(snap.sidebar, snap.nodes, null, 0, "all");
+    assert.equal(allRows.length, 3);
+  });
+});
+
+test("createWikiNode without parentId enters standing; with parent follows parent column", async () => {
+  await withTempWorkspace(async (root) => {
+    const standing = await createWikiNode(root, { title: "Standing" });
+    const archived = await createWikiNode(root, {
+      title: "Archived",
+      column: "record",
+    });
+    const child = await createWikiNode(root, {
+      title: "Child",
+      parentId: archived.id,
+    });
+    const extra = await createWikiNode(root, { title: "Extra standing" });
+    const snap = await getWikiSnapshot(root);
+    const standingIds = flattenWikiContents(snap.sidebar, snap.nodes).map(
+      (r) => r.id,
+    );
+    assert.deepEqual(standingIds, [standing.id, extra.id]);
+    const recordColumn = snap.sidebar.find(
+      (n) => n.type === "column" && n.kind === "record",
+    );
+    assert.equal(recordColumn?.type, "column");
+    if (recordColumn?.type === "column") {
+      assert.equal(recordColumn.children[0]?.type, "ref");
+      if (recordColumn.children[0]?.type === "ref") {
+        assert.equal(recordColumn.children[0].id, archived.id);
+        assert.equal(recordColumn.children[0].children?.[0]?.type, "ref");
+        if (recordColumn.children[0].children?.[0]?.type === "ref") {
+          assert.equal(recordColumn.children[0].children[0].id, child.id);
+        }
+      }
+    }
+    assert.ok(snap.sidebar.some((n) => n.type === "ref" && n.id === extra.id));
+    assert.ok(!snap.sidebar.some((n) => n.type === "column" && n.kind === "standing"));
+  });
+});
+
+test("createWikiNode rejects parentId together with column", async () => {
+  await withTempWorkspace(async (root) => {
+    const parent = await createWikiNode(root, { title: "Parent" });
+    await assert.rejects(
+      () =>
+        createWikiNode(root, {
+          title: "Nope",
+          parentId: parent.id,
+          column: "record",
+        }),
+      /column when parentId/,
+    );
+  });
+});
+
+test("reconcileUnlistedIntoContents appends into standing, not past a record column", async () => {
+  await withTempWorkspace(async (root) => {
+    const standing = await createWikiNode(root, { title: "Standing" });
+    const archived = await createWikiNode(root, {
+      title: "Archived",
+      column: "record",
+    });
+    const orphanDir = path.join(root, "wiki", ORPHAN_ID);
+    fs.mkdirSync(orphanDir, { recursive: true });
+    fs.writeFileSync(path.join(orphanDir, "README.md"), "# Orphan\n", "utf8");
+    fs.writeFileSync(
+      path.join(orphanDir, "props.ts"),
+      `export const props = { "title": "Orphan", "created": "2026-01-01T00:00:00.000Z", "updated": "2026-01-01T00:00:00.000Z" } as const;\n`,
+      "utf8",
+    );
+    const snap = await getWikiSnapshot(root);
+    assert.deepEqual(snap.unlisted, []);
+    const standingRows = flattenWikiContents(snap.sidebar, snap.nodes);
+    assert.deepEqual(
+      standingRows.map((r) => r.id),
+      [standing.id, ORPHAN_ID],
+    );
+    const last = snap.sidebar[snap.sidebar.length - 1];
+    assert.equal(last?.type, "column");
+    if (last?.type === "column") {
+      assert.equal(last.kind, "record");
+      assert.equal(
+        last.children[0]?.type === "ref" ? last.children[0].id : "",
+        archived.id,
+      );
+    }
+  });
+});
+
+test("doctor warns on duplicate column kind and nested column", async () => {
+  await withTempWorkspace(async (root) => {
+    const a = await createWikiNode(root, { title: "A" });
+    const b = await createWikiNode(root, { title: "B" });
+    fs.writeFileSync(
+      path.join(root, "wiki", "sidebar.ts"),
+      `export const props = [
+  { type: "column", kind: "record", title: "One", children: [{ type: "ref", id: ${JSON.stringify(a.id)} }] },
+  { type: "column", kind: "record", title: "Two", children: [{ type: "ref", id: ${JSON.stringify(b.id)} }] },
+] as const;
+`,
+      "utf8",
+    );
+    const dup = scanStrays(root);
+    assert.ok(dup.warnings.some((w) => w.kind === "wiki-column-duplicate"));
+
+    fs.writeFileSync(
+      path.join(root, "wiki", "sidebar.ts"),
+      `export const props = [
+  { type: "ref", id: ${JSON.stringify(a.id)}, children: [
+    { type: "column", kind: "record", title: "Nested", children: [{ type: "ref", id: ${JSON.stringify(b.id)} }] },
+  ] },
+] as const;
+`,
+      "utf8",
+    );
+    const nested = scanStrays(root);
+    assert.ok(nested.warnings.some((w) => w.kind === "wiki-column-nested"));
+  });
+});
+
+test("moveWikiNodeToSidebarPosition rejects parentId together with column", async () => {
+  await withTempWorkspace(async (root) => {
+    const a = await createWikiNode(root, { title: "A" });
+    const b = await createWikiNode(root, { title: "B" });
+    await assert.rejects(
+      () =>
+        moveWikiNodeToSidebarPosition(root, b.id, {
+          parentId: a.id,
+          index: 0,
+          column: "record",
+        }),
+      /column when parentId/,
+    );
   });
 });

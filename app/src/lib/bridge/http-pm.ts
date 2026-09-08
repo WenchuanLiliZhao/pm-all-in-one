@@ -29,7 +29,7 @@ import type {
   WikiNodePatch,
   WikiSnapshot,
   WikiSidebarMove,
-  WikiSidebarNode,
+  WikiSidebarRootNode,
   WikiSidebarPlacement,
   Handoff,
   HandoffPatch,
@@ -352,8 +352,8 @@ export function createHttpPmApi(): PmApi {
         `/wiki/${encodeURIComponent(id)}${q}`,
       );
     },
-    setWikiSidebar: (nodes: WikiSidebarNode[]) =>
-      request<WikiSidebarNode[]>("PUT", "/wiki/sidebar", { nodes }),
+    setWikiSidebar: (nodes: WikiSidebarRootNode[]) =>
+      request<WikiSidebarRootNode[]>("PUT", "/wiki/sidebar", { nodes }),
     moveWikiNodeInSidebar: (id, move: WikiSidebarMove) =>
       request<WikiSnapshot>("POST", "/wiki/sidebar/move", { id, move }),
     moveWikiNodeToSidebarPosition: (id, placement: WikiSidebarPlacement) =>

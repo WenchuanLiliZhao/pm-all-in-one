@@ -108,6 +108,25 @@ export type WikiSidebarNode =
   | WikiSidebarGroupNode
   | WikiSidebarLinkNode;
 
+export type WikiSidebarColumnKind = "standing" | "record";
+
+export type WikiSidebarColumnNode = {
+  type: "column";
+  kind: WikiSidebarColumnKind;
+  title: string;
+  children: WikiSidebarNode[];
+};
+
+/** Root of `wiki/sidebar.ts`. `column` is legal here only — not in `WikiSidebarNode`. */
+export type WikiSidebarRootNode = WikiSidebarColumnNode | WikiSidebarNode;
+
+export type WikiContentsColumnFilter = WikiSidebarColumnKind | "all";
+
+const DEFAULT_COLUMN_TITLE: Record<WikiSidebarColumnKind, string> = {
+  standing: "Standing",
+  record: "Records",
+};
+
 export class WikiSidebarUnreadableError extends Error {
   constructor(message: string) {
     super(message);
@@ -116,7 +135,7 @@ export class WikiSidebarUnreadableError extends Error {
 }
 
 export type SidebarReadResult =
-  | { ok: true; nodes: WikiSidebarNode[] }
+  | { ok: true; nodes: WikiSidebarRootNode[] }
   | { ok: false; reason: string };
 
 export interface WikiNode {
@@ -150,7 +169,7 @@ export interface WikiNodeMeta {
 }
 
 export interface WikiSnapshot {
-  sidebar: WikiSidebarNode[];
+  sidebar: WikiSidebarRootNode[];
   nodes: WikiNodeMeta[];
   /**
    * Ids on disk not in Contents. After getWikiSnapshot reconcile this is
@@ -166,8 +185,13 @@ export interface WikiSnapshot {
 export interface CreateWikiNodeInput {
   title?: string;
   description?: string;
-  /** Insert under this Contents ref as child when found; else root append. */
+  /** Insert under this Contents ref as child when found; else standing root. */
   parentId?: EntityId | null;
+  /**
+   * Root column when `parentId` is null. Illegal together with `parentId`.
+   * Omitted = standing (implicit root or explicit standing column).
+   */
+  column?: WikiSidebarColumnKind;
   body?: string;
   /** Create default `todo`. */
   status?: WikiStatusId;
@@ -211,9 +235,22 @@ const SidebarNodeZod: z.ZodType<WikiSidebarNode> = z.lazy(() =>
   z.union([SidebarRefZod, SidebarGroupZod, SidebarLinkZod]),
 );
 
+const SidebarColumnZod: z.ZodType<WikiSidebarColumnNode> = z.lazy(() =>
+  z.object({
+    type: z.literal("column"),
+    kind: z.enum(["standing", "record"]),
+    title: z.string().min(1),
+    children: z.array(SidebarNodeZod),
+  }),
+);
+
+const SidebarRootNodeZod: z.ZodType<WikiSidebarRootNode> = z.lazy(() =>
+  z.union([SidebarColumnZod, SidebarRefZod, SidebarGroupZod, SidebarLinkZod]),
+);
+
 /**
- * Old workspaces wrote `type: "ref"`; normalize to `ref` before Zod.
- * Recurses into children of ref/group nodes.
+ * Old workspaces wrote `type: "page"`; normalize to `ref` before Zod.
+ * Recurses into children of ref/group/column nodes.
  */
 export function normalizeSidebarTags(raw: unknown): unknown {
   if (!Array.isArray(raw)) {
@@ -244,11 +281,20 @@ export function normalizeSidebarTags(raw: unknown): unknown {
           : [],
       };
     }
+    if (type === "column") {
+      return {
+        ...n,
+        type: "column",
+        children: Array.isArray(n.children)
+          ? normalizeSidebarTags(n.children)
+          : [],
+      };
+    }
     return { ...n, type };
   });
 }
 
-const SidebarFileZod = z.array(SidebarNodeZod);
+const SidebarFileZod = z.array(SidebarRootNodeZod);
 
 /**
  * One-shot: rename legacy `doc/` → `wiki/`.
@@ -412,21 +458,21 @@ function serializeValue(value: unknown, indent: number): string {
   return "null";
 }
 
-function writeSidebarTsSource(nodes: WikiSidebarNode[]): string {
+function writeSidebarTsSource(nodes: WikiSidebarRootNode[]): string {
   return `export const props = ${serializeValue(nodes, 0)} as const;\n`;
 }
 
-function persistSidebar(workspaceRoot: string, nodes: WikiSidebarNode[]): void {
+function persistSidebar(workspaceRoot: string, nodes: WikiSidebarRootNode[]): void {
   const file = sidebarPath(workspaceRoot);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, writeSidebarTsSource(nodes), "utf8");
 }
 
-export function defaultWikiSidebar(): WikiSidebarNode[] {
+export function defaultWikiSidebar(): WikiSidebarRootNode[] {
   return [];
 }
 
-function parseSidebarRaw(raw: unknown): WikiSidebarNode[] {
+function parseSidebarRaw(raw: unknown): WikiSidebarRootNode[] {
   return SidebarFileZod.parse(normalizeSidebarTags(raw));
 }
 
@@ -469,7 +515,7 @@ export async function readSidebarResult(
 /** Throws if sidebar.ts exists but is unreadable — never treat as empty for mutators. */
 export function requireReadableSidebarSync(
   workspaceRoot: string,
-): WikiSidebarNode[] {
+): WikiSidebarRootNode[] {
   const result = readSidebarResultSync(workspaceRoot);
   if (!result.ok) {
     throw new WikiSidebarUnreadableError(
@@ -481,7 +527,7 @@ export function requireReadableSidebarSync(
 
 export async function requireReadableSidebar(
   workspaceRoot: string,
-): Promise<WikiSidebarNode[]> {
+): Promise<WikiSidebarRootNode[]> {
   const result = await readSidebarResult(workspaceRoot);
   if (!result.ok) {
     throw new WikiSidebarUnreadableError(
@@ -492,14 +538,14 @@ export async function requireReadableSidebar(
 }
 
 /** Soft read for snapshot/UI: unreadable → empty array (doctor reports separately). */
-export function readSidebarSync(workspaceRoot: string): WikiSidebarNode[] {
+export function readSidebarSync(workspaceRoot: string): WikiSidebarRootNode[] {
   const result = readSidebarResultSync(workspaceRoot);
   return result.ok ? result.nodes : defaultWikiSidebar();
 }
 
 export async function readSidebar(
   workspaceRoot: string,
-): Promise<WikiSidebarNode[]> {
+): Promise<WikiSidebarRootNode[]> {
   const result = await readSidebarResult(workspaceRoot);
   return result.ok ? result.nodes : defaultWikiSidebar();
 }
@@ -554,11 +600,13 @@ export function listInvalidWikiNodeNames(workspaceRoot: string): string[] {
   return out.sort();
 }
 
-export function collectSidebarWikiNodeIds(nodes: WikiSidebarNode[]): EntityId[] {
+export function collectSidebarWikiNodeIds(nodes: WikiSidebarRootNode[]): EntityId[] {
   const out: EntityId[] = [];
-  const walk = (list: WikiSidebarNode[]) => {
+  const walk = (list: WikiSidebarRootNode[]) => {
     for (const node of list) {
-      if (node.type === "ref") {
+      if (node.type === "column") {
+        walk(node.children);
+      } else if (node.type === "ref") {
         out.push(node.id);
         if (node.children) {
           walk(node.children);
@@ -588,17 +636,15 @@ export type WikiContentsRow = {
   depth: number;
   parentId: EntityId | null;
   ref: string;
+  column: WikiSidebarColumnKind;
 };
 
-/**
- * Flatten Contents `ref` nodes in sidebar order. Groups are transparent
- * (children keep the group's parent). Links are skipped.
- */
-export function flattenWikiContents(
+function flattenNestedContents(
   nodes: WikiSidebarNode[],
   wikiNodes: ReadonlyArray<Pick<WikiNodeMeta, "id" | "title" | "status">>,
-  parentId: EntityId | null = null,
-  depth = 0,
+  parentId: EntityId | null,
+  depth: number,
+  column: WikiSidebarColumnKind,
 ): WikiContentsRow[] {
   const rows: WikiContentsRow[] = [];
   for (const node of nodes) {
@@ -611,16 +657,69 @@ export function flattenWikiContents(
         depth,
         parentId,
         ref: wikiLinkSyntax(node.id),
+        column,
       });
       if (node.children?.length) {
         rows.push(
-          ...flattenWikiContents(node.children, wikiNodes, node.id, depth + 1),
+          ...flattenNestedContents(
+            node.children,
+            wikiNodes,
+            node.id,
+            depth + 1,
+            column,
+          ),
         );
       }
       continue;
     }
     if (node.type === "group") {
-      rows.push(...flattenWikiContents(node.children, wikiNodes, parentId, depth));
+      rows.push(
+        ...flattenNestedContents(
+          node.children,
+          wikiNodes,
+          parentId,
+          depth,
+          column,
+        ),
+      );
+    }
+  }
+  return rows;
+}
+
+/**
+ * Flatten Contents `ref` nodes in sidebar order. Groups are transparent
+ * (children keep the group's parent). Columns are not: default skips the record column.
+ * Links are skipped.
+ */
+export function flattenWikiContents(
+  nodes: WikiSidebarRootNode[],
+  wikiNodes: ReadonlyArray<Pick<WikiNodeMeta, "id" | "title" | "status">>,
+  parentId: EntityId | null = null,
+  depth = 0,
+  columnFilter: WikiContentsColumnFilter = "standing",
+): WikiContentsRow[] {
+  void parentId;
+  void depth;
+  const includeStanding = columnFilter === "standing" || columnFilter === "all";
+  const includeRecordColumn = columnFilter === "record" || columnFilter === "all";
+  const rows: WikiContentsRow[] = [];
+  for (const node of nodes) {
+    if (node.type === "column") {
+      if (
+        (node.kind === "standing" && includeStanding) ||
+        (node.kind === "record" && includeRecordColumn)
+      ) {
+        rows.push(
+          ...flattenNestedContents(node.children, wikiNodes, null, 0, node.kind),
+        );
+      }
+      continue;
+    }
+    if (includeStanding) {
+      rows.push(
+        ...flattenNestedContents([node], wikiNodes, null, 0, "standing"),
+      );
     }
   }
   return rows;
@@ -632,6 +731,7 @@ export function flattenWikiContents(
  */
 export async function listWikiContentsRows(
   workspaceRoot: string,
+  columnFilter: WikiContentsColumnFilter = "standing",
 ): Promise<WikiContentsRow[]> {
   const sidebar = await readSidebar(workspaceRoot);
   const metas: WikiNodeMeta[] = [];
@@ -641,15 +741,22 @@ export async function listWikiContentsRows(
       metas.push(meta);
     }
   }
-  return flattenWikiContents(sidebar, metas);
+  return flattenWikiContents(sidebar, metas, null, 0, columnFilter);
 }
 
 function removeIdFromSidebar(
-  nodes: WikiSidebarNode[],
+  nodes: WikiSidebarRootNode[],
   id: EntityId,
-): WikiSidebarNode[] {
-  const next: WikiSidebarNode[] = [];
+): WikiSidebarRootNode[] {
+  const next: WikiSidebarRootNode[] = [];
   for (const node of nodes) {
+    if (node.type === "column") {
+      next.push({
+        ...node,
+        children: removeIdFromSidebar(node.children, id) as WikiSidebarNode[],
+      });
+      continue;
+    }
     if (node.type === "ref") {
       if (node.id === id) {
         if (node.children?.length) {
@@ -660,13 +767,13 @@ function removeIdFromSidebar(
       next.push({
         ...node,
         children: node.children
-          ? removeIdFromSidebar(node.children, id)
+          ? (removeIdFromSidebar(node.children, id) as WikiSidebarNode[])
           : undefined,
       });
       continue;
     }
     if (node.type === "group") {
-      const children = removeIdFromSidebar(node.children, id);
+      const children = removeIdFromSidebar(node.children, id) as WikiSidebarNode[];
       if (children.length === 0) {
         continue;
       }
@@ -678,17 +785,103 @@ function removeIdFromSidebar(
   return next;
 }
 
+function findColumnIndex(
+  nodes: WikiSidebarRootNode[],
+  kind: WikiSidebarColumnKind,
+): number {
+  return nodes.findIndex(
+    (node) => node.type === "column" && node.kind === kind,
+  );
+}
+
+function ensureColumn(
+  nodes: WikiSidebarRootNode[],
+  kind: WikiSidebarColumnKind,
+): WikiSidebarColumnNode {
+  const index = findColumnIndex(nodes, kind);
+  const existing = index >= 0 ? nodes[index] : undefined;
+  if (existing && existing.type === "column") {
+    return existing;
+  }
+  const created: WikiSidebarColumnNode = {
+    type: "column",
+    kind,
+    title: DEFAULT_COLUMN_TITLE[kind],
+    children: [],
+  };
+  nodes.push(created);
+  return created;
+}
+
+function assertColumnParentExclusive(
+  parentId: EntityId | null | undefined,
+  column: WikiSidebarColumnKind | undefined,
+): void {
+  if (parentId && column) {
+    throw new Error(
+      "Cannot set column when parentId is set; the parent decides the column.",
+    );
+  }
+}
+
+function appendToColumn(
+  nodes: WikiSidebarRootNode[],
+  page: WikiSidebarRefNode,
+  kind: WikiSidebarColumnKind,
+): WikiSidebarRootNode[] {
+  const next = nodes.map((node) =>
+    node.type === "column" ? { ...node, children: [...node.children] } : node,
+  );
+  if (kind === "record") {
+    const idx = findColumnIndex(next, "record");
+    if (idx >= 0) {
+      const col = next[idx];
+      if (col && col.type === "column") {
+        next[idx] = { ...col, children: [...col.children, page] };
+        return next;
+      }
+    }
+    next.push({
+      type: "column",
+      kind: "record",
+      title: DEFAULT_COLUMN_TITLE.record,
+      children: [page],
+    });
+    return next;
+  }
+  const standingIdx = findColumnIndex(next, "standing");
+  if (standingIdx >= 0) {
+    const col = next[standingIdx];
+    if (col && col.type === "column") {
+      next[standingIdx] = { ...col, children: [...col.children, page] };
+      return next;
+    }
+  }
+  const recordColumnIdx = findColumnIndex(next, "record");
+  if (recordColumnIdx === -1) {
+    next.push(page);
+    return next;
+  }
+  next.splice(recordColumnIdx, 0, page);
+  return next;
+}
+
 function insertPageNode(
-  nodes: WikiSidebarNode[],
+  nodes: WikiSidebarRootNode[],
   page: WikiSidebarRefNode,
   parentId: EntityId | null | undefined,
-): WikiSidebarNode[] {
+  column?: WikiSidebarColumnKind,
+): WikiSidebarRootNode[] {
+  assertColumnParentExclusive(parentId, column);
   if (!parentId) {
-    return [...nodes, page];
+    return appendToColumn(nodes, page, column ?? "standing");
   }
   let inserted = false;
-  const walk = (list: WikiSidebarNode[]): WikiSidebarNode[] =>
+  const walk = (list: WikiSidebarRootNode[]): WikiSidebarRootNode[] =>
     list.map((node) => {
+      if (node.type === "column") {
+        return { ...node, children: walk(node.children) as WikiSidebarNode[] };
+      }
       if (node.type === "ref" && node.id === parentId) {
         inserted = true;
         return {
@@ -697,15 +890,15 @@ function insertPageNode(
         };
       }
       if (node.type === "ref" && node.children) {
-        return { ...node, children: walk(node.children) };
+        return { ...node, children: walk(node.children) as WikiSidebarNode[] };
       }
       if (node.type === "group") {
-        return { ...node, children: walk(node.children) };
+        return { ...node, children: walk(node.children) as WikiSidebarNode[] };
       }
       return node;
     });
   const next = walk(nodes);
-  return inserted ? next : [...nodes, page];
+  return inserted ? next : appendToColumn(next, page, "standing");
 }
 
 async function readWikiNodeMeta(
@@ -803,7 +996,7 @@ export async function ensureWiki(workspaceRoot: string): Promise<WikiSnapshot> {
 
 async function buildWikiSnapshot(
   workspaceRoot: string,
-  sidebar: WikiSidebarNode[],
+  sidebar: WikiSidebarRootNode[],
 ): Promise<WikiSnapshot> {
   const onDisk = listWikiNodeIdsOnDisk(workspaceRoot);
   const listed = new Set(collectSidebarWikiNodeIds(sidebar));
@@ -826,8 +1019,8 @@ async function buildWikiSnapshot(
  */
 async function reconcileUnlistedIntoContents(
   workspaceRoot: string,
-  sidebar: WikiSidebarNode[],
-): Promise<WikiSidebarNode[]> {
+  sidebar: WikiSidebarRootNode[],
+): Promise<WikiSidebarRootNode[]> {
   const onDisk = listWikiNodeIdsOnDisk(workspaceRoot);
   const listed = new Set(collectSidebarWikiNodeIds(sidebar));
   const unlisted = onDisk.filter((id) => !listed.has(id));
@@ -902,6 +1095,7 @@ export async function createWikiNode(
   workspaceRoot: string,
   input: CreateWikiNodeInput = {},
 ): Promise<WikiNode> {
+  assertColumnParentExclusive(input.parentId ?? null, input.column);
   await ensureWiki(workspaceRoot);
   const title = (input.title?.trim() || "Untitled").slice(0, 120);
   const description = input.description !== undefined ? input.description : "";
@@ -927,7 +1121,12 @@ export async function createWikiNode(
 
   const sidebar = await requireReadableSidebar(workspaceRoot);
   const pageNode: WikiSidebarRefNode = { type: "ref", id, label: title };
-  const next = insertPageNode(sidebar, pageNode, input.parentId ?? null);
+  const next = insertPageNode(
+    sidebar,
+    pageNode,
+    input.parentId ?? null,
+    input.column,
+  );
   persistSidebar(workspaceRoot, next);
 
   return getWikiNode(workspaceRoot, id);
@@ -1114,17 +1313,22 @@ export async function updateWikiNode(
     }
     const sidebar = sidebarResult.nodes;
     if (collectSidebarWikiNodeIds(sidebar).includes(id)) {
-      const relabel = (nodes: WikiSidebarNode[]): WikiSidebarNode[] =>
+      const relabel = (nodes: WikiSidebarRootNode[]): WikiSidebarRootNode[] =>
         nodes.map((node) => {
+          if (node.type === "column") {
+            return { ...node, children: relabel(node.children) as WikiSidebarNode[] };
+          }
           if (node.type === "ref") {
             return {
               ...node,
               label: node.id === id ? String(props.title) : node.label,
-              children: node.children ? relabel(node.children) : undefined,
+              children: node.children
+                ? (relabel(node.children) as WikiSidebarNode[])
+                : undefined,
             };
           }
           if (node.type === "group") {
-            return { ...node, children: relabel(node.children) };
+            return { ...node, children: relabel(node.children) as WikiSidebarNode[] };
           }
           return node;
         });
@@ -1160,8 +1364,8 @@ export async function deleteWikiNode(
 
 export async function setWikiSidebar(
   workspaceRoot: string,
-  nodes: WikiSidebarNode[],
-): Promise<WikiSidebarNode[]> {
+  nodes: WikiSidebarRootNode[],
+): Promise<WikiSidebarRootNode[]> {
   await ensureWiki(workspaceRoot);
   const parsed = parseSidebarRaw(nodes);
   for (const id of collectSidebarWikiNodeIds(parsed)) {
@@ -1181,17 +1385,21 @@ export type WikiSidebarPlacement = {
   /** null = Contents root */
   parentId: EntityId | null;
   index: number;
+  /** Root column when `parentId` is null. Illegal together with `parentId`. */
+  column?: WikiSidebarColumnKind;
 };
 
 /** Collect ref ids under a node (not including the node itself). */
 function collectDescendantRefIds(node: WikiSidebarRefNode): EntityId[] {
   const out: EntityId[] = [];
-  const walk = (list: WikiSidebarNode[] | undefined) => {
+  const walk = (list: WikiSidebarRootNode[] | undefined) => {
     if (!list) {
       return;
     }
     for (const child of list) {
-      if (child.type === "ref") {
+      if (child.type === "column") {
+        walk(child.children);
+      } else if (child.type === "ref") {
         out.push(child.id);
         walk(child.children);
       } else if (child.type === "group") {
@@ -1208,9 +1416,9 @@ function collectDescendantRefIds(node: WikiSidebarRefNode): EntityId[] {
  * Mutates `sidebar` in place after cloneSidebar.
  */
 function detachRefSubtree(
-  sidebar: WikiSidebarNode[],
+  sidebar: WikiSidebarRootNode[],
   id: EntityId,
-): { node: WikiSidebarRefNode; parent: WikiSidebarNode[]; oldIndex: number } {
+): { node: WikiSidebarRefNode; parent: WikiSidebarRootNode[]; oldIndex: number } {
   const loc = findPageLocation(sidebar, id);
   if (!loc?.parent) {
     throw new Error(`Page not in sidebar: ${id}`);
@@ -1223,20 +1431,30 @@ function detachRefSubtree(
 }
 
 function resolveTargetList(
-  sidebar: WikiSidebarNode[],
+  sidebar: WikiSidebarRootNode[],
   parentId: EntityId | null,
-): WikiSidebarNode[] {
-  if (parentId === null) {
-    return sidebar;
+  column?: WikiSidebarColumnKind,
+): WikiSidebarRootNode[] {
+  if (parentId !== null) {
+    const loc = findPageLocation(sidebar, parentId);
+    if (!loc || loc.node.type !== "ref") {
+      throw new Error(`Contents parent not found: ${parentId}`);
+    }
+    if (!loc.node.children) {
+      loc.node.children = [];
+    }
+    return loc.node.children;
   }
-  const loc = findPageLocation(sidebar, parentId);
-  if (!loc || loc.node.type !== "ref") {
-    throw new Error(`Contents parent not found: ${parentId}`);
+  const kind = column ?? "standing";
+  if (kind === "record") {
+    return ensureColumn(sidebar, "record").children;
   }
-  if (!loc.node.children) {
-    loc.node.children = [];
+  const standingIdx = findColumnIndex(sidebar, "standing");
+  const standing = standingIdx >= 0 ? sidebar[standingIdx] : undefined;
+  if (standing && standing.type === "column") {
+    return standing.children;
   }
-  return loc.node.children;
+  return sidebar;
 }
 
 export async function moveWikiNodeToSidebarPosition(
@@ -1245,6 +1463,7 @@ export async function moveWikiNodeToSidebarPosition(
   placement: WikiSidebarPlacement,
 ): Promise<WikiSnapshot> {
   assertValidWikiNodeId(id);
+  assertColumnParentExclusive(placement.parentId, placement.column);
   const sidebar = cloneSidebar(await requireReadableSidebar(workspaceRoot));
   const locBefore = findPageLocation(sidebar, id);
   if (!locBefore?.parent) {
@@ -1265,7 +1484,11 @@ export async function moveWikiNodeToSidebarPosition(
   }
 
   const { node, parent: sourceList, oldIndex } = detachRefSubtree(sidebar, id);
-  const targetList = resolveTargetList(sidebar, placement.parentId);
+  const targetList = resolveTargetList(
+    sidebar,
+    placement.parentId,
+    placement.column,
+  );
   const sameParentArray = sourceList === targetList;
 
   let finalIndex = Number.isFinite(placement.index)
@@ -1282,24 +1505,29 @@ export async function moveWikiNodeToSidebarPosition(
 }
 
 type FlatLoc = {
-  parent: WikiSidebarNode[] | null;
+  parent: WikiSidebarRootNode[] | null;
   index: number;
   node: WikiSidebarRefNode;
   parentPage: WikiSidebarRefNode | null;
-  root: WikiSidebarNode[];
+  root: WikiSidebarRootNode[];
 };
 
 function findPageLocation(
-  root: WikiSidebarNode[],
+  root: WikiSidebarRootNode[],
   id: EntityId,
 ): FlatLoc | null {
   const search = (
-    list: WikiSidebarNode[],
+    list: WikiSidebarRootNode[],
     parentPage: WikiSidebarRefNode | null,
   ): FlatLoc | null => {
     for (let i = 0; i < list.length; i++) {
       const node = list[i]!;
-      if (node.type === "ref") {
+      if (node.type === "column") {
+        const hit = search(node.children, parentPage);
+        if (hit) {
+          return hit;
+        }
+      } else if (node.type === "ref") {
         if (node.id === id) {
           return { parent: list, index: i, node, parentPage, root };
         }
@@ -1321,8 +1549,8 @@ function findPageLocation(
   return search(root, null);
 }
 
-function cloneSidebar(nodes: WikiSidebarNode[]): WikiSidebarNode[] {
-  return JSON.parse(JSON.stringify(nodes)) as WikiSidebarNode[];
+function cloneSidebar(nodes: WikiSidebarRootNode[]): WikiSidebarRootNode[] {
+  return JSON.parse(JSON.stringify(nodes)) as WikiSidebarRootNode[];
 }
 
 export async function moveWikiNodeInSidebar(

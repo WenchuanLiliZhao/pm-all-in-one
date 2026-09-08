@@ -4,7 +4,7 @@
  * ↔ pages/.../route SettingsGeneralView — depth number input
  * ↔ wiki @wiki-5FG_8PUrpU4edQeivzJcx — inventory
  */
-import type { WikiSidebarNode } from "@/lib/types";
+import type { WikiSidebarRootNode } from "@/lib/types";
 import { contentsGroupKey } from "@/lib/wiki-contents-dnd";
 
 export const WIKI_CONTENTS_COLLAPSED_KEY = "pm.wiki.contents.collapsed";
@@ -78,10 +78,12 @@ export function writeWikiContentsCollapsed(collapsed: ReadonlySet<string>): void
 /**
  * Collapse every foldable Contents node whose depth >= `expandDepth`.
  * Depth 0 = only top-level rows visible; larger values show more nesting.
- * Group keys match `flattenContentsRows` (`contentsGroupKey`).
+ * Root columns are not foldable — children keep the column's depth
+ * (same as implicit standing / Contents). Group keys match
+ * `flattenContentsRows` (`contentsGroupKey`).
  */
 export function collapsedKeysForExpandDepth(
-  nodes: WikiSidebarNode[],
+  nodes: WikiSidebarRootNode[],
   expandDepth: number,
 ): Set<string> {
   const collapsed = new Set<string>();
@@ -89,9 +91,13 @@ export function collapsedKeysForExpandDepth(
     ? Math.max(0, Math.floor(expandDepth))
     : DEFAULT_EXPAND_DEPTH;
 
-  const walk = (list: WikiSidebarNode[], depth: number) => {
+  const walk = (list: WikiSidebarRootNode[], depth: number) => {
     for (let i = 0; i < list.length; i++) {
       const node = list[i]!;
+      if (node.type === "column") {
+        walk(node.children, depth);
+        continue;
+      }
       if (node.type === "ref") {
         const hasChildren = (node.children?.length ?? 0) > 0;
         if (hasChildren && depth >= depthCap) {
@@ -120,14 +126,14 @@ export function collapsedKeysForExpandDepth(
 
 /** Initial collapsed set: persisted fold wins; else derive from default depth. */
 export function initialWikiContentsCollapsed(
-  nodes: WikiSidebarNode[],
+  nodes: WikiSidebarRootNode[],
 ): Set<string> {
   const saved = readWikiContentsCollapsed();
-  if (saved) {
-    return saved;
-  }
-  return collapsedKeysForExpandDepth(
-    nodes,
-    readWikiContentsDefaultExpandDepth(),
+  return (
+    saved ??
+    collapsedKeysForExpandDepth(
+      nodes,
+      readWikiContentsDefaultExpandDepth(),
+    )
   );
 }

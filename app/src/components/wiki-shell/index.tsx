@@ -21,6 +21,7 @@ import {
   PointerSensor,
   closestCenter,
   pointerWithin,
+  useDroppable,
   useSensor,
   useSensors,
   type CollisionDetection,
@@ -32,6 +33,7 @@ import {
   SortableContext,
   useSortable,
   verticalListSortingStrategy,
+  type SortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { TypeConfirmDialog } from "@/components/type-confirm-dialog";
@@ -43,14 +45,18 @@ import { PageWidth } from "@/components/ui/page-width";
 import { TreeRow, treeRowStyles } from "@/components/ui/tree-row";
 import { getPm } from "@/lib/bridge";
 import { incomingWikiDeleteDetail } from "@/lib/wiki-incoming-refs";
-import type { WikiSidebarNode, WikiSnapshot } from "@/lib/types";
+import type { WikiSidebarColumnKind, WikiSidebarNode, WikiSidebarRootNode, WikiSnapshot } from "@/lib/types";
 import {
   canSidebarMove,
+  contentsColumnChildRefIds,
+  contentsColumnKey,
   contentsGroupKey,
   contentsSiblingRefIds,
+  parseContentsColumnKey,
   desiredContentsTempCollapseKeys,
   flattenContentsRows,
   applySidebarPlacement,
+  contentsSortShouldFreeze,
   resolveContentsDrop,
   type ContentsRow,
   type WikiSidebarMove,
@@ -68,12 +74,17 @@ import {
   WIKI_CONTENTS_DEPTH_CHANGED_EVENT,
 } from "@/lib/wiki-contents-collapse";
 import { adjustZoneForVerticalReorder, zoneFromOverTarget, type DropZone } from "@/lib/tree-dnd";
-import { wikiContentsRefLabel } from "@/lib/wiki-sidebar-helpers";
+import { wikiContentsRailSections, wikiContentsRefLabel, type WikiContentsRailSection } from "@/lib/wiki-sidebar-helpers";
 import { useWorkspace } from "@/lib/workspace/workspace-context";
 import { useWiki } from "@/lib/workspace/wiki-context";
 import styles from "./styles.module.scss";
 
 const ROW_ICON_SIZE = 18;
+
+const CONTENTS_COLUMN_ADD_LABEL: Record<WikiSidebarColumnKind, string> = {
+  standing: "New page",
+  record: "New record",
+};
 
 /**
  * Contents nest step (rem). Applied as `--toc-indent` on the row chrome so
@@ -96,7 +107,7 @@ function refLabel(
 }
 
 function ancestorCollapseKeys(
-  nodes: WikiSidebarNode[],
+  nodes: WikiSidebarRootNode[],
   pageId: string,
   depth = 0,
 ): string[] | null {
@@ -111,6 +122,13 @@ function ancestorCollapseKeys(
         if (nested) {
           return [node.id, ...nested];
         }
+      }
+      continue;
+    }
+    if (node.type === "column") {
+      const nested = ancestorCollapseKeys(node.children, pageId, depth);
+      if (nested) {
+        return nested;
       }
       continue;
     }
@@ -132,7 +150,7 @@ function ContentsRowMenu({
   onDelete,
 }: {
   pageId: string;
-  sidebar: WikiSidebarNode[];
+  sidebar: WikiSidebarRootNode[];
   onMove: (id: string, move: WikiSidebarMove) => void;
   onAddChild: (parentId: string) => void;
   onDelete: (id: string) => void;
@@ -226,10 +244,11 @@ function SortableRefRow({
   inDropGroup,
   dropFlash,
   twistLocked,
+  freezeSortTransforms,
 }: {
   row: Extract<ContentsRow, { kind: "ref" }>;
   wikiNodes: WikiSnapshot["nodes"];
-  sidebar: WikiSidebarNode[];
+  sidebar: WikiSidebarRootNode[];
   broken: string[];
   activeId?: string;
   isCollapsed: boolean;
@@ -243,6 +262,7 @@ function SortableRefRow({
   inDropGroup: boolean;
   dropFlash: { kind: "ok" | "bad"; token: number } | null;
   twistLocked: boolean;
+  freezeSortTransforms: boolean;
 }) {
   const navigate = useNavigate();
   const { node, depth, hasChildren } = row;
@@ -284,9 +304,11 @@ function SortableRefRow({
       ref={setNodeRef}
       className={styles.tocItem}
       style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.4 : 1,
+        transform: freezeSortTransforms
+          ? undefined
+          : CSS.Transform.toString(transform),
+        transition: freezeSortTransforms ? undefined : transition,
+        opacity: isDragging ? 0 : 1,
       }}
     >
       <div
@@ -341,6 +363,193 @@ function SortableRefRow({
   );
 }
 
+function ContentsColumnTitle({
+  kind,
+  title,
+  dropZone,
+  overId,
+  dropLegal,
+  inDropGroup,
+}: {
+  kind: WikiSidebarColumnKind;
+  title: string;
+  dropZone: DropZone | null;
+  overId: string | null;
+  dropLegal: boolean | null;
+  inDropGroup: boolean;
+}) {
+  const dropId = contentsColumnKey(kind);
+  const { setNodeRef } = useDroppable({ id: dropId });
+  const isOver = overId === dropId;
+  const zoneClass =
+    isOver && dropLegal !== false && dropZone === "into"
+      ? ` ${styles.dropInto}`
+      : isOver && dropLegal !== false && dropZone === "before"
+        ? ` ${styles.dropBefore}`
+        : isOver && dropLegal !== false && dropZone === "after"
+          ? ` ${styles.dropAfter}`
+          : "";
+  const groupClass = inDropGroup
+    ? dropLegal === true
+      ? ` ${styles.dropGroupLegal}`
+      : dropLegal === false
+        ? ` ${styles.dropGroupIllegal}`
+        : ` ${styles.dropGroup}`
+    : isOver && dropLegal === false
+      ? ` ${styles.dropGroupIllegal}`
+      : "";
+  return (
+    <div
+      ref={setNodeRef}
+      data-dnd-key={dropId}
+      className={`${styles.sectionTitle}${zoneClass}${groupClass}`}
+    >
+      {title}
+    </div>
+  );
+}
+
+function ContentsColumnAdd({
+  kind,
+  onAdd,
+}: {
+  kind: WikiSidebarColumnKind;
+  onAdd: (kind: WikiSidebarColumnKind) => void;
+}) {
+  return (
+    <div className={styles.addWrap}>
+      <DropdownMenu>
+        <DropdownMenu.Trigger asChild>
+          <Button
+            variant="outlined"
+            size="small"
+            endIcon={<Lucide.ChevronDown />}
+          >
+            Add
+          </Button>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content align="end" side="bottom">
+          <DropdownMenu.ItemButton
+            label={CONTENTS_COLUMN_ADD_LABEL[kind]}
+            onSelect={() => onAdd(kind)}
+          />
+        </DropdownMenu.Content>
+      </DropdownMenu>
+    </div>
+  );
+}
+
+function ContentsColumnPlaceholder() {
+  const navigate = useNavigate();
+  return (
+    <p className={styles.emptyHint}>
+      No pages yet. Use Add, or open{" "}
+      <button
+        type="button"
+        className={styles.inlineLink}
+        onClick={() => navigate("/w/wiki")}
+      >
+        All pages
+      </button>
+      .
+    </p>
+  );
+}
+
+function ContentsColumnSection({
+  section,
+  rows,
+  ready,
+  wiki,
+  onAdd,
+  activeRouteId,
+  dropZone,
+  overId,
+  dropLegal,
+  dropGroupIds,
+  collapsed,
+  onToggle,
+  onMoveInSidebar,
+  onRequestDelete,
+  onAddChild,
+  dropFlash,
+  activeDragId,
+  freezeSortTransforms,
+  onPointerMove,
+}: {
+  section: WikiContentsRailSection;
+  rows: readonly ContentsRow[];
+  ready: boolean;
+  wiki: WikiSnapshot | null;
+  onAdd: (kind: WikiSidebarColumnKind) => void;
+  activeRouteId?: string;
+  dropZone: DropZone | null;
+  overId: string | null;
+  dropLegal: boolean | null;
+  dropGroupIds: ReadonlySet<string> | null;
+  collapsed: ReadonlySet<string>;
+  onToggle: (key: string) => void;
+  onMoveInSidebar: (id: string, move: WikiSidebarMove) => void;
+  onRequestDelete: (id: string) => void;
+  onAddChild: (parentId: string) => void;
+  dropFlash: { key: string; kind: "ok" | "bad"; token: number } | null;
+  activeDragId: string | null;
+  freezeSortTransforms: boolean;
+  onPointerMove: (clientY: number) => void;
+}) {
+  let body: ReactNode;
+  if (!ready || !wiki) {
+    body = <p className={styles.emptyHint}>Loading…</p>;
+  } else if (rows.length === 0) {
+    body = <ContentsColumnPlaceholder />;
+  } else {
+    body = (
+      <TocRows
+        rows={rows}
+        wikiNodes={wiki.nodes}
+        sidebar={wiki.sidebar}
+        broken={wiki.broken}
+        activeRouteId={activeRouteId}
+        collapsed={collapsed}
+        onToggle={onToggle}
+        onMoveInSidebar={onMoveInSidebar}
+        onRequestDelete={onRequestDelete}
+        onAddChild={onAddChild}
+        dropZone={dropZone}
+        overId={overId}
+        dropLegal={dropLegal}
+        dropGroupIds={dropGroupIds}
+        dropFlash={dropFlash}
+        activeDragId={activeDragId}
+        freezeSortTransforms={freezeSortTransforms}
+      />
+    );
+  }
+  return (
+    <div
+      className={styles.section}
+      onPointerMove={(e) => {
+        onPointerMove(e.clientY);
+      }}
+    >
+      <div className={styles.sectionHeader}>
+        <ContentsColumnTitle
+          kind={section.kind}
+          title={section.title}
+          dropZone={dropZone}
+          overId={overId}
+          dropLegal={dropLegal}
+          inDropGroup={Boolean(
+            dropGroupIds?.has(contentsColumnKey(section.kind)),
+          )}
+        />
+        <ContentsColumnAdd kind={section.kind} onAdd={onAdd} />
+      </div>
+      {body}
+    </div>
+  );
+}
+
 function TocRows({
   rows,
   wikiNodes,
@@ -358,10 +567,11 @@ function TocRows({
   dropGroupIds,
   dropFlash,
   activeDragId,
+  freezeSortTransforms,
 }: {
   rows: readonly ContentsRow[];
   wikiNodes: WikiSnapshot["nodes"];
-  sidebar: WikiSidebarNode[];
+  sidebar: WikiSidebarRootNode[];
   broken: string[];
   activeRouteId?: string;
   collapsed: ReadonlySet<string>;
@@ -375,6 +585,7 @@ function TocRows({
   dropGroupIds: ReadonlySet<string> | null;
   dropFlash: { key: string; kind: "ok" | "bad"; token: number } | null;
   activeDragId: string | null;
+  freezeSortTransforms: boolean;
 }) {
   return (
     <ul className={styles.tocList}>
@@ -462,6 +673,7 @@ function TocRows({
               (row.key === activeDragId ||
                 (dropLegal === true && row.key === overId))
             }
+            freezeSortTransforms={freezeSortTransforms}
           />
         );
       })}
@@ -561,9 +773,22 @@ export function WikiShell({
     return closestCenter(args);
   }, []);
 
+  const sections = useMemo(
+    () => wikiContentsRailSections(wiki?.sidebar ?? []),
+    [wiki],
+  );
+
+  const rowsByKind = useMemo(() => {
+    const map = new Map<WikiSidebarColumnKind, ContentsRow[]>();
+    for (const section of sections) {
+      map.set(section.kind, flattenContentsRows(section.nodes, collapsed));
+    }
+    return map;
+  }, [sections, collapsed]);
+
   const rows = useMemo(
-    () => (wiki ? flattenContentsRows(wiki.sidebar, collapsed) : []),
-    [wiki, collapsed],
+    () => sections.flatMap((section) => rowsByKind.get(section.kind) ?? []),
+    [sections, rowsByKind],
   );
 
   const sortableIds = useMemo(
@@ -578,12 +803,31 @@ export function WikiShell({
     return resolveContentsDrop(wiki.sidebar, activeDragId, overId, zone).ok;
   }, [wiki, activeDragId, overId, zone]);
 
+  const freezeSortTransforms = Boolean(
+    wiki &&
+      activeDragId &&
+      overId &&
+      contentsSortShouldFreeze(wiki.sidebar, activeDragId, overId),
+  );
+  const freezeSortRef = useRef(false);
+  freezeSortRef.current = freezeSortTransforms;
+  const contentsSortingStrategy = useCallback<SortingStrategy>((args) => {
+    if (freezeSortRef.current) {
+      return null;
+    }
+    return verticalListSortingStrategy(args);
+  }, []);
+
   const dropGroupIds = useMemo(() => {
     if (!wiki || !activeDragId) {
       return null;
     }
     const anchor =
       overId && overId !== activeDragId ? overId : activeDragId;
+    const columnKind = parseContentsColumnKey(anchor);
+    if (columnKind) {
+      return contentsColumnChildRefIds(wiki.sidebar, columnKind);
+    }
     return contentsSiblingRefIds(wiki.sidebar, anchor);
   }, [wiki, activeDragId, overId]);
 
@@ -714,10 +958,6 @@ export function WikiShell({
     );
   }, [activeDragId, wiki]);
 
-  const addNewToContents = async () => {
-    await createWikiNode();
-  };
-
   const onAddChildPage = useCallback(
     (parentId: string) => {
       // Ensure the new child is visible under this parent in Contents.
@@ -730,6 +970,13 @@ export function WikiShell({
         return next;
       });
       void createWikiNode({ parentId });
+    },
+    [createWikiNode],
+  );
+
+  const onAddInColumn = useCallback(
+    (kind: WikiSidebarColumnKind) => {
+      void createWikiNode({ column: kind });
     },
     [createWikiNode],
   );
@@ -918,108 +1165,69 @@ export function WikiShell({
           />
         </div>
 
-        <div className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionTitle}>Contents</div>
-            <div className={styles.addWrap}>
-              <DropdownMenu>
-                <DropdownMenu.Trigger asChild>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    endIcon={<Lucide.ChevronDown />}
-                  >
-                    Add
-                  </Button>
-                </DropdownMenu.Trigger>
-                <DropdownMenu.Content align="end" side="bottom">
-                  <DropdownMenu.ItemButton
-                    label="New page"
-                    onSelect={() => void addNewToContents()}
-                  />
-                </DropdownMenu.Content>
-              </DropdownMenu>
-            </div>
-          </div>
-          {wiki && foldReady ? (
-            <>
-              <div
-                onPointerMove={(e) => {
-                  pointerY.current = e.clientY;
-                }}
-              >
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={contentsCollision}
-                  onDragStart={onDragStart}
-                  onDragOver={onDragOver}
-                  onDragEnd={(e) => {
-                    void onDragEnd(e);
+        <DndContext
+          sensors={sensors}
+          collisionDetection={contentsCollision}
+          onDragStart={onDragStart}
+          onDragOver={onDragOver}
+          onDragEnd={(e) => {
+            void onDragEnd(e);
+          }}
+          onDragCancel={() => {
+            restoreTempCollapse();
+            setActiveDragId(null);
+            setOverId(null);
+          }}
+        >
+          <div className={styles.dndRail}>
+            <SortableContext
+              items={sortableIds}
+              strategy={contentsSortingStrategy}
+            >
+              {sections.map((section) => (
+                <ContentsColumnSection
+                  key={section.kind}
+                  section={section}
+                  rows={rowsByKind.get(section.kind) ?? []}
+                  ready={Boolean(wiki && foldReady)}
+                  wiki={wiki}
+                  onAdd={onAddInColumn}
+                  activeRouteId={routeId}
+                  dropZone={activeDragId ? zone : null}
+                  overId={overId}
+                  dropLegal={dropLegal}
+                  dropGroupIds={dropGroupIds}
+                  collapsed={collapsed}
+                  onToggle={onToggle}
+                  onMoveInSidebar={(id, move) => void onMoveInSidebar(id, move)}
+                  onRequestDelete={onRequestDelete}
+                  onAddChild={onAddChildPage}
+                  dropFlash={dropFlash}
+                  activeDragId={activeDragId}
+                  freezeSortTransforms={freezeSortTransforms}
+                  onPointerMove={(clientY) => {
+                    pointerY.current = clientY;
                   }}
-                  onDragCancel={() => {
-                    restoreTempCollapse();
-                    setActiveDragId(null);
-                    setOverId(null);
-                  }}
+                />
+              ))}
+            </SortableContext>
+            <DragOverlay dropAnimation={null}>
+              {activeDragId ? (
+                <div
+                  className={`${styles.dragOverlay}${
+                    dropLegal === true
+                      ? ` ${styles.dragOverlayLegal}`
+                      : dropLegal === false
+                        ? ` ${styles.dragOverlayIllegal}`
+                        : ""
+                  }`}
                 >
-                  <SortableContext
-                    items={sortableIds}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <TocRows
-                      rows={rows}
-                      wikiNodes={wiki.nodes}
-                      sidebar={wiki.sidebar}
-                      broken={wiki.broken}
-                      activeRouteId={routeId}
-                      collapsed={collapsed}
-                      onToggle={onToggle}
-                      onMoveInSidebar={(id, move) => void onMoveInSidebar(id, move)}
-                      onRequestDelete={onRequestDelete}
-                      onAddChild={onAddChildPage}
-                      dropZone={activeDragId ? zone : null}
-                      overId={overId}
-                      dropLegal={dropLegal}
-                      dropGroupIds={dropGroupIds}
-                      dropFlash={dropFlash}
-                      activeDragId={activeDragId}
-                    />
-                  </SortableContext>
-                  <DragOverlay dropAnimation={null}>
-                    {activeDragId ? (
-                      <div
-                        className={`${styles.dragOverlay}${
-                          dropLegal === true
-                            ? ` ${styles.dragOverlayLegal}`
-                            : dropLegal === false
-                              ? ` ${styles.dragOverlayIllegal}`
-                              : ""
-                        }`}
-                      >
-                        {dragLabel}
-                      </div>
-                    ) : null}
-                  </DragOverlay>
-                </DndContext>
-              </div>
-              {wiki.sidebar.length === 0 ? (
-                <p className={styles.emptyHint}>
-                  Contents is empty. Use Add to create a page, or open{" "}
-                  <button
-                    type="button"
-                    className={styles.inlineLink}
-                    onClick={() => navigate("/w/wiki")}
-                  >
-                    All pages
-                  </button>{" "}
-                  to manage the inventory.
-                </p>
+                  {dragLabel}
+                </div>
               ) : null}
-            </>
-          ) : (
-            <p className={styles.emptyHint}>Loading…</p>
-          )}
-        </div>
+            </DragOverlay>
+          </div>
+        </DndContext>
         {error || wikiError ? (
           <p className={styles.railError}>{error ?? wikiError}</p>
         ) : null}

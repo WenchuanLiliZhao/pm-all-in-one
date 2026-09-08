@@ -39,6 +39,12 @@
   box-sizing: border-box;
 }
 
+/* Lets each Contents column be a `.section` sibling of Workspace so the
+ * rail stack gap applies. DndContext still wraps both columns. */
+.dndRail {
+  display: contents;
+}
+
 .main {
   flex: 1;
   min-width: 0;
@@ -203,6 +209,11 @@
   color: var(--color-use--text-secondary);
 }
 
+.tocGroup {
+  /* Was 0.35rem (5.6) → 4 */
+  margin-top: var(--space--4);
+}
+
 .titleBroken {
   flex: 1;
   min-width: 0;
@@ -233,11 +244,6 @@
   flex-direction: column;
   /* Keep 0 — same as `.section` gap; row pad-y owns density (`rail-section-stack`). */
   gap: 0;
-}
-
-.tocGroup {
-  /* Was 0.35rem (5.6) → 4 */
-  margin-top: var(--space--4);
 }
 
 .tocItem {
@@ -289,7 +295,9 @@
 }
 
 .tocRow:hover .tocActions,
-.tocRow:focus-within .tocActions {
+.tocRow:focus-within .tocActions,
+.tocRowStatic:hover .tocActions,
+.tocRowStatic:focus-within .tocActions {
   opacity: 1;
 }
 

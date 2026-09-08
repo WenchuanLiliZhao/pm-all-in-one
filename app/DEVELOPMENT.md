@@ -10,7 +10,8 @@
 | Command | What |
 | --- | --- |
 | `npm install` | Installs deps; `postinstall` runs `electron-rebuild -f -w node-pty` |
-| `npm run build:electron` | Compile `electron/` → `dist-electron/` (+ preload `.cjs`) and copy workspace/project templates |
+| `npm run compile:electron` | Incremental compile `electron/` → `dist-electron/` (+ preload `.cjs`) and copy templates |
+| `npm run build:electron` | Same as compile, with `tsc --force` (tests / package) |
 | `npm run build:server` | Compile HTTP API (`server/` + `electron/core/`) → `dist-server/` and copy templates |
 | `npm run dev` | Vite (5173) + tsc watch + Electron (`window.pm` via preload) |
 | `npm run dev:web` | Vite **UI** (`http://127.0.0.1:5173/`) + HTTP API (`:8787`); open **5173**, not 8787 |
@@ -89,10 +90,10 @@ electron/project-template/     # → issue-hierarchy/<allocatedId>/ when seedPro
 
 `scaffoldWorkspace` copies the tree (including `.gitkeep` in required empty dirs), then patches only dynamic bits (`workspace.ts` title/createdDate, `.pm/views.json`, seed `project.ts` + `schema.d.ts`). Opening a workspace also writes those `.gitkeep` files if missing. The app does **not** rewrite harness files on open. Shipped skills under `.agents/skills/core/` are copied once at create (**no product refresh**). User skills live under `.agents/skills/custom/`. Only `.pm/agent.md` is product-owned.
 
-- Build: `scripts/copy-templates.mjs` runs after `tsc` in `build:electron` / `build:server` (tsc never emits non-`.ts` assets). Dot dirs (`.agents/`, `.pm/`) copy fine — both the build script and `copyTemplateTree` use recursive `readdir`.
+- Build: `scripts/copy-templates.mjs` runs after `tsc` in `compile:electron` / `build:electron` / `build:server` (tsc never emits non-`.ts` assets). Dot dirs (`.agents/`, `.pm/`) copy fine — both the build script and `copyTemplateTree` use recursive `readdir`.
 - Runtime resolver: `electron/core/workspace/workspace-template.ts` (`import.meta.url` sibling; asar-safe hand copy). Drift check: `electron/core/workspace/agent-md.ts` ↔ `electron/core/workspace/doctor.ts` (`agent-md-modified` / `agent-md-outdated`).
 - **Rev stamp:** first line of template `.pm/agent.md` is `<!-- local-pm agent.md rev N — … -->`. When you change the **product body** of that file, bump `N` by hand. Do not tie it to app semver.
-- **Dev caveat:** editing a template while `npm run dev` is running requires re-running `build:electron` — the tsc watchers do not copy templates.
+- **Dev caveat:** editing a template while `npm run dev` is running requires re-running `compile:electron` (or `build:electron`) — the tsc watchers do not copy templates.
 - **House rule:** anything you put in the template folder lands in every new workspace. No scratch README/notes inside it.
 - **Known side effect:** Cursor discovers nested `.agents/skills/` under `electron/workspace-template/` (and under `dist-electron/workspace-template/` after build) as skills of the **app repo**, scoped to that subtree. Noise is local; do not "fix" it by renaming the template path (keeps create-time copy a pure tree copy).
 

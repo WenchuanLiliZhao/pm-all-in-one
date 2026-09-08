@@ -24,7 +24,7 @@ import type {
   WikiNodePatch,
   WikiSnapshot,
   WikiSidebarMove,
-  WikiSidebarNode,
+  WikiSidebarRootNode,
   WikiSidebarPlacement,
   EntityId,
   GitPullResult,
@@ -216,7 +216,7 @@ export interface PmApi {
     id: string,
     options?: { removeFile?: boolean },
   ) => Promise<boolean>;
-  setWikiSidebar: (nodes: WikiSidebarNode[]) => Promise<WikiSidebarNode[]>;
+  setWikiSidebar: (nodes: WikiSidebarRootNode[]) => Promise<WikiSidebarRootNode[]>;
   moveWikiNodeInSidebar: (
     id: string,
     move: WikiSidebarMove,
