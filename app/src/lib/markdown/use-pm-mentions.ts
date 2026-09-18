@@ -14,6 +14,7 @@ import type { MentionAutocompleteProps } from "@/components/markdown-editor";
 import type { MarkdownPlugin } from "@/components/markdown-editor";
 import type { Issue, Project, WikiNodeMeta } from "@/lib/types";
 import { issueRefKey } from "@/lib/types";
+import { openHandoffNode, openMemberNode, openWikiNode } from "@/lib/bridge/open-pm-document";
 import { useMember } from "@/lib/workspace/member-context";
 import { useWorkspace } from "@/lib/workspace/workspace-context";
 import { useHandoffMetas } from "@/lib/workspace/use-handoff-metas";
@@ -105,9 +106,9 @@ export function usePmMentions({
         handoffTitles,
         onNavigateIssue,
         onNavigateProject,
-        onNavigateWikiNode: (id) => navigate(`/w/wiki/${id}`),
-        onNavigateMember: (id) => navigate(`/w/members/${id}`),
-        onNavigateHandoff: (id) => navigate(`/w/handoffs/${id}`),
+        onNavigateWikiNode: (id) => openWikiNode(id, navigate),
+        onNavigateMember: (id) => openMemberNode(id, navigate),
+        onNavigateHandoff: (id) => openHandoffNode(id, navigate),
       }),
     ],
     [
@@ -140,9 +141,9 @@ export function usePmMentions({
         activatePmMention(token, {
           onNavigateIssue,
           onNavigateProject,
-          onNavigateWikiNode: (id) => navigate(`/w/wiki/${id}`),
-          onNavigateMember: (id) => navigate(`/w/members/${id}`),
-          onNavigateHandoff: (id) => navigate(`/w/handoffs/${id}`),
+          onNavigateWikiNode: (id) => openWikiNode(id, navigate),
+          onNavigateMember: (id) => openMemberNode(id, navigate),
+          onNavigateHandoff: (id) => openHandoffNode(id, navigate),
         });
       },
     }),

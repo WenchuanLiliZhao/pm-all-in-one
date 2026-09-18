@@ -13,6 +13,7 @@ import type {
 } from "@/lib/types";
 import { BUILTIN_ISSUE_STATUSES } from "@/lib/issue-status";
 import { BUILTIN_ISSUE_PRIORITIES } from "@/lib/issue-priority";
+import { openWikiNode } from "@/lib/bridge/open-pm-document";
 import type {
   DetailSaveStatus,
   Selection,
@@ -779,7 +780,7 @@ export function IssueDetail({
                         wikiNodes={wikiNodes}
                         listAriaLabel={def.label?.trim() || def.key}
                         addAriaLabel={`Add ${def.label?.trim() || def.key}`}
-                        onOpen={(id) => navigate(`/w/wiki/${id}`)}
+                        onOpen={(id) => openWikiNode(id, navigate)}
                         onChange={(ids) =>
                           onChange({ fields: { [def.key]: ids } })
                         }

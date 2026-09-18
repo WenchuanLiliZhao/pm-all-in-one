@@ -24,6 +24,8 @@ import {
 } from "@pm-core/views/view-order-apply";
 import type { Issue, IssueTree } from "@/lib/types";
 import { issueRefKey } from "@/lib/types";
+import { treeNodeToNodeRef } from "@/lib/bridge/open-pm-document";
+import { useOpenInNewWebview } from "@/components/open-in-new-webview-menu";
 import type { IssueStatusId } from "@/lib/issue-status";
 import type { Selection } from "@/lib/workspace/workspace-context";
 import {
@@ -404,6 +406,7 @@ function SortableRow({
   dropLegal: boolean | null;
   dropFlash: { kind: "ok" | "bad"; token: number } | null;
 }) {
+  const { onNodeContextMenu } = useOpenInNewWebview();
   const entry = tree.byId[nodeKey];
   const {
     attributes,
@@ -496,6 +499,12 @@ function SortableRow({
                 projectId: entry.projectId,
                 issueId: entry.issueId,
               });
+            }
+          }}
+          onContextMenu={(e) => {
+            const ref = treeNodeToNodeRef(entry);
+            if (ref) {
+              onNodeContextMenu(e, ref);
             }
           }}
         />

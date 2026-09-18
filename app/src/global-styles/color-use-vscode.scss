@@ -1,0 +1,266 @@
+/**
+ * vscode-theme / cursor-theme / --vscode- / host adapter
+ *
+ * Maps `--color-use--*` onto VS Code / Cursor theme CSS variables when the
+ * webview host sets `data-pm-host="vscode"` on `<html>` (see
+ * `extension/src/webview-html.ts` + `extension/media/vscode-pm.js`).
+ *
+ * Law: components and pages keep using `--color-use--*` only. Do **not**
+ * write `--vscode-*` in component SCSS. Do **not** remap `--color--*`
+ * primitives (VS Code has chrome colors, not this app’s gray ramp).
+ *
+ * Electron never sets `data-pm-host`, so this file is a no-op there.
+ * Light / dark / high-contrast already live inside `--vscode-*`; this is
+ * one table, not four theme copies.
+ *
+ * `--vscode-*` update by themselves when the IDE theme changes. `data-theme`
+ * is still synced (light/dark) for non-color forks: `shadow.scss`, mermaid.
+ *
+ * Selector must beat `:root[data-theme="light"|"dark"]` and
+ * `:root:not([data-theme])` in color-use.scss (`:root` + one attribute /
+ * `:not` is (0, 2, 0); these are (0, 2, 1)). Forwarded *after* color-use in
+ * `0-index.scss`.
+ *
+ * ↔ color-use.scss — product semantic tokens this file reassigns
+ * ↔ extension/src/webview-html.ts — sets data-pm-host before first paint
+ * ↔ src/lib/host-theme.ts — JS subscribers (xterm / mermaid)
+ */
+
+html[data-pm-host="vscode"]:not([data-theme]),
+html[data-pm-host="vscode"][data-theme="light"],
+html[data-pm-host="vscode"][data-theme="dark"] {
+  // --- chrome: text ---
+  // body text / caret — editor.foreground → --vscode-editor-foreground
+  --color-use--text-prime: var(
+    --vscode-editor-foreground,
+    var(--vscode-foreground)
+  );
+  --color-use--text-prime-hex: var(
+    --vscode-editor-foreground,
+    var(--vscode-foreground)
+  );
+  // muted labels — descriptionForeground → --vscode-descriptionForeground
+  --color-use--text-secondary: var(--vscode-descriptionForeground);
+  --color-use--text-secondary-hex: var(--vscode-descriptionForeground);
+  // placeholder / de-emphasized — disabledForeground → --vscode-disabledForeground
+  --color-use--text-negative: var(--vscode-disabledForeground);
+  --color-use--text-negative-hex: var(--vscode-disabledForeground);
+  // text on inverted surfaces (fill-inverse) — button.foreground
+  --color-use--text-prime-inverse: var(--vscode-button-foreground);
+
+  // --- chrome: background ---
+  // page / editor canvas — editor.background
+  --color-use--bg-prime-hex: var(--vscode-editor-background);
+  --color-use--bg-prime: var(--vscode-editor-background);
+  // recessed rail / secondary pane — sideBar.background
+  --color-use--bg-secondary: var(
+    --vscode-sideBar-background,
+    var(--vscode-editorWidget-background)
+  );
+  --color-use--bg-secondary-hex: var(
+    --vscode-sideBar-background,
+    var(--vscode-editorWidget-background)
+  );
+  // inset / code well — input.background
+  --color-use--bg-darken: var(
+    --vscode-input-background,
+    var(--vscode-editor-inactiveSelectionBackground)
+  );
+  // inverted fill (fill-inverse button) — button.background
+  --color-use--bg-prime-hex-inverse: var(--vscode-button-background);
+  --color-use--bg-prime-inverse: var(--vscode-button-background);
+  // inverted hover — button.hoverBackground
+  --color-use--bg-secondary-inverse: var(
+    --vscode-button-hoverBackground,
+    var(--vscode-button-secondaryBackground)
+  );
+  --color-use--bg-secondary-hex-inverse: var(
+    --vscode-button-hoverBackground,
+    var(--vscode-button-secondaryBackground)
+  );
+
+  // --- chrome: border ---
+  // hairline — panel.border
+  --color-use--border-prime-hex: var(
+    --vscode-panel-border,
+    var(--vscode-widget-border)
+  );
+  --color-use--border-prime: var(
+    --vscode-panel-border,
+    var(--vscode-widget-border)
+  );
+  // stronger edge — widget.border
+  --color-use--border-emphasis: var(
+    --vscode-widget-border,
+    var(--vscode-input-border)
+  );
+  --color-use--border-emphasis-hex: var(
+    --vscode-widget-border,
+    var(--vscode-input-border)
+  );
+  // keyboard focus — focusBorder
+  --color-use--border-focus: var(--vscode-focusBorder);
+  --color-use--border-focus-hex: var(--vscode-focusBorder);
+
+  // --- chrome: hover ---
+  // row / list hover — list.hoverBackground
+  --color-use--hover-overlay-hover: var(--vscode-list-hoverBackground);
+  // pressed / selected idle — list.inactiveSelectionBackground
+  --color-use--hover-overlay-mouse-down: var(
+    --vscode-list-inactiveSelectionBackground
+  );
+
+  // --- controls: switch ---
+  // thumb (off) — checkbox.foreground
+  --color-use--in-components-switch-thumb-bg: var(
+    --vscode-checkbox-foreground,
+    var(--vscode-editor-background)
+  );
+  // rail (off) — checkbox.background
+  --color-use--in-components-switch-rail-bg-normal: var(
+    --vscode-checkbox-background,
+    var(--vscode-input-background)
+  );
+  // thumb (on) — checkbox.foreground
+  --color-use--in-components-switch-thumb-bg-active: var(
+    --vscode-checkbox-foreground,
+    var(--vscode-button-foreground)
+  );
+  // rail (on) — button.background
+  --color-use--in-components-switch-rail-bg-normal-active: var(
+    --vscode-button-background,
+    var(--vscode-checkbox-background)
+  );
+
+  // --- controls: solid fill button ---
+  // fill-mode label — button.foreground
+  --color-use--in-components-button-text-color-in-fill-mode: var(
+    --vscode-button-foreground
+  );
+  // fill-mode surface — button.background
+  --color-use--in-components-button-bg-color-in-fill-mode: var(
+    --vscode-button-background
+  );
+
+  // --- status: danger ---
+  // destructive / error — errorForeground
+  --color-use--danger: var(--vscode-errorForeground);
+  --color-use--danger-fg: var(--vscode-errorForeground);
+  // error wash — inputValidation.errorBackground
+  --color-use--danger-soft: var(--vscode-inputValidation-errorBackground);
+  --color-use--danger-bg: var(--vscode-inputValidation-errorBackground);
+  // error edge — inputValidation.errorBorder
+  --color-use--danger-border: var(--vscode-inputValidation-errorBorder);
+
+  // --- status: warn ---
+  // warning label — editorWarning.foreground
+  --color-use--warn-fg: var(--vscode-editorWarning-foreground);
+  // warning wash — inputValidation.warningBackground
+  --color-use--warn-bg: var(--vscode-inputValidation-warningBackground);
+  // warning edge — inputValidation.warningBorder
+  --color-use--warn-border: var(--vscode-inputValidation-warningBorder);
+  // stronger warning (cancel / high priority) — charts.orange
+  --color-use--warn-strong: var(
+    --vscode-charts-orange,
+    var(--vscode-editorWarning-foreground)
+  );
+
+  // --- status: success ---
+  // positive / done — charts.green
+  --color-use--success: var(
+    --vscode-charts-green,
+    var(--vscode-testing-iconPassed)
+  );
+  --color-use--success-strong: var(
+    --vscode-charts-green,
+    var(--vscode-testing-iconPassed)
+  );
+  --color-use--success-fg: var(
+    --vscode-charts-green,
+    var(--vscode-testing-iconPassed)
+  );
+  // success wash — diffEditor.insertedTextBackground
+  --color-use--success-soft: var(
+    --vscode-diffEditor-insertedTextBackground,
+    color-mix(
+      in srgb,
+      var(--vscode-charts-green, var(--vscode-testing-iconPassed)) 12%,
+      transparent
+    )
+  );
+  // success edge — gitDecoration.addedResourceForeground
+  --color-use--success-border: var(
+    --vscode-gitDecoration-addedResourceForeground,
+    var(--vscode-charts-green, var(--vscode-testing-iconPassed))
+  );
+
+  // --- accent / links ---
+  // links / in-progress / guides — textLink.foreground
+  --color-use--accent: var(--vscode-textLink-foreground);
+  --color-use--accent-text: var(--vscode-textLink-foreground);
+  // mention / chip wash — no link-bg token; mix textLink.foreground
+  --color-use--accent-bg: color-mix(
+    in srgb,
+    var(--vscode-textLink-foreground) 18%,
+    transparent
+  );
+  // action on inverse surface — textLink.foreground
+  --color-use--on-inverse-action: var(--vscode-textLink-foreground);
+  --color-use--on-inverse-action-hover: var(
+    --vscode-textLink-activeForeground,
+    var(--vscode-textLink-foreground)
+  );
+
+  // --- roadmap grid ---
+  // unit edge — editorLineNumber.foreground
+  --color-use--grid-line: var(
+    --vscode-editorLineNumber-foreground,
+    var(--vscode-panel-border)
+  );
+  // day tick — widget.border
+  --color-use--grid-line-soft: var(--vscode-widget-border);
+  // weekend wash — editor.inactiveSelectionBackground
+  --color-use--grid-weekend: var(--vscode-editor-inactiveSelectionBackground);
+
+  // --- terminal (not aliases of bg-prime; match IDE terminal chrome) ---
+  // terminal canvas — terminal.background
+  --color-use--terminal-bg: var(
+    --vscode-terminal-background,
+    var(--vscode-editor-background)
+  );
+  // terminal text — terminal.foreground
+  --color-use--terminal-fg: var(
+    --vscode-terminal-foreground,
+    var(--vscode-editor-foreground)
+  );
+  // terminal toolbar — panel.background
+  --color-use--terminal-toolbar: var(
+    --vscode-panel-background,
+    var(--vscode-sideBar-background)
+  );
+  // terminal edge — panel.border
+  --color-use--terminal-border: var(
+    --vscode-panel-border,
+    var(--vscode-widget-border)
+  );
+  // idle tab — tab.inactiveBackground
+  --color-use--terminal-tab: var(
+    --vscode-tab-inactiveBackground,
+    var(--vscode-editor-background)
+  );
+  // active tab — tab.activeBackground
+  --color-use--terminal-tab-active: var(
+    --vscode-tab-activeBackground,
+    var(--vscode-editor-background)
+  );
+  // active tab underline — tab.activeBorder
+  --color-use--terminal-tab-active-border: var(
+    --vscode-tab-activeBorder,
+    var(--vscode-focusBorder)
+  );
+  // muted terminal chrome — descriptionForeground
+  --color-use--terminal-muted: var(
+    --vscode-descriptionForeground,
+    var(--vscode-terminal-foreground)
+  );
+}

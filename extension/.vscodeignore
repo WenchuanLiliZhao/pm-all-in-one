@@ -1,0 +1,12 @@
+src/**
+scripts/**
+.vscode/**
+tsconfig.json
+.gitignore
+vite.config.ts
+node_modules/@types/**
+node_modules/vite/**
+node_modules/@vitejs/**
+**/*.map
+*.vsix
+

@@ -4,6 +4,7 @@
 @forward "1-reset";
 @forward "color";
 @forward "color-use";
+@forward "color-use-vscode"; // vscode host remap; no-op without data-pm-host
 @forward "shadow";
 @forward "font";
 @forward "icon";

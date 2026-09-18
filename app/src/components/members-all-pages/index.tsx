@@ -12,10 +12,13 @@ import { useNavigate } from "react-router-dom";
 import { MemberPerson } from "@/components/member-person";
 import { Button } from "@/components/ui/button";
 import { useMember } from "@/lib/workspace/member-context";
+import { openMemberNode } from "@/lib/bridge/open-pm-document";
+import { useOpenInNewWebview } from "@/components/open-in-new-webview-menu";
 import styles from "./styles.module.scss";
 
 export function MembersAllPages() {
   const navigate = useNavigate();
+  const { onNodeContextMenu } = useOpenInNewWebview();
   const { members, createMember, error: membersError } = useMember();
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -35,7 +38,7 @@ export function MembersAllPages() {
     try {
       const created = await createMember({ title: "New member" });
       setError(null);
-      navigate(`/w/members/${created.id}`);
+      openMemberNode(created.id, navigate);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -82,7 +85,10 @@ export function MembersAllPages() {
                 <button
                   type="button"
                   className={`${styles.row}${left ? ` ${styles.rowLefted}` : ""}`}
-                  onClick={() => navigate(`/w/members/${node.id}`)}
+                  onClick={() => openMemberNode(node.id, navigate)}
+                  onContextMenu={(e) =>
+                    onNodeContextMenu(e, { kind: "member", memberId: node.id })
+                  }
                 >
                   <span className={styles.rowLeft}>
                     <MemberPerson

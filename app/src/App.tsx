@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { createHashRouter, Navigate, Outlet } from "react-router-dom";
 import { ElectronShell } from "@/layout/electron-shell";
+import { OpenInNewWebviewProvider } from "@/components/open-in-new-webview-menu";
 import { getPm, isWebPm } from "@/lib/bridge";
 import { ToastProvider } from "@/lib/toast";
 import { WorkspaceProvider } from "@/lib/workspace/workspace-context";
@@ -34,6 +35,15 @@ import {
   TableView,
   WorkspaceLayout,
 } from "@/pages/channels/workspace-page";
+import {
+  NodeHandoffView,
+  NodeHomeView,
+  NodeIssueView,
+  NodeLayout,
+  NodeMemberView,
+  NodeProjectView,
+  NodeWikiView,
+} from "@/pages/channels/workspace-page/node-layout";
 
 function useWebUiLabHotkey(): void {
   useEffect(() => {
@@ -62,7 +72,9 @@ function AppChrome() {
       <WorkspaceProvider>
         <GitSyncProvider>
           <ElectronShell>
-            <Outlet />
+            <OpenInNewWebviewProvider>
+              <Outlet />
+            </OpenInNewWebviewProvider>
           </ElectronShell>
         </GitSyncProvider>
       </WorkspaceProvider>
@@ -98,6 +110,18 @@ export const router = createHashRouter([
           { path: "roadmap", element: <RoadmapView /> },
           { path: "table", element: <TableView /> },
           { path: "views/:viewId", element: <CustomViewPage /> },
+        ],
+      },
+      {
+        path: "n",
+        element: <NodeLayout />,
+        children: [
+          { path: "home", element: <NodeHomeView /> },
+          { path: "wiki/:wikiNodeId", element: <NodeWikiView /> },
+          { path: "issues/:projectId/:issueId", element: <NodeIssueView /> },
+          { path: "projects/:projectId", element: <NodeProjectView /> },
+          { path: "members/:memberId", element: <NodeMemberView /> },
+          { path: "handoffs/:handoffId", element: <NodeHandoffView /> },
         ],
       },
       {

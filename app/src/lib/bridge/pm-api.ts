@@ -161,6 +161,16 @@ export interface PmApi {
   revealPath: (targetPath: string) => Promise<boolean>;
   /** Desktop-only: open a file/dir with the OS default app. Web stub → false. */
   openPath: (targetPath: string) => Promise<boolean>;
+  /**
+   * VS Code / Cursor host only: open a node README in a new PM Node webview.
+   * Electron and web omit this.
+   */
+  openPmNode?: (ref: NodeRef) => Promise<void>;
+  /**
+   * VS Code / Cursor host only: close the current PM custom editor tab.
+   * Electron and web omit this.
+   */
+  closePmPanel?: () => Promise<void>;
 
   /**
    * Desktop-only: fetch + ahead/behind vs upstream.

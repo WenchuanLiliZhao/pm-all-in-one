@@ -28,7 +28,7 @@ import {
   type TerminalPanelHandle,
 } from "@/components";
 import { GitSyncPanel } from "@/components/git-sync-panel";
-import { getPm, isWebPm } from "@/lib/bridge";
+import { getPm, isVsCodePm, isWebPm } from "@/lib/bridge";
 import type { WikiCustomPropsSchema, WikiNodeMeta, WikiSidebarColumnKind, WorkspaceView } from "@/lib/types";
 import { issueRefKey } from "@/lib/types";
 import {
@@ -399,7 +399,6 @@ export function WorkspaceLayout() {
               <span className={styles.workspaceName}>
                 {meta?.title ?? workspaceNameFromPath(root)}
               </span>
-              <span className={styles.topbarPath}>{root}</span>
             </div>
           )}
 
@@ -641,7 +640,7 @@ export function WorkspaceLayout() {
           </div>
         </div>
 
-        {terminalOpen ? (
+        {terminalOpen && !isVsCodePm() ? (
           <aside className={styles.terminal}>
             <TerminalPanel ref={terminalRef} />
           </aside>

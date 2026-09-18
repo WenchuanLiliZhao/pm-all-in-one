@@ -1,7 +1,7 @@
 ---
 aliases:
   - markdown-editor
-updated: 2026-08-18
+updated: 2026-09-18
 description: >-
   App-local Markdown editor module—CodeMirror 6 (Source/Live) +
   react-markdown Reading View; sticky filename nav; GFM tables/lists/codeblocks;
@@ -52,7 +52,7 @@ Either alone is not enough. Passing (1) but not (2) spends a renderer to beat pl
 | math (`$…$` / `$$…$$`) | yes | Keep — `elements/math/`. |
 | product figure fences (`plot` and kin) | no (fails both) | Refused — ordinary codeblock chrome only; no figure runtime in this module. Reversible: revisit on author feedback, and only as a Reading View plugin — never by adding a runtime to Live. |
 
-**Import rule:** this module must not import `@/lib/bridge`, `@pm-core/*`, workspace stores, or other host product modules. Consumers import `@/components/markdown-editor` directly (not via `@/components` barrel) when they also export from that barrel — avoid cycles.
+**Import rule:** this module must not import `@/lib/bridge`, `@pm-core/*`, workspace stores, or other host product modules. Exception: [`elements/codeblock/mermaid-render.ts`](elements/codeblock/mermaid-render.ts) may import `@/lib/host-theme` (chrome theme subscription, not a product module). Consumers import `@/components/markdown-editor` directly (not via `@/components` barrel) when they also export from that barrel — avoid cycles.
 
 ## Layout
 
@@ -227,7 +227,7 @@ Core `pre` looks up `lang` in the plugin registry **before** mermaid / boxed cod
 
 ## Host token contract
 
-Chrome colors use app SoT `--color-use--*` only (see `src/global-styles/`). This module depends on:
+Chrome colors use app SoT `--color-use--*` only (see `src/global-styles/`). On the vscode / Cursor webview host, [`color-use-vscode.scss`](../../global-styles/color-use-vscode.scss) remaps that same table to `--vscode-*` — do **not** use `--vscode-*` in this module. `subscribeMermaidTheme` delegates to `@/lib/host-theme` (chrome observer, not a product/workspace import). This module depends on:
 
 | Token | Use |
 | --- | --- |

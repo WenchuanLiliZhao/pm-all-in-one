@@ -20,6 +20,14 @@ import type {
 import { useGitSync } from "@/lib/workspace/git-sync-context";
 import { useHandoffMetas } from "@/lib/workspace/use-handoff-metas";
 import { useWorkspace } from "@/lib/workspace/workspace-context";
+import {
+  openHandoffNode,
+  openHomeNode,
+  openMemberNode,
+  openWikiNode,
+} from "@/lib/bridge/open-pm-document";
+import { useOpenInNewWebview } from "@/components/open-in-new-webview-menu";
+import type { NodeRef } from "@/lib/bridge/pm-api";
 import styles from "./styles.module.scss";
 
 export type GitSyncPanelVariant = "titlebar" | "topbar";
@@ -117,6 +125,7 @@ export function GitSyncPanel({
   resolveTitle: resolveTitleProp,
 }: GitSyncPanelProps) {
   const navigate = useNavigate();
+  const { onNodeContextMenu } = useOpenInNewWebview();
   const {
     available,
     status: liveStatus,
@@ -237,7 +246,7 @@ export function GitSyncPanel({
       }
       switch (ref.kind) {
         case "workspace":
-          navigate("/w/home");
+          openHomeNode(navigate);
           break;
         case "project":
           await select({ kind: "project", projectId: ref.projectId });
@@ -252,13 +261,13 @@ export function GitSyncPanel({
           navigate("/w/table");
           break;
         case "wiki":
-          navigate(`/w/wiki/${ref.wikiNodeId}`);
+          openWikiNode(ref.wikiNodeId, navigate);
           break;
         case "member":
-          navigate(`/w/members/${ref.memberId}`);
+          openMemberNode(ref.memberId, navigate);
           break;
         case "handoff":
-          navigate(`/w/handoffs/${ref.handoffId}`);
+          openHandoffNode(ref.handoffId, navigate);
           break;
         default:
           break;
@@ -405,6 +414,9 @@ export function GitSyncPanel({
                         type="button"
                         className={styles.nodeRow}
                         onClick={() => void onSelectNode(node.ref)}
+                        onContextMenu={(e) =>
+                          onNodeContextMenu(e, node.ref as NodeRef)
+                        }
                       >
                         <span className={styles.nodeTitle}>
                           {resolveTitle(node.ref)}

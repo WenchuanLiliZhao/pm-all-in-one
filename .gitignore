@@ -5,6 +5,10 @@
 
 # app build / deps (also listed under app/.gitignore)
 app/node_modules/
+extension/node_modules/
+extension/out/
+extension/media/webview/
+extension/templates/
 app/dist/
 app/dist-cli/
 app/dist-electron/

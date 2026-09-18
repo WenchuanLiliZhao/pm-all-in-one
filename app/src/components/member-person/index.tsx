@@ -27,6 +27,7 @@ import buttonStyles from "@/components/ui/button/styles.module.scss";
 import { DropdownMenu } from "@/components/ui/dropdown-menu";
 import { Lucide } from "@/components/ui/lucide";
 import { getPm } from "@/lib/bridge";
+import { openMemberNode } from "@/lib/bridge/open-pm-document";
 import type { MemberMeta, Membership } from "@/lib/types";
 import { useMember } from "@/lib/workspace/member-context";
 import styles from "./styles.module.scss";
@@ -450,7 +451,7 @@ export function MemberPerson({
           canNavigate
             ? (e) => {
                 e.stopPropagation();
-                navigate(`/w/members/${memberId}`);
+                openMemberNode(memberId, navigate);
               }
             : undefined
         }
@@ -473,7 +474,7 @@ export function MemberPerson({
         className={`${rootClass} ${styles.clickable}`}
         onClick={(e) => {
           e.stopPropagation();
-          navigate(`/w/members/${memberId}`);
+          openMemberNode(memberId, navigate);
         }}
         title={tooltip}
       >

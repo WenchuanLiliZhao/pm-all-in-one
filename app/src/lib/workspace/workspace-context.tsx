@@ -18,7 +18,7 @@ import {
 } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CreateWorkspaceWizard } from "@/components/create-workspace-wizard";
-import { getPm, isWebPm } from "@/lib/bridge";
+import { getPm, isVsCodePm, isWebPm } from "@/lib/bridge";
 import type {
   CustomPropsSchema,
   DoctorWarning,
@@ -433,7 +433,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   /** Desktop always reloads the window; do not paint the old session. */
   const adoptOpenedWorkspace = useCallback(
     (snap: WorkspaceSnapshot) => {
-      if (!isWebPm()) {
+      if (!isWebPm() && !isVsCodePm()) {
         return;
       }
       applySnapshot(snap);
@@ -555,7 +555,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         // Home / workspace detail may be open without selection.
         const onHome =
           typeof window !== "undefined" &&
-          window.location.hash.includes("/w/home");
+          (window.location.hash.includes("/w/home") ||
+            window.location.hash.includes("/n/home"));
         if (onHome || detailSaveRef.current?.getTarget()?.kind === "workspace") {
           const baseline =
             workspaceBaselineRef.current ??

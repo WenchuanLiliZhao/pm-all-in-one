@@ -35,6 +35,8 @@ import type {
   Project,
 } from "@/lib/types";
 import { issueRefKey } from "@/lib/types";
+import { treeNodeToNodeRef } from "@/lib/bridge/open-pm-document";
+import { useOpenInNewWebview } from "@/components/open-in-new-webview-menu";
 import { useViewOrderedTree } from "@/lib/workspace/use-view-ordered-tree";
 import {
   useWorkspace,
@@ -587,6 +589,7 @@ function SortableTableRow({
   dropLegal: boolean | null;
   dropFlash: { kind: "ok" | "bad"; token: number } | null;
 }) {
+  const { onNodeContextMenu } = useOpenInNewWebview();
   const entry = tree.byId[nodeKey];
   const { persistIssuePriority, setError } = useWorkspace();
   const {
@@ -701,6 +704,12 @@ function SortableTableRow({
                   projectId: entry.projectId,
                   issueId: entry.issueId,
                 });
+              }
+            }}
+            onContextMenu={(e) => {
+              const ref = treeNodeToNodeRef(entry);
+              if (ref) {
+                onNodeContextMenu(e, ref);
               }
             }}
           />

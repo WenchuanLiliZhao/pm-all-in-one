@@ -4,6 +4,10 @@
  *
  * Theme contract: `data-theme="light"|"dark"` on `:root`, or auto via `:root:not([data-theme])`
  * (light default) with `@media (prefers-color-scheme: dark)` override when `data-theme` is unset.
+ *
+ * ↔ color-use-vscode.scss — vscode / Cursor host remaps these same names to
+ * `--vscode-*` when `html[data-pm-host="vscode"]`. Components still consume
+ * `--color-use--*` only; do not read `--vscode-*` here or in UI SCSS.
  */
 
 // 1. Explicit light

@@ -44,6 +44,9 @@ import { DropdownMenu } from "@/components/ui/dropdown-menu";
 import { PageWidth } from "@/components/ui/page-width";
 import { TreeRow, treeRowStyles } from "@/components/ui/tree-row";
 import { getPm } from "@/lib/bridge";
+import { openWikiNode } from "@/lib/bridge/open-pm-document";
+import type { NodeRef } from "@/lib/bridge/pm-api";
+import { useOpenInNewWebview } from "@/components/open-in-new-webview-menu";
 import { incomingWikiDeleteDetail } from "@/lib/wiki-incoming-refs";
 import type { WikiSidebarColumnKind, WikiSidebarNode, WikiSidebarRootNode, WikiSnapshot } from "@/lib/types";
 import {
@@ -265,6 +268,7 @@ function SortableRefRow({
   freezeSortTransforms: boolean;
 }) {
   const navigate = useNavigate();
+  const { onNodeContextMenu } = useOpenInNewWebview();
   const { node, depth, hasChildren } = row;
   const {
     attributes,
@@ -345,8 +349,11 @@ function SortableRefRow({
             if (isBroken) {
               return;
             }
-            navigate(`/w/wiki/${node.id}`);
+            openWikiNode(node.id, navigate);
           }}
+          onContextMenu={(e) =>
+            onNodeContextMenu(e, { kind: "wiki", wikiNodeId: node.id })
+          }
         />
         {/* Menu stays outside TreeRow select — nested buttons are invalid HTML. */}
         <span className={styles.tocActions}>
@@ -687,15 +694,20 @@ function RailNavRow({
   end,
   icon,
   title,
+  onNavigate,
+  pmNodeRef,
 }: {
   to: string;
   end?: boolean;
   icon: ReactNode;
   title: string;
+  onNavigate?: () => void;
+  pmNodeRef?: NodeRef;
 }) {
   const navigate = useNavigate();
   const match = useMatch({ path: to, end: end ?? false });
   const active = Boolean(match);
+  const { onNodeContextMenu } = useOpenInNewWebview();
 
   return (
     <div
@@ -710,7 +722,18 @@ function RailNavRow({
         className={styles.rowSelect}
         aria-current={active ? "page" : undefined}
         aria-label={title}
-        onClick={() => navigate(to)}
+        onClick={() => {
+          if (onNavigate) {
+            onNavigate();
+            return;
+          }
+          navigate(to);
+        }}
+        onContextMenu={
+          pmNodeRef
+            ? (e) => onNodeContextMenu(e, pmNodeRef)
+            : undefined
+        }
       />
     </div>
   );
@@ -1141,6 +1164,7 @@ export function WikiShell({
             end
             icon={<Lucide.Home size={ROW_ICON_SIZE} aria-hidden />}
             title="Overview"
+            pmNodeRef={{ kind: "workspace" }}
           />
           <RailNavRow
             to="/w/wiki"

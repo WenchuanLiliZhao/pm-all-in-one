@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { PageWidth } from "@/components/ui/page-width";
+import { isVscodePmHost } from "@/lib/host-theme";
 import styles from "./page.module.scss";
 
 const COLOR_USE_TOKENS = [
@@ -95,6 +96,7 @@ export function TokensPage() {
   const [theme, setTheme] = useState<ThemeMode>(() =>
     typeof document === "undefined" ? "auto" : readThemeMode(),
   );
+  const [vscodeHost] = useState(() => isVscodePmHost());
 
   useEffect(() => {
     applyThemeMode(theme);
@@ -107,6 +109,13 @@ export function TokensPage() {
         Tokens from self-contained <code>src/global-styles/</code>, including
         light / dark / auto blocks in <code>color-use.scss</code>.
       </p>
+      {vscodeHost ? (
+        <p className={styles.lead}>
+          vscode host: live <code>--color-use--*</code> chips read the IDE
+          mapping in <code>color-use-vscode.scss</code>. Light / dark toggles
+          still change shadows and mermaid, not the vscode color table.
+        </p>
+      ) : null}
 
       <div className={styles.block}>
         <p className={styles.blockLabel}>Theme (data-theme)</p>

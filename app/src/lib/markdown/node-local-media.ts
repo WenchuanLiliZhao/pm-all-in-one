@@ -42,8 +42,34 @@ function joinDirFile(dir: string, relPath: string): string {
   return `${trimmed}${sep}${rel}`;
 }
 
+function posixRelativeToWorkspace(root: string, absPath: string): string | null {
+  const nRoot = root.replace(/\\/g, "/").replace(/\/+$/, "");
+  const nAbs = absPath.replace(/\\/g, "/");
+  if (nAbs === nRoot) {
+    return "";
+  }
+  const prefix = `${nRoot}/`;
+  if (!nAbs.startsWith(prefix)) {
+    return null;
+  }
+  return nAbs.slice(prefix.length);
+}
+
 /** Absolute filesystem path → privileged media URL for <img> in the renderer. */
 export function absolutePathToMediaUrl(absPath: string): string {
+  const base = window.__pmAssetBase;
+  const root = window.__pmWorkspaceRoot;
+  if (base && root) {
+    const rel = posixRelativeToWorkspace(root, absPath);
+    if (rel !== null) {
+      const suffix = rel
+        .split("/")
+        .filter((part) => part.length > 0)
+        .map((part) => encodeURIComponent(part))
+        .join("/");
+      return suffix ? `${base.replace(/\/+$/, "")}/${suffix}` : base;
+    }
+  }
   return `pm-asset://local/?p=${encodeURIComponent(absPath)}`;
 }
 

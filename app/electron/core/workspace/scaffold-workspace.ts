@@ -30,6 +30,23 @@ export interface ScaffoldWorkspaceOptions {
   seedProject?: { title: string };
 }
 
+/** Cursor / VS Code Explorer opens the map from this marker file. */
+export const PMWS_MARKER_NAME = ".pmws";
+export const PMWS_MARKER_BODY =
+  "# pm-all-in-one workspace — right-click to open PM\n";
+
+export function pmwsMarkerPath(root: string): string {
+  return path.join(root, PMWS_MARKER_NAME);
+}
+
+/** Write `.pmws` when the template copy did not (must exist after create). */
+export function ensurePmwsMarker(root: string): void {
+  const file = pmwsMarkerPath(root);
+  if (!fs.existsSync(file)) {
+    fs.writeFileSync(file, PMWS_MARKER_BODY, "utf8");
+  }
+}
+
 function looksLikeWorkspace(root: string): boolean {
   return (
     fs.existsSync(path.join(root, "issue-hierarchy")) &&
@@ -68,6 +85,7 @@ export function scaffoldWorkspace(
 
   copyTemplateTree(workspaceTemplateDir(), root);
   ensureStructuralGitkeeps(root);
+  ensurePmwsMarker(root);
 
   writeWorkspaceMeta(root, defaultWorkspaceMeta(root, options.title));
   fs.writeFileSync(

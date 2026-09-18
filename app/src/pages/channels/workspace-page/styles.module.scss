@@ -76,15 +76,6 @@
   font-weight: 600;
 }
 
-.topbarPath {
-  color: var(--color-use--text-secondary);
-  font-family: var(--font-family-mono);
-  font-size: 0.85rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .viewBar {
   display: flex;
   flex-wrap: nowrap;
@@ -151,6 +142,12 @@
   position: relative;
   overflow: visible;
   min-width: 0;
+}
+
+/* Node tab (no WikiShell): this is the article scrollport + DocEditShell cqw box. */
+.nodeMain {
+  container-type: inline-size;
+  container-name: doc-edit-view;
 }
 
 .detail {

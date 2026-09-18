@@ -35,6 +35,7 @@ import {
   issueStatusToneStyles,
 } from "@/components/ui/issue-status";
 import { getPm } from "@/lib/bridge";
+import { closePmPanelIfNodeSurface, isPmNodeSurface, openWikiNode } from "@/lib/bridge/open-pm-document";
 import type {
   CustomPropDef,
   WikiIncomingRef,
@@ -554,7 +555,11 @@ export function WikiNodeEditor({
       ctrl.resetClean();
       await getPm().deleteWikiNode(id, { removeFile: true });
       setWiki(await getPm().getWiki());
-      navigate("/w/wiki");
+      if (isPmNodeSurface()) {
+        await closePmPanelIfNodeSurface();
+      } else {
+        navigate("/w/wiki");
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -783,7 +788,7 @@ export function WikiNodeEditor({
                                 if (!hit) {
                                   return;
                                 }
-                                navigate(`/w/wiki/${id}`);
+                                openWikiNode(id, navigate);
                               }}
                             >
                               {title}
@@ -812,7 +817,7 @@ export function WikiNodeEditor({
                         wikiNodes={wikiNodes}
                         listAriaLabel={def.label?.trim() || def.key}
                         addAriaLabel={`Add ${def.label?.trim() || def.key}`}
-                        onOpen={(id) => navigate(`/w/wiki/${id}`)}
+                        onOpen={(id) => openWikiNode(id, navigate)}
                         onChange={(ids) => patchFields(def.key, ids)}
                       />
                     </PropField>

@@ -9,6 +9,7 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
 import { getPm, isWebPm } from "@/lib/bridge";
+import { subscribeHostTheme } from "@/lib/host-theme";
 import { Button } from "@/components/ui/button";
 import styles from "./styles.module.scss";
 
@@ -149,16 +150,9 @@ export const TerminalPanel = forwardRef<TerminalPanelHandle>(
         return;
       }
       applyThemeToAllTerminals();
-      const root = document.documentElement;
-      const mo = new MutationObserver(() => applyThemeToAllTerminals());
-      mo.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
-      const mq = window.matchMedia("(prefers-color-scheme: dark)");
-      const onMq = () => applyThemeToAllTerminals();
-      mq.addEventListener("change", onMq);
-      return () => {
-        mo.disconnect();
-        mq.removeEventListener("change", onMq);
-      };
+      // Watch data-theme *and* vscode theme-name so two dark IDE themes
+      // still refresh xterm (CSS vars update; this object is cached).
+      return subscribeHostTheme(applyThemeToAllTerminals);
     }, [web]);
 
     useEffect(() => {

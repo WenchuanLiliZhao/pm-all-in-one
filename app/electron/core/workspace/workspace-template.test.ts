@@ -45,6 +45,7 @@ test("scaffold copies template files including .gitkeep", () => {
       scaffoldWorkspace(root, { title: "Template scaffold" });
 
       assert.ok(fs.existsSync(path.join(root, "AGENTS.md")));
+      assert.ok(fs.existsSync(path.join(root, ".pmws")));
       assert.ok(fs.existsSync(path.join(root, ".pm", "agent.md")));
       assert.ok(fs.existsSync(path.join(root, ".pm", "view-orders.json")));
       assert.ok(fs.existsSync(path.join(root, ".pm", "views.json")));
@@ -180,4 +181,37 @@ test("scaffold with seed project copies project-template", () => {
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
+});
+
+test("scaffold writes .pmws when the template omits it", () => {
+  const template = tmpRoot();
+  const root = tmpRoot();
+  const prevWs = process.env.LOCAL_PM_WORKSPACE_TEMPLATE;
+  const prevProj = process.env.LOCAL_PM_PROJECT_TEMPLATE;
+  try {
+    fs.cpSync(sourceTemplate, template, { recursive: true });
+    fs.rmSync(path.join(template, ".pmws"), { force: true });
+    process.env.LOCAL_PM_WORKSPACE_TEMPLATE = template;
+    process.env.LOCAL_PM_PROJECT_TEMPLATE = sourceProjectTemplate;
+    scaffoldWorkspace(root, { title: "Marker fallback" });
+    const marker = path.join(root, ".pmws");
+    assert.ok(fs.existsSync(marker));
+    assert.match(
+      fs.readFileSync(marker, "utf8"),
+      /pm-all-in-one workspace/,
+    );
+  } finally {
+    if (prevWs === undefined) {
+      delete process.env.LOCAL_PM_WORKSPACE_TEMPLATE;
+    } else {
+      process.env.LOCAL_PM_WORKSPACE_TEMPLATE = prevWs;
+    }
+    if (prevProj === undefined) {
+      delete process.env.LOCAL_PM_PROJECT_TEMPLATE;
+    } else {
+      process.env.LOCAL_PM_PROJECT_TEMPLATE = prevProj;
+    }
+    fs.rmSync(template, { recursive: true, force: true });
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });

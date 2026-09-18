@@ -18,6 +18,8 @@ import { MemberPerson, MemberPersonSelect } from "@/components/member-person";
 import { Button } from "@/components/ui/button";
 import { Lucide } from "@/components/ui/lucide";
 import { getPm } from "@/lib/bridge";
+import { openHandoffNode } from "@/lib/bridge/open-pm-document";
+import { useOpenInNewWebview } from "@/components/open-in-new-webview-menu";
 import { usePmMentions } from "@/lib/markdown/use-pm-mentions";
 import type { HandoffMeta, HandoffSnapshot, WikiNodeMeta } from "@/lib/types";
 import { useMember } from "@/lib/workspace/member-context";
@@ -164,7 +166,7 @@ export function CollaborationCards() {
       setError(null);
       setComposing(false);
       await refresh();
-      navigate(`/w/handoffs/${created.id}`);
+      openHandoffNode(created.id, navigate);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -354,7 +356,7 @@ export function CollaborationCards() {
                     projectTitleById.get(node.relatedProject) ??
                     node.relatedProject
                   }
-                  onOpen={() => navigate(`/w/handoffs/${node.id}`)}
+                  onOpen={() => openHandoffNode(node.id, navigate)}
                 />
               </li>
             ))}
@@ -374,8 +376,16 @@ function HandoffCard({
   projectTitle: string;
   onOpen: () => void;
 }) {
+  const { onNodeContextMenu } = useOpenInNewWebview();
   return (
-    <button type="button" className={styles.card} onClick={onOpen}>
+    <button
+      type="button"
+      className={styles.card}
+      onClick={onOpen}
+      onContextMenu={(e) =>
+        onNodeContextMenu(e, { kind: "handoff", handoffId: node.id })
+      }
+    >
       <span className={styles.cardTop}>
         <span className={styles.cardTitle}>{node.title}</span>
         <span

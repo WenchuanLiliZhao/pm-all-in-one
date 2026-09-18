@@ -58,6 +58,10 @@ export type { CreateWorkspaceOptions, NodeRef, PmApi };
 declare global {
   interface Window {
     pm?: PmApi;
+    __pmAssetBase?: string;
+    __pmWorkspaceRoot?: string;
+    __pmSurface?: "map" | "node";
+    __pmNodeRef?: NodeRef | null;
   }
 }
 
@@ -75,4 +79,8 @@ export function getPm(): PmApi {
 
 export function isWebPm(): boolean {
   return !window.pm;
+}
+
+export function isVsCodePm(): boolean {
+  return window.pm?.platform === "vscode";
 }

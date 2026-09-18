@@ -1,0 +1,150 @@
+{
+  "name": "pm-all-in-one",
+  "displayName": "pm-all-in-one",
+  "description": "Open a local-pm workspace from a .pmws marker in a webview.",
+  "version": "0.2.12",
+  "publisher": "wenchuanlilizhao",
+  "icon": "media/icons/pmws.png",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:pm-all-in-one.newWorkspace",
+    "onCommand:pm-all-in-one.open",
+    "onStartupFinished",
+    "workspaceContains:**/.pmws"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "pm-all-in-one.open",
+        "title": "Open in pm-all-in-one",
+        "category": "pm-all-in-one",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "pm-all-in-one.newWorkspace",
+        "title": "New PM Workspace…",
+        "category": "pm-all-in-one",
+        "icon": "$(new-folder)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "pm-all-in-one.open",
+          "when": "resourceScheme == 'file' && (resourceFilename == '.pmws' || resourceExtname == '.pmws') && activeCustomEditorId != 'pm-all-in-one.workspace'",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "pm-all-in-one.newWorkspace",
+          "when": "explorerResourceIsFolder && resourceScheme == 'file'",
+          "group": "navigation@99"
+        },
+        {
+          "command": "pm-all-in-one.open",
+          "when": "resourceScheme == 'file' && (resourceFilename == '.pmws' || resourceExtname == '.pmws')",
+          "group": "navigation@1"
+        },
+        {
+          "command": "pm-all-in-one.open",
+          "when": "resourceScheme == 'file' && resourceFilename == 'README.md' && resourcePath =~ /wiki|members|handoffs|issue-hierarchy/",
+          "group": "navigation@1"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "pm-all-in-one.open",
+          "when": "resourceScheme == 'file' && (resourceFilename == '.pmws' || resourceExtname == '.pmws' || resourceFilename == 'README.md')",
+          "group": "navigation@1"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "pm-all-in-one.open",
+          "when": "resourceScheme == 'file' && (resourceFilename == '.pmws' || resourceExtname == '.pmws' || resourceFilename == 'README.md')",
+          "group": "navigation@1"
+        }
+      ]
+    },
+    "languages": [
+      {
+        "id": "pmws",
+        "aliases": [
+          "PM Workspace",
+          "pmws"
+        ],
+        "filenames": [
+          ".pmws"
+        ],
+        "extensions": [
+          ".pmws"
+        ],
+        "icon": {
+          "light": "./media/icons/pmws-light.svg",
+          "dark": "./media/icons/pmws.svg"
+        }
+      }
+    ],
+    "customEditors": [
+      {
+        "viewType": "pm-all-in-one.workspace",
+        "displayName": "PM",
+        "selector": [
+          {
+            "filenamePattern": "**/.pmws"
+          },
+          {
+            "filenamePattern": ".pmws"
+          }
+        ],
+        "priority": "option"
+      },
+      {
+        "viewType": "pm-all-in-one.node",
+        "displayName": "PM Node",
+        "selector": [
+          {
+            "filenamePattern": "**/README.md"
+          },
+          {
+            "filenamePattern": "README.md"
+          }
+        ],
+        "priority": "option"
+      }
+    ],
+    "configurationDefaults": {
+      "files.associations": {
+        ".pmws": "pmws",
+        "*.pmws": "pmws"
+      },
+      "workbench.editorAssociations": {
+        "**/.pmws": "default",
+        ".pmws": "default"
+      }
+    }
+  },
+  "scripts": {
+    "compile": "node ./scripts/build.mjs",
+    "watch": "node ./scripts/build.mjs --watch",
+    "package": "npx --yes @vscode/vsce package"
+  },
+  "dependencies": {
+    "chokidar": "^4.0.3",
+    "esbuild": "^0.28.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/vscode": "^1.90.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "~5.6.2",
+    "vite": "^5.4.11"
+  }
+}

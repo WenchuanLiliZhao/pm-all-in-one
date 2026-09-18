@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TypeConfirmDialog } from "@/components/type-confirm-dialog";
 import { getPm } from "@/lib/bridge";
+import { openWikiNode } from "@/lib/bridge/open-pm-document";
+import { useOpenInNewWebview } from "@/components/open-in-new-webview-menu";
 import { incomingWikiDeleteDetail } from "@/lib/wiki-incoming-refs";
 import type { WikiNodeMeta } from "@/lib/types";
 import { wikiStatusLabel } from "@/lib/wiki-status";
@@ -39,6 +41,7 @@ function formatTs(iso: string): string {
 
 export function WikiAllPages() {
   const navigate = useNavigate();
+  const { onNodeContextMenu } = useOpenInNewWebview();
   const { createWikiNode } = useWorkspace();
   const { wiki, refresh, error: wikiError } = useWiki();
   const [error, setError] = useState<string | null>(null);
@@ -235,8 +238,14 @@ export function WikiAllPages() {
                       to={`/w/wiki/${node.id}`}
                       onClick={(e) => {
                         e.preventDefault();
-                        navigate(`/w/wiki/${node.id}`);
+                        openWikiNode(node.id, navigate);
                       }}
+                      onContextMenu={(e) =>
+                        onNodeContextMenu(e, {
+                          kind: "wiki",
+                          wikiNodeId: node.id,
+                        })
+                      }
                     >
                       {node.title}
                     </Link>

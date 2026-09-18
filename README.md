@@ -6,7 +6,7 @@ Jira, chat threads, and tool-only PM stacks split context across systems agents 
 
 This repository is the product home — macOS app + [`pm-all-in-one`](https://www.npmjs.com/package/pm-all-in-one) CLI.
 
-We run the product on itself: development of **pm-all-in-one** is planned and tracked in a local-pm workspace. A filtered snapshot of that dogfood ships in-repo as [`example-workspace/`](example-workspace/) (Open Folder on that directory in the app — not the product repo root). The README, releases, and disk contract below are what that dogfood has to survive, not a slide deck.
+We run the product on itself: development of **pm-all-in-one** is planned and tracked in a separate local-pm library, not this product repo. The README, releases, and disk contract below are what that dogfood has to survive, not a slide deck.
 
 ## What matters
 
@@ -46,11 +46,11 @@ There is one structural difference, and the rest follows from it:
 What that buys, concretely:
 
 - **Resolution without a server.** Every reference is a path join — `@issue-<projectId>::<issueId>` → `issue-hierarchy/<projectId>/<issueId>/`, `@wiki-<id>` → `wiki/<id>/README.md`. No index to rebuild, no app running, no auth.
-- **Cross-cutting questions are a grep, not N API calls.** From this repo, against the shipped snapshot:
+- **Cross-cutting questions are a grep, not N API calls.** From an opened workspace:
 
 ```sh
-rg -l '"status": "in-progress"' example-workspace/issue-hierarchy   # everything in flight
-rg -l 'blockedBy' example-workspace/issue-hierarchy                 # every declared dependency
+rg -l '"status": "in-progress"' issue-hierarchy   # everything in flight
+rg -l 'blockedBy' issue-hierarchy                 # every declared dependency
 ```
 
 - **A change of plan is a diff.** Intent moves on branches, arrives in PRs, and reverts like any other commit. `git log` over `issue-hierarchy/` is the decision history, with no separate audit feature.
@@ -58,7 +58,7 @@ rg -l 'blockedBy' example-workspace/issue-hierarchy                 # every decl
 
 **"Jira has an MCP server now."** It does, and it works. The gap is not access, it is shape. An API answers questions an agent already knew to ask, one paginated call at a time, and hands back an unversioned snapshot it cannot diff. A directory hands over the corpus: grep it, `git log` it, and read the code in the same pass. Same reason a database endpoint is not "having the repo".
 
-**Where the files live is your call.** A workspace is just a directory, so it can sit inside your code repo — intent and implementation in one PR — or be a repo beside it. pm-all-in-one takes the second path: the live dogfood library is a separate repo because it tracks more than this codebase, and [`example-workspace/`](example-workspace/) is a filtered snapshot of it. Same-repo co-review is available to you; it is not what we run daily.
+**Where the files live is your call.** A workspace is just a directory, so it can sit inside your code repo — intent and implementation in one PR — or be a repo beside it. pm-all-in-one takes the second path: the live dogfood library is a separate repo because it tracks more than this codebase. Same-repo co-review is available to you; it is not what we run daily.
 
 **What it costs.** The ladder is fixed at epic → task → subtask — no configurable workflows, schemes, or issue types. That is a real capability loss against Jira, taken deliberately: a structure every workspace can redefine is a structure no agent learns once. Per-project custom fields exist (`custom-props.ts`), but the three ranks do not move. And Jira still wins at cross-org ticket flow, audit reports, SLA, and ACL — that is its home field, **walking onto it is losing**, and this product stays off it on purpose.
 
@@ -119,7 +119,6 @@ Only do that if you trust this source. The app embeds a terminal and reads/write
 
 | Doc | Role |
 | --- | --- |
-| [example-workspace/](example-workspace/) | Filtered dogfood snapshot (open this folder in the app) |
 | [docs/cli.md](docs/cli.md) | CLI install and common commands |
 | [docs/releasing.md](docs/releasing.md) | Cut app + npm releases |
 | [app/DEVELOPMENT.md](app/DEVELOPMENT.md) | Develop the desktop shell |

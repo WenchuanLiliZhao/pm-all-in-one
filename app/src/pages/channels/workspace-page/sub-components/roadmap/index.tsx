@@ -34,6 +34,8 @@ import {
 import type { Issue, IssueTree, TreeNode } from "@/lib/types";
 import { issueRefKey } from "@/lib/types";
 import { getPm } from "@/lib/bridge";
+import { treeNodeToNodeRef } from "@/lib/bridge/open-pm-document";
+import { useOpenInNewWebview } from "@/components/open-in-new-webview-menu";
 import {
   useWorkspace,
   type Selection,
@@ -2533,6 +2535,7 @@ function RoadmapLabelRow({
   onToggle: (key: string) => void;
   onSelect: () => void;
 }) {
+  const { onNodeContextMenu } = useOpenInNewWebview();
   const {
     attributes,
     listeners,
@@ -2608,6 +2611,12 @@ function RoadmapLabelRow({
         className={styles.labelSelect}
         aria-label={ariaLabel}
         onClick={onSelect}
+        onContextMenu={(e) => {
+          const ref = treeNodeToNodeRef(entry);
+          if (ref) {
+            onNodeContextMenu(e, ref);
+          }
+        }}
       />
     </div>
   );

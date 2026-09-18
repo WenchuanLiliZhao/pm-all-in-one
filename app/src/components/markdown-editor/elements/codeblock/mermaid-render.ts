@@ -1,6 +1,9 @@
 // ↔ ./mermaid-widget.ts — Live idle SVG / error
 // ↔ ./preview.tsx — Reading View host
 // ↔ ./mermaid-info.ts — lang gate lives there (this file only renders)
+// ↔ @/lib/host-theme.ts — chrome theme subscription (not a product/workspace import)
+
+import { subscribeHostTheme } from "@/lib/host-theme";
 
 export type MermaidColorTheme = "dark" | "default";
 
@@ -35,18 +38,9 @@ export function mermaidColorTheme(): MermaidColorTheme {
     : "default";
 }
 
-/** Re-run `cb` when `data-theme` or OS color-scheme changes. */
+/** Re-run `cb` when host chrome theme changes (data-theme, OS, vscode kind). */
 export function subscribeMermaidTheme(cb: () => void): () => void {
-  if (typeof document === "undefined") return () => {};
-  const root = document.documentElement;
-  const mo = new MutationObserver(cb);
-  mo.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
-  const mq = window.matchMedia("(prefers-color-scheme: dark)");
-  mq.addEventListener("change", cb);
-  return () => {
-    mo.disconnect();
-    mq.removeEventListener("change", cb);
-  };
+  return subscribeHostTheme(cb);
 }
 
 async function getMermaid(theme: MermaidColorTheme): Promise<MermaidApi> {
