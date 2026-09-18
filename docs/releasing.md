@@ -2,11 +2,14 @@
 
 Repeatable local path: clean checkout → package app → publish CLI → attach GitHub Release.
 
+The Cursor extension is a **separate channel** (Open VSX, not this GitHub Release). Checklist: [cursor-extension.md](cursor-extension.md).
+
 ## Channel
 
 - **App entry:** GitHub Releases on `WenchuanLiliZhao/pm-all-in-one`
 - **App artifacts:** `*.dmg` and `*-mac.zip` from `app/release/`
 - **CLI entry:** public npm package [`pm-all-in-one`](https://www.npmjs.com/package/pm-all-in-one) (from `app/dist-cli/`)
+- **Cursor extension:** Open VSX id `wenchuanlilizhao.pm-all-in-one` — [cursor-extension.md](cursor-extension.md)
 - **Not primary:** source archives
 
 Bare name `local-pm` is **not** usable on npm (403: too similar to `local-pkg`). Do not try to reclaim it.
