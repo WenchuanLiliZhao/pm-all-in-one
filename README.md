@@ -4,7 +4,7 @@ Project management for small teams where **humans and AI agents share one worksp
 
 Jira, chat threads, and tool-only PM stacks split context across systems agents cannot reliably read or continue. This product keeps the project library as **files next to your code**: a clone is the full state; collaboration is git.
 
-This repository is the product home — macOS app + [`pm-all-in-one`](https://www.npmjs.com/package/pm-all-in-one) CLI.
+This repository is the product home — macOS app, [`pm-all-in-one`](https://www.npmjs.com/package/pm-all-in-one) CLI, and the Cursor extension (`wenchuanlilizhao.pm-all-in-one` on Open VSX).
 
 We run the product on itself: development of **pm-all-in-one** is planned and tracked in a separate local-pm library, not this product repo. The README, releases, and disk contract below are what that dogfood has to survive, not a slide deck.
 
@@ -92,6 +92,12 @@ npx pm-all-in-one doctor
 
 Full install paths and commands: [docs/cli.md](docs/cli.md).
 
+### Cursor extension
+
+Cursor installs third-party extensions from [Open VSX](https://open-vsx.org), not the Visual Studio Marketplace. After the first Open VSX upload, search **pm-all-in-one** in Cursor’s Extensions panel for `wenchuanlilizhao.pm-all-in-one`.
+
+Sideload a local VSIX, or cut that listing: [docs/cursor-extension.md](docs/cursor-extension.md).
+
 ### Build the app from source (no Gatekeeper friction)
 
 A locally built app carries no quarantine attribute, so it just opens.
@@ -121,6 +127,7 @@ Only do that if you trust this source. The app embeds a terminal and reads/write
 | --- | --- |
 | [docs/cli.md](docs/cli.md) | CLI install and common commands |
 | [docs/releasing.md](docs/releasing.md) | Cut app + npm releases |
+| [docs/cursor-extension.md](docs/cursor-extension.md) | Package and publish the Cursor extension (Open VSX) |
 | [app/DEVELOPMENT.md](app/DEVELOPMENT.md) | Develop the desktop shell |
 
 Inside an opened workspace, agent-facing law lives in `AGENTS.md` → `.pm/agent.md` (not duplicated here).
@@ -130,4 +137,5 @@ Inside an opened workspace, agent-facing law lives in `AGENTS.md` → `.pm/agent
 | Surface | Value |
 | --- | --- |
 | Product name (repo, CLI, npm, app bundle) | `pm-all-in-one` |
+| Cursor extension (Open VSX) | `wenchuanlilizhao.pm-all-in-one` |
 | macOS `appId` | `com.pm-all-in-one.desktop` |

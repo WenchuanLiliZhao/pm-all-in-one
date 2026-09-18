@@ -2,6 +2,7 @@
  * Paths the workspace watcher must not descend into.
  * ↔ watch.ts — chokidar `ignored`
  * ↔ fence-validators.ts — `skipName` (same junk trees; fence also skips `assets/`)
+ * ↔ discover-pm-workspaces.ts — same dir-name skip when walking for `.pmws`
  * ↔ ../domain/node-assets.ts — `NODE_ASSETS_DIRNAME`
  */
 import path from "node:path";
@@ -24,6 +25,11 @@ const IGNORED_WATCH_DIR_NAMES = new Set([
   "build",
 ]);
 
+/** True for junk / attachment directory names and any dot-directory. */
+export function isIgnoredWatchDirName(name: string): boolean {
+  return IGNORED_WATCH_DIR_NAMES.has(name) || name.startsWith(".");
+}
+
 /**
  * True when `watchedPath` is under `workspaceRoot` and any path segment is a
  * junk / attachment directory, or a dot-directory (`.git`, `.next`, …).
@@ -42,13 +48,5 @@ export function isIgnoredWatchPath(
   if (rel.startsWith("..") || path.isAbsolute(rel)) {
     return false;
   }
-  for (const part of rel.split(path.sep)) {
-    if (IGNORED_WATCH_DIR_NAMES.has(part)) {
-      return true;
-    }
-    if (part.startsWith(".")) {
-      return true;
-    }
-  }
-  return false;
+  return rel.split(path.sep).some((part) => isIgnoredWatchDirName(part));
 }

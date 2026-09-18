@@ -2,7 +2,7 @@
   "name": "pm-all-in-one",
   "displayName": "pm-all-in-one",
   "description": "Open a local-first PM workspace (.pmws) in Cursor: issues, wiki, members, and handoffs as editor tabs.",
-  "version": "0.2.13",
+  "version": "0.2.16",
   "publisher": "wenchuanlilizhao",
   "license": "MIT",
   "author": "WenchuanLiliZhao",
@@ -32,6 +32,7 @@
   "activationEvents": [
     "onCommand:pm-all-in-one.newWorkspace",
     "onCommand:pm-all-in-one.open",
+    "onCommand:pm-all-in-one.openMap",
     "onStartupFinished",
     "workspaceContains:**/.pmws"
   ],
@@ -43,6 +44,12 @@
         "title": "Open in pm-all-in-one",
         "category": "pm-all-in-one",
         "icon": "$(open-preview)"
+      },
+      {
+        "command": "pm-all-in-one.openMap",
+        "title": "Open pm-all-in-one map",
+        "category": "pm-all-in-one",
+        "icon": "$(map)"
       },
       {
         "command": "pm-all-in-one.newWorkspace",
@@ -67,13 +74,23 @@
         },
         {
           "command": "pm-all-in-one.open",
+          "when": "explorerResourceIsFolder && resourceScheme == 'file'",
+          "group": "1_pmAllInOne@1"
+        },
+        {
+          "command": "pm-all-in-one.openMap",
+          "when": "explorerResourceIsFolder && resourceScheme == 'file'",
+          "group": "1_pmAllInOne@2"
+        },
+        {
+          "command": "pm-all-in-one.open",
           "when": "resourceScheme == 'file' && (resourceFilename == '.pmws' || resourceExtname == '.pmws')",
-          "group": "navigation@1"
+          "group": "1_pmAllInOne@1"
         },
         {
           "command": "pm-all-in-one.open",
           "when": "resourceScheme == 'file' && resourceFilename == 'README.md' && resourcePath =~ /wiki|members|handoffs|issue-hierarchy/",
-          "group": "navigation@1"
+          "group": "1_pmAllInOne@1"
         }
       ],
       "editor/title/context": [

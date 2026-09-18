@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { test } from "node:test";
 
-import { isIgnoredWatchPath } from "./watch-ignore.js";
+import { isIgnoredWatchDirName, isIgnoredWatchPath } from "./watch-ignore.js";
 
 const root = path.join("/tmp", "pm-watch-ws");
 
@@ -59,4 +59,11 @@ test("isIgnoredWatchPath: skips .pm, node_modules, assets, and dotdirs", () => {
 
 test("isIgnoredWatchPath: workspace root itself is not ignored", () => {
   assert.equal(isIgnoredWatchPath(root, root), false);
+});
+
+test("isIgnoredWatchDirName: junk names and dotdirs", () => {
+  assert.equal(isIgnoredWatchDirName("node_modules"), true);
+  assert.equal(isIgnoredWatchDirName("assets"), true);
+  assert.equal(isIgnoredWatchDirName(".git"), true);
+  assert.equal(isIgnoredWatchDirName("wiki"), false);
 });

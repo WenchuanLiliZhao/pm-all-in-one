@@ -3,7 +3,13 @@ import * as path from "node:path";
 import * as vscode from "vscode";
 import { buildWebviewHtml } from "./webview-html";
 import { WorkspaceSessionRegistry } from "./workspace-session-registry";
+import { CatalogPanelHost } from "./catalog-panel";
 import { createPmWorkspace } from "./new-workspace";
+import {
+  choosePmWorkspaceRoot,
+  isPmWorkspaceFolder,
+  markerUriForRoot,
+} from "./pick-pm-workspace";
 import {
   labelForNodeRef,
   resolvePmNodeReadme,
@@ -403,29 +409,68 @@ export function activate(context: vscode.ExtensionContext): void {
   const registry = new WorkspaceSessionRegistry(makeUi());
   const nodes = new NodePanelHost(context, registry);
   const maps = new MapPanelHost(context, registry, nodes);
+  const catalog = new CatalogPanelHost(maps);
   context.subscriptions.push({ dispose: () => registry.disposeAll() });
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "pm-all-in-one.open",
       async (uri?: vscode.Uri) => {
-        const target = uri ?? vscode.window.activeTextEditor?.document.uri;
-        if (!target) {
+        const explicit = fileUri(uri);
+        if (explicit) {
+          const kind = await classifyOpenTarget(explicit);
+          if (kind === "marker") {
+            await maps.open(explicit);
+            return;
+          }
+          if (kind === "node") {
+            const resolved = resolvePmNodeReadme(explicit);
+            if (resolved.ok) {
+              await nodes.open(resolved.value.root, resolved.value.ref);
+            }
+            return;
+          }
+          if (kind === "folder") {
+            await openDiscovered(maps, [explicit.fsPath]);
+            return;
+          }
+          await openDiscovered(maps, [path.dirname(explicit.fsPath)]);
+          return;
+        }
+
+        const active = fileUri(vscode.window.activeTextEditor?.document.uri);
+        if (active) {
+          const kind = await classifyOpenTarget(active);
+          if (kind === "marker") {
+            await maps.open(active);
+            return;
+          }
+          if (kind === "node") {
+            const resolved = resolvePmNodeReadme(active);
+            if (resolved.ok) {
+              await nodes.open(resolved.value.root, resolved.value.ref);
+            }
+            return;
+          }
+        }
+
+        const folders = vscode.workspace.workspaceFolders;
+        if (!folders?.length) {
           void vscode.window.showErrorMessage(
-            "Select a .pmws file or a PM node README.md.",
+            "Open a folder, or select a .pmws file or a PM node README.md.",
           );
           return;
         }
-        if (path.basename(target.fsPath) === ".pmws") {
-          await maps.open(target);
-          return;
-        }
-        const resolved = resolvePmNodeReadme(target);
-        if (!resolved.ok) {
-          void vscode.window.showErrorMessage(resolved.error);
-          return;
-        }
-        await nodes.open(resolved.value.root, resolved.value.ref);
+        await openDiscovered(
+          maps,
+          folders.map((folder) => folder.uri.fsPath),
+        );
+      },
+    ),
+    vscode.commands.registerCommand(
+      "pm-all-in-one.openMap",
+      async (uri?: vscode.Uri) => {
+        await openMapPanel(maps, catalog, uri);
       },
     ),
     vscode.commands.registerCommand(
@@ -465,6 +510,88 @@ export function activate(context: vscode.ExtensionContext): void {
       editorOptions,
     ),
   );
+}
+
+type OpenTargetKind = "marker" | "node" | "folder" | "other";
+
+function fileUri(value: vscode.Uri | undefined): vscode.Uri | undefined {
+  if (!value || value.scheme !== "file") {
+    return undefined;
+  }
+  return value;
+}
+
+async function classifyOpenTarget(target: vscode.Uri): Promise<OpenTargetKind> {
+  try {
+    const stat = await vscode.workspace.fs.stat(target);
+    if (stat.type & vscode.FileType.Directory) {
+      return "folder";
+    }
+  } catch {
+    return "other";
+  }
+  if (path.basename(target.fsPath) === ".pmws") {
+    return "marker";
+  }
+  const resolved = resolvePmNodeReadme(target);
+  return resolved.ok ? "node" : "other";
+}
+
+async function openDiscovered(
+  maps: MapPanelHost,
+  scanRoots: string[],
+): Promise<void> {
+  const root = await choosePmWorkspaceRoot(scanRoots);
+  if (!root) {
+    return;
+  }
+  await maps.open(markerUriForRoot(root));
+}
+
+async function folderPathFromUri(target: vscode.Uri): Promise<string> {
+  try {
+    const stat = await vscode.workspace.fs.stat(target);
+    if (stat.type & vscode.FileType.Directory) {
+      return target.fsPath;
+    }
+  } catch {
+    /* dirname fallback */
+  }
+  return path.dirname(target.fsPath);
+}
+
+/**
+ * Map webview when the folder is a PM workspace; otherwise a catalog webview
+ * of outermost libraries (not QuickPick).
+ */
+async function openMapPanel(
+  maps: MapPanelHost,
+  catalog: CatalogPanelHost,
+  uri?: vscode.Uri,
+): Promise<void> {
+  const explicit = fileUri(uri);
+  if (explicit) {
+    const folder = await folderPathFromUri(explicit);
+    if (isPmWorkspaceFolder(folder)) {
+      await maps.open(markerUriForRoot(folder));
+      return;
+    }
+    await catalog.open([folder]);
+    return;
+  }
+  const folders = vscode.workspace.workspaceFolders;
+  if (!folders?.length) {
+    void vscode.window.showErrorMessage("Open a folder first.");
+    return;
+  }
+  if (
+    folders.length === 1 &&
+    isPmWorkspaceFolder(folders[0]!.uri.fsPath)
+  ) {
+    await maps.open(markerUriForRoot(folders[0]!.uri.fsPath));
+    return;
+  }
+  await catalog.open(folders.map((folder) => folder.uri.fsPath));
 }
 
 export function deactivate(): void {}

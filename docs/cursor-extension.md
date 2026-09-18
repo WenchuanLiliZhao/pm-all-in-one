@@ -25,7 +25,7 @@ npm run package
 
 Do **not** pass `--no-dependencies`. Activation loads `esbuild` and `chokidar` from the VSIX; omitting them dies with `Cannot find module 'esbuild'`.
 
-Sideload smoke (required before upload): Cursor → **Extensions: Install from VSIX…** → **Developer: Reload Window** → open a real `.pmws` workspace → Open in pm-all-in-one and New PM Workspace…. Expect the webview chrome to follow the Cursor theme.
+Sideload smoke (required before upload): Cursor → **Extensions: Install from VSIX…** → **Developer: Reload Window** → open a folder that contains one or more `.pmws` libraries → Explorer empty space **Open pm-all-in-one map** (catalog webview, then a map tab) plus **Open in pm-all-in-one** in the same second group, and New PM Workspace…. Expect the webview chrome to follow the Cursor theme.
 
 ## First publish (human, once)
 

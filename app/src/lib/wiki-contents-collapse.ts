@@ -2,7 +2,6 @@
  * Wiki Contents fold prefs — machine-local UI chrome (localStorage).
  * ↔ components/wiki-shell — consume collapsed + default depth
  * ↔ pages/.../route SettingsGeneralView — depth number input
- * ↔ wiki @wiki-5FG_8PUrpU4edQeivzJcx — inventory
  */
 import type { WikiSidebarRootNode } from "@/lib/types";
 import { contentsGroupKey } from "@/lib/wiki-contents-dnd";

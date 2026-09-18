@@ -22,6 +22,7 @@ Local-first project manager for personal (and later small-team) developers who f
 | Path | Role |
 | --- | --- |
 | [[app/README\|app/]] | Electron + Vite + React desktop app (+ local web API skeleton) |
+| [[extension/AGENTS\|extension/]] | Cursor host; Open VSX id `wenchuanlilizhao.pm-all-in-one` |
 | [[app/src/components/markdown-editor/AGENTS\|app/src/components/markdown-editor/]] | App-local Markdown edit/preview module |
 
 Do not open the product repo root as a PM workspace. The live dogfood library remains outside this repo (`new-world`).
@@ -61,7 +62,7 @@ Session discipline for vibe coding. Zone map: [[app/DEVELOPMENT|DEVELOPMENT]] §
 
 **Out of scope (still):** OpenAI SDK agent, production server deploy / auth / multi-tenant, SQLite index, comments/line anchors, kanban. (Local `dev:web` API ≠ “server deploy.”)
 
-In-flight product work lives in dogfood issues (e.g. Prop「这是什么」+ Project settings → `@issue-blwwMj6xHRYLCWXfa9wwl::mg6bIUXfu0nW3PQjgWYUE`；UI 打磨 `@issue-blwwMj6xHRYLCWXfa9wwl::usNnrv-FvzXQN1IwgZ54q`).
+In-flight product work lives in the dogfood library: current campaign `@issue-blwwMj6xHRYLCWXfa9wwl::oN84nGQvrVikavAk7D3Ui` (Cursor as daily host). Electron / signed-release campaigns were cancelled.
 Nodes (disk pattern): dogfood `@wiki-WZ_eBxLpaAG_HYKecNZeW`.
 Electron vs server: dogfood `@wiki-X-Z3_3kcrIQ--pNVQhzcw`.
 Save / leave contracts: dogfood `@wiki-n8_7zg25NlxwdV6nIBVcD`.

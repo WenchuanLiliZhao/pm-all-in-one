@@ -4,6 +4,7 @@ scripts/**
 tsconfig.json
 .gitignore
 vite.config.ts
+AGENTS.md
 node_modules/@types/**
 node_modules/vite/**
 node_modules/@vitejs/**

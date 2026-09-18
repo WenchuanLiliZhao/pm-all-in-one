@@ -13,6 +13,7 @@ Workspace lifecycle: create from shipped templates, open-time health (doctor), c
 | `rebuild-index.ts` | Derived `.pm/index.json` (app cache; **not** a barrel). Does not write `.pm/tree.md`. |
 | `watch.ts` | Chokidar → rebuild + doctor payload |
 | `watch-ignore.ts` | Watcher skip list (`.pm`, `assets/`, `node_modules`, dotdirs) |
+| `discover-pm-workspaces.ts` | Outermost `.pmws` + `isValidWorkspace` walk (Cursor host picker) |
 | `doctor.ts` | Filesystem-shape stray scan + `scanWorkspace` (fence validators) |
 | `fence-validators.ts` | Workspace-declared Markdown fence lint (opt-in module import) |
 | `agent-md.ts` | `.pm/agent.md` rev stamp + drift vs factory |

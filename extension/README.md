@@ -13,8 +13,8 @@ Sideload a local build: Command Palette → **Extensions: Install from VSIX…**
 
 ## Use
 
-1. Open a folder that already is a pm-all-in-one workspace (it contains a `.pmws` marker at the root).
-2. Command Palette → **pm-all-in-one: Open in pm-all-in-one**, or right-click `.pmws` / a node `README.md`.
+1. Open a folder that contains one or more pm-all-in-one libraries (each has a `.pmws` marker at its root).
+2. Explorer → right-click empty space → **Open pm-all-in-one map** opens a webview of libraries (click a row for that map). If you right-click a folder that already is a library, it opens that map directly. **Open in pm-all-in-one** stays in the same group for `.pmws` / node `README.md` / a QuickPick.
 3. To start a new library: Explorer → right-click a folder → **New PM Workspace…**
 
 Left-click still navigates inside the current PM tab. Right-click a node row to open it in another Cursor tab.
