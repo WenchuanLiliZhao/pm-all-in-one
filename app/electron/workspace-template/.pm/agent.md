@@ -1,4 +1,4 @@
-<!-- local-pm agent.md rev 19 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/custom/ (see pm-create-skill). -->
+<!-- local-pm agent.md rev 20 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/custom/ (see pm-create-skill). -->
 # Agent rules (local-pm)
 
 ## Finding things
@@ -113,7 +113,8 @@ Required directories that may be empty (`members/`, `handoffs/`,
 `issue-hierarchy/`, `.agents/skills/custom/`) always contain `.gitkeep` so git
 can track them. The app writes these on create and on open; do not delete them.
 Optional per-node `assets/` folders stay absent when empty — they are not this
-rule.
+rule. A `README.md` inside `assets/` is ordinary Markdown (start it with a
+`#` title), not the node's body.
 
 Create `.pm/local.md` only when you have something to write (do **not** seed an empty
 file). It is for agents and humans on this machine — natural-language checkout
@@ -328,10 +329,16 @@ markdown prop files (issue or wiki-node), and the non-structural fields of
 status.
 
 **Title vs body.** Title lives in `workspace.ts` / `project.ts` / issue, wiki-node,
-or member `props.ts`. The matching `README.md` is body only — do **not** start
-it with a `#` heading that repeats the title (the UI already renders title).
-Start the body with prose or `##` sections. When you need the full entity,
-read both the props file and the README.
+or member `props.ts`. The **node** `README.md` — the file sitting next to that
+meta file, not a nested path — is body only. Do **not** start that README with
+a `#` heading that repeats the title (the UI already renders title). Start the
+body with prose or `##` sections.
+
+This no-`#`-title rule does **not** apply to `README.md` files under a node's
+`assets/` (demo cuts, how-to-open notes, packages). Those are ordinary Markdown
+documents: they have no meta title and no UI chrome, so start them with a `#`
+heading. When you need the full entity, read both the props file and the node
+README.
 
 **Do not edit `created` or `updated` in `props.ts` / `project.ts` / wiki-node
 or member `props.ts`.** They are system fields: `created` is set once at create;

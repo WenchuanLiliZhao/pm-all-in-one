@@ -138,6 +138,8 @@ test("scaffold copies template files including .gitkeep", () => {
       assert.ok(agent.includes("## Mentions (live cross-references)"));
       assert.ok(agent.includes("**Never** wrap a concrete locator"));
       assert.ok(agent.includes("## Fence validators"));
+      assert.ok(agent.includes("This no-`#`-title rule does **not** apply"));
+      assert.ok(agent.includes("ordinary Markdown"));
       assert.ok(agent.includes("trustFenceValidators"));
       assert.ok(agent.includes("local.md"));
       assert.ok(agent.includes("machine-absolute code paths"));

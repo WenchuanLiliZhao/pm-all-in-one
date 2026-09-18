@@ -1,10 +1,28 @@
 {
   "name": "pm-all-in-one",
   "displayName": "pm-all-in-one",
-  "description": "Open a local-pm workspace from a .pmws marker in a webview.",
-  "version": "0.2.12",
+  "description": "Open a local-first PM workspace (.pmws) in Cursor: issues, wiki, members, and handoffs as editor tabs.",
+  "version": "0.2.13",
   "publisher": "wenchuanlilizhao",
+  "license": "MIT",
+  "author": "WenchuanLiliZhao",
+  "homepage": "https://github.com/WenchuanLiliZhao/pm-all-in-one",
+  "bugs": {
+    "url": "https://github.com/WenchuanLiliZhao/pm-all-in-one/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/WenchuanLiliZhao/pm-all-in-one.git",
+    "directory": "extension"
+  },
   "icon": "media/icons/pmws.png",
+  "keywords": [
+    "project-management",
+    "wiki",
+    "issues",
+    "local-first",
+    "pmws"
+  ],
   "engines": {
     "vscode": "^1.90.0"
   },
@@ -132,6 +150,7 @@
     }
   },
   "scripts": {
+    "vscode:prepublish": "npm run compile",
     "compile": "node ./scripts/build.mjs",
     "watch": "node ./scripts/build.mjs --watch",
     "package": "npx --yes @vscode/vsce package"
