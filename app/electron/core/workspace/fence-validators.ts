@@ -11,6 +11,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { BODY_FILE } from "../identity/body-file.js";
 import { pathToFileURL } from "node:url";
 import { z } from "zod";
 
@@ -187,10 +188,10 @@ function collectMarkdownFiles(dir: string, into: string[]): void {
   }
 }
 
-/** Home, issue/project bodies, markdown custom props, wiki / member / handoff READMEs. */
+/** Home, issue/project bodies, markdown custom props, wiki / member / handoff bodies. */
 export function listMarkdownBodies(workspaceRoot: string): string[] {
   const files: string[] = [];
-  const home = path.join(workspaceRoot, "README.md");
+  const home = path.join(workspaceRoot, BODY_FILE);
   if (fs.existsSync(home) && fs.statSync(home).isFile()) {
     files.push(home);
   }

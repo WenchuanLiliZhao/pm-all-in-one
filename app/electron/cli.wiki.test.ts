@@ -88,7 +88,7 @@ test("cli wiki create allocates id, writes disk, and enters Contents root", asyn
       true,
     );
     assert.equal(
-      fs.existsSync(path.join(root, "wiki", payload.id, "README.md")),
+      fs.existsSync(path.join(root, "wiki", payload.id, "body.md")),
       true,
     );
     const sidebar = await requireReadableSidebar(root);

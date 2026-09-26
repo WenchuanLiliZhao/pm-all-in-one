@@ -179,7 +179,7 @@ export interface WorkspaceMeta {
   title: string;
   /** ISO date YYYY-MM-DD */
   createdDate: string;
-  /** README.md body */
+  /** body.md body */
   description: string;
 }
 

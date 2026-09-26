@@ -476,7 +476,7 @@ export function MemberEditor({ memberId }: Props) {
           }}
           plugins={plugins}
           mentionAutocomplete={mentionAutocomplete}
-          placeholder="Member README… type @ to link issue / wiki / member / handoff"
+          placeholder="Member body… type @ to link issue / wiki / member / handoff"
           rows={12}
           onNavigateOutAtStart={() => {
             const el = titleInputRef.current;

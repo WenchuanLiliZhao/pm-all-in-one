@@ -1,4 +1,4 @@
-<!-- local-pm agent.md rev 20 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/custom/ (see pm-create-skill). -->
+<!-- local-pm agent.md rev 21 — product-owned; do not hand-edit. Custom conventions go in .agents/skills/custom/ (see pm-create-skill). -->
 # Agent rules (local-pm)
 
 ## Finding things
@@ -8,7 +8,7 @@ Every reference resolves by joining directory names, with no index and no runnin
 ```text
 @issue-<projectId>             ->  issue-hierarchy/<projectId>/   (project container)
 @issue-<projectId>::<issueId>  ->  issue-hierarchy/<projectId>/<issueId>/
-@wiki-<wikiNodeId>             ->  wiki/<wikiNodeId>/README.md
+@wiki-<wikiNodeId>             ->  wiki/<wikiNodeId>/body.md
 @member-<memberId>             ->  members/<memberId>/
 @handoff-<handoffId>           ->  handoffs/<handoffId>/
 ```
@@ -35,7 +35,7 @@ Work order for agents:
 1. Honor `blockedBy`. Do not start an issue whose blockers are still open.
    `done` blockers are satisfied; `cancel` items are not work.
 2. Among currently unblocked open issues, pick by **semantic readiness** —
-   what must be true before the next thing can be learned (titles, README,
+   what must be true before the next thing can be learned (titles, body,
    the parent's suggested sequence). Do not use alphabetical title order.
 
 Do not glob nanoid folders. Do not read or write `.pm/tree.md` — older
@@ -43,7 +43,7 @@ builds used to dump a derived map there; it is not a source of truth.
 
 ## Mentions (live cross-references)
 
-In body Markdown (workspace Home, project / issue / wiki / member / handoff `README.md`, and
+In body Markdown (workspace Home, project / issue / wiki / member / handoff `body.md`, and
 markdown custom-prop files), write **live** locators as bare text so the app
 turns them into chips:
 
@@ -71,7 +71,7 @@ Backticks are fine only when explaining the *syntax* with placeholders
 <workspace-root>/
   AGENTS.md                    # IDE entry → .pm/agent.md
   workspace.ts                 # title, createdDate
-  README.md                    # workspace body (Home)
+  body.md                      # workspace body (Home)
   .agents/skills/
     core/                      # create-time product skills (pm-content-placement, …)
     custom/                    # user conventions (see pm-create-skill)
@@ -81,25 +81,25 @@ Backticks are fine only when explaining the *syntax* with placeholders
     schema.d.ts                # generated from wiki/custom-props.ts
     <nanoid>/                  # wiki-node dirs (ids never renamed)
       props.ts                 # title, description, created, updated, createdBy?, custom scalars
-      README.md                # body
+      body.md                  # body
       <kebab-key>.md           # optional markdown custom field
   members/
     <nanoid>/                  # member dirs (ids never renamed)
       props.ts                 # title, membership, created, updated
-      README.md                # body
+      body.md                  # body
       avatar.<ext>             # optional
   handoffs/
     <nanoid>/                  # one sent handoff (ids never renamed)
       props.ts                 # title, description, relatedProject, open, from, to, created, updated
-      README.md                # body (may cite @issue-…)
+      body.md                  # body (may cite @issue-…)
   issue-hierarchy/
     <nanoid>/                  # project container
       project.ts               # title, created, updated, createdBy?
-      README.md
+      body.md
       custom-props.ts
       <nanoid>/                # issue
         props.ts               # …, assignee?, createdBy?
-        README.md
+        body.md
   .pm/
     agent.md
     views.json
@@ -114,7 +114,7 @@ Required directories that may be empty (`members/`, `handoffs/`,
 can track them. The app writes these on create and on open; do not delete them.
 Optional per-node `assets/` folders stay absent when empty — they are not this
 rule. A `README.md` inside `assets/` is ordinary Markdown (start it with a
-`#` title), not the node's body.
+`#` title), not the node's body; the body is `body.md`.
 
 Create `.pm/local.md` only when you have something to write (do **not** seed an empty
 file). It is for agents and humans on this machine — natural-language checkout
@@ -181,14 +181,14 @@ a validator.
 
 ## Wiki
 
-Each wiki-node is `wiki/<id>/{props.ts,README.md}` where `id` is an opaque
+Each wiki-node is `wiki/<id>/{props.ts,body.md}` where `id` is an opaque
 token. Props include `title`, `description` (required key, may be `""`), and
 `status` (`"todo"` | `"in-progress"` | `"done"`; required; create default
 `todo`).
 **Contents** (`wiki/sidebar.ts` `ref` tree) is the required hierarchy —
 every wiki-node must appear there. Create via the app or CLI so ids allocate
 correctly; new nodes always enter Contents (`parentId` optional, default root).
-Prefer `@wiki-<id>` for links. Home is root `README.md`, not a file under
+Prefer `@wiki-<id>` for links. Home is root `body.md`, not a file under
 `wiki/`. All pages is a flat admin inventory of the same set.
 
 **Only `done` wiki-nodes in the standing column are standing facts.** Record-column pages are dated snapshots: cite them only via an explicit pointer from a standing page, never as library law. Do not cite `todo` or `in-progress` bodies as truth — they are still being written. You may still open them to continue the work. When you create or substantially rewrite a wiki-node, leave it `todo` or set `in-progress` while editing, then:
@@ -209,9 +209,9 @@ exports `{ fields: CustomPropDef[] }`. Generated `wiki/schema.d.ts` is
 `satisfies WikiNodeProps`); markdown values are sibling `<kebab-key>.md`,
 never in props.ts. Missing `wiki/custom-props.ts` means an empty schema.
 Do not declare reserved keys (`id`, `title`, `description`, `status`, `created`,
-`updated`, `createdBy`, `body`) or a markdown key that kebab-cases to `readme`.
+`updated`, `createdBy`, `body`) or a markdown key that kebab-cases to `body`.
 `type: "wiki-node"` stores `string[]` of wiki-node ids in props.ts (omit when
-empty). Those ids are not Contents parents. A `@wiki-<id>` in README.md is a
+empty). Those ids are not Contents parents. A `@wiki-<id>` in body.md is a
 prose mention, not membership in the field.
 `type: "string-list"` stores `string[]` of free-text tokens in props.ts (omit
 when empty). Tokens are not wiki-node ids — use this for keywords / aliases.
@@ -227,7 +227,7 @@ app or CLI. Collaboration between people is still **git** (commit / push /
 pull).
 
 **Do not** put machine-absolute code paths (or other per-machine location notes)
-in `members/*/README.md` or any other file that enters git. Those belong in
+in `members/*/body.md` or any other file that enters git. Those belong in
 `.pm/local.md` (or, when the product path table ships, `.pm/local.json`).
 
 ## Handoffs
@@ -247,7 +247,7 @@ project / epic truth.
 ```text
 issue-hierarchy/<projectId>/<issueId>/
   props.ts                     # title, level, parentId, created, updated, …
-  README.md                    # the body
+  body.md                      # the body
   verification-standard.md     # one file per markdown custom prop
 ```
 
@@ -321,7 +321,7 @@ Hand-created directories under a project are **not** issues until adopted
 
 ## Editing by hand
 
-Fine to edit: workspace / issue / project / member `README.md`, `wiki/*/README.md`,
+Fine to edit: workspace / issue / project / member `body.md`, `wiki/*/body.md`,
 markdown prop files (issue or wiki-node), and the non-structural fields of
 `workspace.ts`, `project.ts`, and `props.ts` (title, wiki-node `status`,
 `startDate`/`endDate`, `blockedBy`, `assignee`, custom props, member
@@ -329,16 +329,20 @@ markdown prop files (issue or wiki-node), and the non-structural fields of
 status.
 
 **Title vs body.** Title lives in `workspace.ts` / `project.ts` / issue, wiki-node,
-or member `props.ts`. The **node** `README.md` — the file sitting next to that
-meta file, not a nested path — is body only. Do **not** start that README with
-a `#` heading that repeats the title (the UI already renders title). Start the
-body with prose or `##` sections.
+or member `props.ts`. The **node** `body.md` — the file sitting next to that
+meta file — is body only. Do **not** start it with a `#` heading that repeats
+the title (the UI already renders title). Start the body with prose or `##`
+sections.
 
-This no-`#`-title rule does **not** apply to `README.md` files under a node's
-`assets/` (demo cuts, how-to-open notes, packages). Those are ordinary Markdown
-documents: they have no meta title and no UI chrome, so start them with a `#`
-heading. When you need the full entity, read both the props file and the node
-README.
+A `README.md` is never a node body. Every `README.md` in a workspace — under a
+node's `assets/` (demo cuts, how-to-open notes, packages) or anywhere else — is
+an ordinary Markdown document: it has no meta title and no UI chrome, so start
+it with a `#` heading. When you need the full entity, read both the props file
+and the node `body.md`.
+
+Workspaces made before rev 21 have `README.md` bodies. The app renames them on
+open; without the app, run `pm-all-in-one migrate body`. Doctor reports what is
+left as `body-legacy-readme`.
 
 **Do not edit `created` or `updated` in `props.ts` / `project.ts` / wiki-node
 or member `props.ts`.** They are system fields: `created` is set once at create;

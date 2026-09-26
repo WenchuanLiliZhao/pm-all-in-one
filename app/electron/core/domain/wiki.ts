@@ -1,5 +1,5 @@
 /**
- * Workspace documentation: `wiki/<id>/{props.ts,README.md}` + `wiki/sidebar.ts` nav SoT.
+ * Workspace documentation: `wiki/<id>/{props.ts,body.md}` + `wiki/sidebar.ts` nav SoT.
  * Ids are opaque nanoid(21) tokens (never renamed). Node pattern: dogfood @wiki-WZ_eBxLpaAG_HYKecNZeW.
  *
  * ↔ electron/core/sync/detail-diff.ts — OCC expected / StaleWriteError on updateWikiNode
@@ -11,6 +11,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { BODY_FILE } from "../identity/body-file.js";
 import { z } from "zod";
 
 import { isValidEntityId, keyToKebab, parseId, type EntityId } from "../identity/dir-id.js";
@@ -324,11 +325,11 @@ export function wikiNodePropsPath(workspaceRoot: string, id: EntityId): string {
   return path.join(wikiNodeDirPath(workspaceRoot, id), "props.ts");
 }
 
-export function wikiNodeReadmePath(workspaceRoot: string, id: EntityId): string {
-  return path.join(wikiNodeDirPath(workspaceRoot, id), "README.md");
+export function wikiNodeBodyPath(workspaceRoot: string, id: EntityId): string {
+  return path.join(wikiNodeDirPath(workspaceRoot, id), BODY_FILE);
 }
 
-/** @deprecated Prefer wikiNodeReadmePath; kept for callers checking legacy flat files. */
+/** @deprecated Prefer wikiNodeBodyPath; kept for callers checking legacy flat files. */
 export function wikiNodeLegacyFilePath(workspaceRoot: string, id: EntityId): string {
   return path.join(wikiDir(workspaceRoot), `${id}.md`);
 }
@@ -354,12 +355,12 @@ function isWikiNodeDir(workspaceRoot: string, id: EntityId): boolean {
   }
   return (
     fs.existsSync(wikiNodePropsPath(workspaceRoot, id)) ||
-    fs.existsSync(wikiNodeReadmePath(workspaceRoot, id))
+    fs.existsSync(wikiNodeBodyPath(workspaceRoot, id))
   );
 }
 
 /**
- * One-shot: `wiki/<id>.md` → `wiki/<id>/{props.ts,README.md}`.
+ * One-shot: `wiki/<id>.md` → `wiki/<id>/{props.ts,body.md}`.
  * Prefers existing dir; removes leftover flat file after migrate.
  */
 export function migrateLegacyFlatWikiNodes(workspaceRoot: string): void {
@@ -382,12 +383,12 @@ export function migrateLegacyFlatWikiNodes(workspaceRoot: string): void {
     const body = fs.readFileSync(flat, "utf8");
     const destDir = wikiNodeDirPath(workspaceRoot, id);
     const propsFile = wikiNodePropsPath(workspaceRoot, id);
-    const readmeFile = wikiNodeReadmePath(workspaceRoot, id);
+    const bodyFile = wikiNodeBodyPath(workspaceRoot, id);
     if (!fs.existsSync(destDir)) {
       fs.mkdirSync(destDir, { recursive: true });
     }
-    if (!fs.existsSync(readmeFile)) {
-      fs.writeFileSync(readmeFile, body, "utf8");
+    if (!fs.existsSync(bodyFile)) {
+      fs.writeFileSync(bodyFile, body, "utf8");
     }
     if (!fs.existsSync(propsFile)) {
       const now = nowIsoUtcZ();
@@ -910,9 +911,9 @@ async function readWikiNodeMeta(
   }
   const dir = wikiNodeDirPath(workspaceRoot, id);
   const propsFile = wikiNodePropsPath(workspaceRoot, id);
-  const readmeFile = wikiNodeReadmePath(workspaceRoot, id);
-  const body = fs.existsSync(readmeFile)
-    ? fs.readFileSync(readmeFile, "utf8")
+  const bodyFile = wikiNodeBodyPath(workspaceRoot, id);
+  const body = fs.existsSync(bodyFile)
+    ? fs.readFileSync(bodyFile, "utf8")
     : "";
   let title = titleFromBody(body, id);
   let description = "";
@@ -966,8 +967,8 @@ async function readWikiNodeMeta(
       updated,
     });
   }
-  if (!fs.existsSync(readmeFile)) {
-    fs.writeFileSync(readmeFile, "", "utf8");
+  if (!fs.existsSync(bodyFile)) {
+    fs.writeFileSync(bodyFile, "", "utf8");
   }
   return {
     id,
@@ -1060,8 +1061,8 @@ export async function getWikiNode(
   if (!meta) {
     throw new Error(`Wiki-node not found: ${id}`);
   }
-  const body = fs.existsSync(wikiNodeReadmePath(workspaceRoot, id))
-    ? fs.readFileSync(wikiNodeReadmePath(workspaceRoot, id), "utf8")
+  const body = fs.existsSync(wikiNodeBodyPath(workspaceRoot, id))
+    ? fs.readFileSync(wikiNodeBodyPath(workspaceRoot, id), "utf8")
     : "";
   let fields: Record<string, unknown> = {};
   let markdownFields: Record<string, string> = {};
@@ -1117,7 +1118,7 @@ export async function createWikiNode(
     updated: now,
     ...(createdBy ? { createdBy } : {}),
   });
-  fs.writeFileSync(wikiNodeReadmePath(workspaceRoot, id), body, "utf8");
+  fs.writeFileSync(wikiNodeBodyPath(workspaceRoot, id), body, "utf8");
 
   const sidebar = await requireReadableSidebar(workspaceRoot);
   const pageNode: WikiSidebarRefNode = { type: "ref", id, label: title };
@@ -1198,7 +1199,7 @@ export async function updateWikiNode(
     }
   }
   const propsFile = wikiNodePropsPath(workspaceRoot, id);
-  const readmeFile = wikiNodeReadmePath(workspaceRoot, id);
+  const bodyFile = wikiNodeBodyPath(workspaceRoot, id);
   const nodeDir = wikiNodeDirPath(workspaceRoot, id);
   let props: Record<string, unknown> = {
     title: meta.title,
@@ -1244,7 +1245,7 @@ export async function updateWikiNode(
   }
 
   if (patch.body !== undefined) {
-    fs.writeFileSync(readmeFile, patch.body, "utf8");
+    fs.writeFileSync(bodyFile, patch.body, "utf8");
   }
   if (patch.title !== undefined) {
     const nextTitle = patch.title.trim();

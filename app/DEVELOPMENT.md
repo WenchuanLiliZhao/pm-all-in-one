@@ -63,10 +63,10 @@ A workspace is any folder with:
 
 ```text
 workspace.ts         # title, createdDate
-README.md            # workspace body (Home)
-wiki/                # <nanoid(21)>/{props.ts,README.md} + sidebar.ts (nav SoT)
+body.md              # workspace body (Home)
+wiki/                # <nanoid(21)>/{props.ts,body.md} + sidebar.ts (nav SoT)
 .pm/                 # views, derived index.json (gitignored)
-issue-hierarchy/     # <projectId>/<issueId>/ — flat (props.ts + README.md)
+issue-hierarchy/     # <projectId>/<issueId>/ — flat (props.ts + body.md)
 ```
 
 Dogfood library: `/Users/wenchuanzhao/Documents/GitHub/new-world`. Nodes / wiki disk pattern: `@wiki-WZ_eBxLpaAG_HYKecNZeW`. Electron vs server: `@wiki-X-Z3_3kcrIQ--pNVQhzcw`.

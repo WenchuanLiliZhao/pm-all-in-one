@@ -156,7 +156,7 @@ export function MarkdownEditorPage() {
             Preview. Auto-pair on. Controlled value.
           </p>
           <MarkdownEditor
-            filename="README.md"
+            filename="body.md"
             value={value}
             onChange={setValue}
             placeholder="Type Markdown… try **bold**, @, ```"
@@ -204,7 +204,7 @@ export function MarkdownEditorPage() {
           </Button>
         </div>
         <MarkdownEditor
-          filename="README.md"
+          filename="body.md"
           editorRef={focusRef}
           value={value}
           onChange={setValue}

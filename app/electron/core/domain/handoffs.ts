@@ -1,5 +1,5 @@
 /**
- * Workspace handoffs: `handoffs/<id>/{props.ts,README.md}`.
+ * Workspace handoffs: `handoffs/<id>/{props.ts,body.md}`.
  * One directory = one sent handoff. from/to are member ids. No delete in v1.
  *
  * ↔ electron/core/sync/detail-diff.ts — OCC expected / StaleWriteError on updateHandoff
@@ -9,6 +9,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { BODY_FILE } from "../identity/body-file.js";
 
 import { parseId, type EntityId } from "../identity/dir-id.js";
 import {
@@ -52,8 +53,8 @@ export function handoffPropsPath(workspaceRoot: string, id: EntityId): string {
   return path.join(handoffDirPath(workspaceRoot, id), "props.ts");
 }
 
-export function handoffReadmePath(workspaceRoot: string, id: EntityId): string {
-  return path.join(handoffDirPath(workspaceRoot, id), "README.md");
+export function handoffBodyPath(workspaceRoot: string, id: EntityId): string {
+  return path.join(handoffDirPath(workspaceRoot, id), BODY_FILE);
 }
 
 function assertValidHandoffId(id: string): asserts id is EntityId {
@@ -232,8 +233,8 @@ export async function getHandoff(
   if (!meta) {
     throw new Error(`Handoff not found: ${id}`);
   }
-  const body = fs.existsSync(handoffReadmePath(workspaceRoot, id))
-    ? fs.readFileSync(handoffReadmePath(workspaceRoot, id), "utf8")
+  const body = fs.existsSync(handoffBodyPath(workspaceRoot, id))
+    ? fs.readFileSync(handoffBodyPath(workspaceRoot, id), "utf8")
     : "";
   return { ...meta, body };
 }
@@ -280,7 +281,7 @@ export async function createHandoff(
     }),
     "utf8",
   );
-  fs.writeFileSync(handoffReadmePath(workspaceRoot, id), body, "utf8");
+  fs.writeFileSync(handoffBodyPath(workspaceRoot, id), body, "utf8");
   return getHandoff(workspaceRoot, id);
 }
 
@@ -349,7 +350,7 @@ export async function updateHandoff(
     }
   }
   const propsFile = handoffPropsPath(workspaceRoot, id);
-  const readmeFile = handoffReadmePath(workspaceRoot, id);
+  const readmeFile = handoffBodyPath(workspaceRoot, id);
   let props: Record<string, unknown> = {
     title: meta.title,
     description: meta.description,

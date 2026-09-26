@@ -57,7 +57,7 @@ function runHandoff(
   };
 }
 
-test("cli handoff create --body writes README", async () => {
+test("cli handoff create --body writes body.md", async () => {
   await withTempWorkspace(async (root) => {
     const project = await createProject(root, { title: "P" });
     const from = await createMember(root, { title: "Alice" });
@@ -89,7 +89,7 @@ test("cli handoff create --body writes README", async () => {
     assert.equal(payload.body, "Start here.");
     assert.equal(
       fs.readFileSync(
-        path.join(root, "handoffs", payload.id, "README.md"),
+        path.join(root, "handoffs", payload.id, "body.md"),
         "utf8",
       ),
       "Start here.",
@@ -97,7 +97,7 @@ test("cli handoff create --body writes README", async () => {
   });
 });
 
-test("cli handoff create --body-file writes README", async () => {
+test("cli handoff create --body-file writes body.md", async () => {
   await withTempWorkspace(async (root) => {
     const project = await createProject(root, { title: "P" });
     const from = await createMember(root, { title: "Alice" });

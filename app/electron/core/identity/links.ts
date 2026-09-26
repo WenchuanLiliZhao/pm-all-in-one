@@ -44,7 +44,7 @@ const ISSUE_LINK_RE = new RegExp(
  */
 const PROJECT_LINK_RE = new RegExp(`@issue-${ENTITY_ID_SRC}(?!::)`, "g");
 
-/** Canonical mention: `@wiki-<wikiNodeId>` → `wiki/<id>/README.md`. */
+/** Canonical mention: `@wiki-<wikiNodeId>` → `wiki/<id>/body.md`. */
 const WIKI_LINK_RE = new RegExp(`@wiki-${ENTITY_ID_SRC}`, "g");
 
 /** Canonical mention: `@member-<memberId>` → `members/<id>/`. */

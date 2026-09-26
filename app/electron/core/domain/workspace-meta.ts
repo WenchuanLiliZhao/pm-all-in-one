@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { BODY_FILE } from "../identity/body-file.js";
 
 import {
   equalsForSync,
@@ -14,8 +15,8 @@ export function workspacePropsPath(root: string): string {
   return path.join(root, "workspace.ts");
 }
 
-export function workspaceReadmePath(root: string): string {
-  return path.join(root, "README.md");
+export function workspaceBodyPath(root: string): string {
+  return path.join(root, BODY_FILE);
 }
 
 function todayIsoDate(): string {
@@ -43,7 +44,7 @@ export function defaultWorkspaceMeta(
   };
 }
 
-/** Write workspace.ts + README.md from a full meta object. */
+/** Write workspace.ts + body.md from a full meta object. */
 export function writeWorkspaceMeta(root: string, meta: WorkspaceMeta): void {
   fs.writeFileSync(
     workspacePropsPath(root),
@@ -53,30 +54,30 @@ export function writeWorkspaceMeta(root: string, meta: WorkspaceMeta): void {
     }),
     "utf8",
   );
-  fs.writeFileSync(workspaceReadmePath(root), meta.description, "utf8");
+  fs.writeFileSync(workspaceBodyPath(root), meta.description, "utf8");
 }
 
 /**
- * Ensure root workspace.ts + README.md exist.
+ * Ensure root workspace.ts + body.md exist.
  * Missing files are seeded from folder basename + today's date.
  */
 export async function ensureWorkspaceMeta(root: string): Promise<WorkspaceMeta> {
   const propsFile = workspacePropsPath(root);
-  const readmeFile = workspaceReadmePath(root);
+  const bodyFile = workspaceBodyPath(root);
   const defaults = defaultWorkspaceMeta(root);
 
   if (!fs.existsSync(propsFile)) {
     writeWorkspaceMeta(root, {
       ...defaults,
-      description: fs.existsSync(readmeFile)
-        ? fs.readFileSync(readmeFile, "utf8")
+      description: fs.existsSync(bodyFile)
+        ? fs.readFileSync(bodyFile, "utf8")
         : "",
     });
     return readWorkspaceMeta(root);
   }
 
-  if (!fs.existsSync(readmeFile)) {
-    fs.writeFileSync(readmeFile, "", "utf8");
+  if (!fs.existsSync(bodyFile)) {
+    fs.writeFileSync(bodyFile, "", "utf8");
   }
 
   return readWorkspaceMeta(root);
@@ -88,8 +89,8 @@ export async function readWorkspaceMeta(root: string): Promise<WorkspaceMeta> {
     throw new Error(`Missing workspace.ts at ${root}`);
   }
   const props = await loadWorkspaceProps(fs.readFileSync(propsFile, "utf8"));
-  const description = fs.existsSync(workspaceReadmePath(root))
-    ? fs.readFileSync(workspaceReadmePath(root), "utf8")
+  const description = fs.existsSync(workspaceBodyPath(root))
+    ? fs.readFileSync(workspaceBodyPath(root), "utf8")
     : "";
   return {
     title: props.title,

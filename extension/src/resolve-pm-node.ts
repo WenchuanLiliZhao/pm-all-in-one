@@ -7,6 +7,7 @@ import {
 } from "../../app/electron/core/domain/node-assets.js";
 import { isValidEntityId } from "../../app/electron/core/identity/dir-id.js";
 import { isValidWorkspace } from "../../app/electron/core/domain/store.js";
+import { BODY_FILE } from "../../app/electron/core/identity/body-file.js";
 
 export type { NodeRef };
 
@@ -38,8 +39,8 @@ export function findWorkspaceRootFromFile(filePath: string): string | null {
   }
 }
 
-function parseNodeReadme(root: string, filePath: string): NodeRef | null {
-  if (path.basename(filePath) !== "README.md") {
+function parseNodeBody(root: string, filePath: string): NodeRef | null {
+  if (path.basename(filePath) !== BODY_FILE) {
     return null;
   }
   const rel = posixRel(root, path.resolve(filePath));
@@ -50,33 +51,33 @@ function parseNodeReadme(root: string, filePath: string): NodeRef | null {
   if (parts.some((p) => p === "assets")) {
     return null;
   }
-  if (parts.length === 1 && parts[0] === "README.md") {
+  if (parts.length === 1 && parts[0] === BODY_FILE) {
     return { kind: "workspace" };
   }
-  if (parts.length === 3 && parts[0] === "wiki" && parts[2] === "README.md") {
+  if (parts.length === 3 && parts[0] === "wiki" && parts[2] === BODY_FILE) {
     const wikiNodeId = parts[1]!;
     return isValidEntityId(wikiNodeId) ? { kind: "wiki", wikiNodeId } : null;
   }
-  if (parts.length === 3 && parts[0] === "members" && parts[2] === "README.md") {
+  if (parts.length === 3 && parts[0] === "members" && parts[2] === BODY_FILE) {
     const memberId = parts[1]!;
     return isValidEntityId(memberId) ? { kind: "member", memberId } : null;
   }
   if (
     parts.length === 3 &&
     parts[0] === "handoffs" &&
-    parts[2] === "README.md"
+    parts[2] === BODY_FILE
   ) {
     const handoffId = parts[1]!;
     return isValidEntityId(handoffId) ? { kind: "handoff", handoffId } : null;
   }
   if (parts[0] === "issue-hierarchy") {
-    if (parts.length === 3 && parts[2] === "README.md") {
+    if (parts.length === 3 && parts[2] === BODY_FILE) {
       const projectId = parts[1]!;
       return isValidEntityId(projectId)
         ? { kind: "project", projectId }
         : null;
     }
-    if (parts.length === 4 && parts[3] === "README.md") {
+    if (parts.length === 4 && parts[3] === BODY_FILE) {
       const projectId = parts[1]!;
       const issueId = parts[2]!;
       return isValidEntityId(projectId) && isValidEntityId(issueId)
@@ -87,13 +88,13 @@ function parseNodeReadme(root: string, filePath: string): NodeRef | null {
   return null;
 }
 
-export function resolvePmNodeReadme(uri: vscode.Uri): ResolvePmNodeResult {
+export function resolvePmNodeBody(uri: vscode.Uri): ResolvePmNodeResult {
   if (uri.scheme !== "file") {
     return { ok: false, error: "Not a file on disk." };
   }
   const filePath = uri.fsPath;
-  if (path.basename(filePath) !== "README.md") {
-    return { ok: false, error: "Not a node README.md." };
+  if (path.basename(filePath) !== BODY_FILE) {
+    return { ok: false, error: "Not a node body.md." };
   }
   const root = findWorkspaceRootFromFile(filePath);
   if (!root) {
@@ -102,18 +103,18 @@ export function resolvePmNodeReadme(uri: vscode.Uri): ResolvePmNodeResult {
       error: "Not inside a pm-all-in-one workspace (.pmws).",
     };
   }
-  const ref = parseNodeReadme(root, filePath);
+  const ref = parseNodeBody(root, filePath);
   if (!ref) {
     return {
       ok: false,
-      error: "Not a PM node README (wiki / issue / Home / member / handoff).",
+      error: "Not a PM node body.md (wiki / issue / Home / member / handoff).",
     };
   }
   return { ok: true, value: { root, ref } };
 }
 
-export function readmeUriForNode(root: string, ref: NodeRef): vscode.Uri {
-  return vscode.Uri.file(path.join(resolveNodeDir(root, ref), "README.md"));
+export function bodyUriForNode(root: string, ref: NodeRef): vscode.Uri {
+  return vscode.Uri.file(path.join(resolveNodeDir(root, ref), BODY_FILE));
 }
 
 export function labelForNodeRef(ref: NodeRef): string {

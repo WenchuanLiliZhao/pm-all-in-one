@@ -1,14 +1,14 @@
 ---
 name: pm-content-placement
-description: Decide whether content belongs in a project description, an epic README, or a wiki node in this local-pm library. Use when creating or editing project descriptions, epic bodies, or wiki pages, or when promoting a closed epic's learnings.
+description: Decide whether content belongs in a project description, an epic body, or a wiki node in this local-pm library. Use when creating or editing project descriptions, epic bodies, or wiki pages, or when promoting a closed epic's learnings.
 ---
 
 # What goes where (project / epic / wiki)
 
-- **Project description** (`issue-hierarchy/<projectId>/README.md`): long-lived
+- **Project description** (`issue-hierarchy/<projectId>/body.md`): long-lived
   area — what this line is, its boundaries, how it operates. Slow-changing.
   No campaign dates and no done criteria here.
-- **Epic README** (`issue-hierarchy/<projectId>/<issueId>/README.md` when
+- **Epic body** (`issue-hierarchy/<projectId>/<issueId>/body.md` when
   `level` is `epic`): this campaign — why now, scope / non-goals, done
   criteria, status, dates. Freezes when status becomes `done` or `cancel` —
   going stale is history, not a defect.

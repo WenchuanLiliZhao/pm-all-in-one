@@ -45,7 +45,7 @@ There is one structural difference, and the rest follows from it:
 
 What that buys, concretely:
 
-- **Resolution without a server.** Every reference is a path join — `@issue-<projectId>::<issueId>` → `issue-hierarchy/<projectId>/<issueId>/`, `@wiki-<id>` → `wiki/<id>/README.md`. No index to rebuild, no app running, no auth.
+- **Resolution without a server.** Every reference is a path join — `@issue-<projectId>::<issueId>` → `issue-hierarchy/<projectId>/<issueId>/`, `@wiki-<id>` → `wiki/<id>/body.md`. No index to rebuild, no app running, no auth.
 - **Cross-cutting questions are a grep, not N API calls.** From an opened workspace:
 
 ```sh

@@ -15,7 +15,7 @@ import type {
 import {
   readWorkspaceMeta,
   workspacePropsPath,
-  workspaceReadmePath,
+  workspaceBodyPath,
 } from "../domain/workspace-meta.js";
 
 export type WorkspaceChangePayload = {
@@ -56,7 +56,7 @@ export class WorkspaceWatcher {
         members,
         handoffs,
         workspacePropsPath(workspaceRoot),
-        workspaceReadmePath(workspaceRoot),
+        workspaceBodyPath(workspaceRoot),
       ],
       {
         ignoreInitial: true,

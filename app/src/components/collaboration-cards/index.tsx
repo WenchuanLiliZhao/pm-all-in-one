@@ -275,7 +275,7 @@ export function CollaborationCards() {
                 </div>
               </div>
               <MarkdownEditor
-                filename="README.md"
+                filename="body.md"
                 value={draftBody}
                 onChange={setDraftBody}
                 plugins={plugins}

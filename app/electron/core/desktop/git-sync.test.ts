@@ -45,8 +45,8 @@ test("getGitSyncStatus returns no-upstream when remote tracking missing", async 
   const root = mkTmp("local-pm-sync-noup-");
   try {
     initRepo(root);
-    writeFile(root, "README.md", "a\n");
-    git(root, ["add", "README.md"]);
+    writeFile(root, "body.md", "a\n");
+    git(root, ["add", "body.md"]);
     git(root, ["commit", "-m", "init"]);
 
     const status = await getGitSyncStatus(root);
@@ -68,8 +68,8 @@ function cloneRepo(bare: string, dest: string): void {
 }
 
 function pushAdvance(a: string, body: string): void {
-  writeFile(a, "README.md", body);
-  git(a, ["add", "README.md"]);
+  writeFile(a, "body.md", body);
+  git(a, ["add", "body.md"]);
   git(a, ["commit", "-m", "advance"]);
   git(a, ["push"]);
 }
@@ -83,8 +83,8 @@ function setupRemotePair(): { bare: string; a: string; b: string } {
   git(bare, ["init", "--bare"]);
 
   initRepo(a);
-  writeFile(a, "README.md", "one\n");
-  git(a, ["add", "README.md"]);
+  writeFile(a, "body.md", "one\n");
+  git(a, ["add", "body.md"]);
   git(a, ["commit", "-m", "init"]);
   git(a, ["branch", "-M", "main"]);
   git(a, ["remote", "add", "origin", bare]);
@@ -140,7 +140,7 @@ test("pullFastForward fast-forwards a clean behind clone", async () => {
     const result = await pullFastForward(pair.b);
     assert.equal(result.ok, true);
     assert.equal(
-      fs.readFileSync(path.join(pair.b, "README.md"), "utf8"),
+      fs.readFileSync(path.join(pair.b, "body.md"), "utf8"),
       "two\n",
     );
 
@@ -170,7 +170,7 @@ test("getGitSyncStatus dirty ignores sibling outside workspace cwd", async () =>
   try {
     initRepo(repo);
     writeFile(repo, "outside.txt", "out\n");
-    writeFile(repo, "workspace/README.md", "in\n");
+    writeFile(repo, "workspace/body.md", "in\n");
     git(repo, ["add", "."]);
     git(repo, ["commit", "-m", "init"]);
     git(repo, ["branch", "-M", "main"]);

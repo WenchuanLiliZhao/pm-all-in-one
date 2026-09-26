@@ -177,7 +177,7 @@ test("scaffold with seed project copies project-template", () => {
       const projectDir = path.join(root, "issue-hierarchy", projects[0]!);
       assert.ok(fs.existsSync(path.join(projectDir, "project.ts")));
       assert.ok(fs.existsSync(path.join(projectDir, "custom-props.ts")));
-      assert.ok(fs.existsSync(path.join(projectDir, "README.md")));
+      assert.ok(fs.existsSync(path.join(projectDir, "body.md")));
       assert.ok(fs.existsSync(path.join(projectDir, "schema.d.ts")));
     } finally {
       fs.rmSync(root, { recursive: true, force: true });

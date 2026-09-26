@@ -44,6 +44,7 @@ import {
 import { readLocalConfig, writeLocalConfig } from "../electron/core/workspace/local-config.js";
 import { ensureLocalJsonGitignore } from "../electron/core/workspace/workspace-gitignore.js";
 import { ensureStructuralGitkeeps } from "../electron/core/workspace/workspace-gitkeep.js";
+import { migrateBodyFiles } from "../electron/core/workspace/migrate-body.js";
 import { rebuildIndex } from "../electron/core/workspace/rebuild-index.js";
 import {
   setLastWorkspaceRoot,
@@ -191,6 +192,7 @@ async function openSnapshot(root: string) {
   ensureViewOrders(root);
   ensureLocalJsonGitignore(root);
   ensureStructuralGitkeeps(root);
+  migrateBodyFiles(root);
   await ensureWiki(root);
   await ensureMembers(root);
   await ensureHandoffs(root);

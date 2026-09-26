@@ -65,9 +65,9 @@ test("writeWikiCustomProps rejects reserved keys and readme collision", async ()
     assert.throws(
       () =>
         writeWikiCustomProps(root, {
-          fields: [{ key: "README", label: "Body", type: "markdown" }],
+          fields: [{ key: "Body", label: "Body", type: "markdown" }],
         }),
-      /collides with README.md/,
+      /collides with body.md/,
     );
     assert.throws(
       () =>

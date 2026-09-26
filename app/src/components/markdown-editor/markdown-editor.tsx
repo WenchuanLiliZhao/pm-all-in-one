@@ -38,7 +38,7 @@ export function MarkdownEditor({
   onChange,
   placeholder,
   defaultMode = "preview",
-  filename = "README.md",
+  filename = "body.md",
   editorRef,
   onNavigateOutAtStart,
   onBlur,

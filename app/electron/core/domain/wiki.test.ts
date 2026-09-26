@@ -67,7 +67,7 @@ test("createWikiNode always enters Contents at root", async () => {
     const page = await createWikiNode(root, { title: "Getting Started" });
     assert.equal(isValidEntityId(page.id), true);
     assert.equal(
-      fs.existsSync(path.join(root, "wiki", page.id, "README.md")),
+      fs.existsSync(path.join(root, "wiki", page.id, "body.md")),
       true,
     );
     assert.equal(
@@ -125,7 +125,7 @@ test("getWikiSnapshot reconciles orphans into Contents; doctor reports wiki-unli
     });
     const orphanDir = path.join(root, "wiki", ORPHAN_ID);
     fs.mkdirSync(orphanDir, { recursive: true });
-    fs.writeFileSync(path.join(orphanDir, "README.md"), "# Orphan\n", "utf8");
+    fs.writeFileSync(path.join(orphanDir, "body.md"), "# Orphan\n", "utf8");
     fs.writeFileSync(
       path.join(orphanDir, "props.ts"),
       `export const props = { "title": "Orphan", "created": "2026-01-01T00:00:00.000Z", "updated": "2026-01-01T00:00:00.000Z" } as const;\n`,
@@ -322,7 +322,7 @@ test("migrateLegacyFlatWikiNodes converts flat md to dir", async () => {
     migrateLegacyFlatWikiNodes(root);
     assert.equal(fs.existsSync(path.join(root, "wiki", `${MIGRATE_ID}.md`)), false);
     assert.equal(
-      fs.existsSync(path.join(root, "wiki", MIGRATE_ID, "README.md")),
+      fs.existsSync(path.join(root, "wiki", MIGRATE_ID, "body.md")),
       true,
     );
     assert.equal(
@@ -713,7 +713,7 @@ test("reconcileUnlistedIntoContents appends into standing, not past a record col
     });
     const orphanDir = path.join(root, "wiki", ORPHAN_ID);
     fs.mkdirSync(orphanDir, { recursive: true });
-    fs.writeFileSync(path.join(orphanDir, "README.md"), "# Orphan\n", "utf8");
+    fs.writeFileSync(path.join(orphanDir, "body.md"), "# Orphan\n", "utf8");
     fs.writeFileSync(
       path.join(orphanDir, "props.ts"),
       `export const props = { "title": "Orphan", "created": "2026-01-01T00:00:00.000Z", "updated": "2026-01-01T00:00:00.000Z" } as const;\n`,

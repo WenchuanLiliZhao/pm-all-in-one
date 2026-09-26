@@ -7,6 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { adoptStray, isFenceSoftWarning, scanWorkspace, type DoctorReport } from "./core/workspace/doctor.js";
+import { migrateBodyFiles } from "./core/workspace/migrate-body.js";
 import {
   handoffLinkSyntax,
   issueLinkSyntax,
@@ -99,7 +100,7 @@ function flagId(flags: Record<string, string | boolean>, ...keys: string[]): str
   return s;
 }
 
-/** README body for handoff create/update. `--body` and `--body-file` cannot both be set. */
+/** body.md text for handoff create/update. `--body` and `--body-file` cannot both be set. */
 function resolveHandoffBody(
   flags: Record<string, string | boolean>,
 ): string | undefined {
@@ -183,6 +184,7 @@ Usage:
   pm-all-in-one wiki list   [--column standing|record|--all]
   pm-all-in-one doctor [--trust-fence-validators]
   pm-all-in-one adopt <path>
+  pm-all-in-one migrate body
 
 Options:
   --workspace <path>   Workspace root (default: LOCAL_PM_WORKSPACE or cwd upward)
@@ -1104,6 +1106,27 @@ async function main(): Promise<void> {
     }
     const root = resolveWorkspace(flags);
     await cmdAdopt(root, target, json);
+    return;
+  }
+  if (cmd === "migrate") {
+    if (sub !== "body") {
+      throw new Error(`Unknown migrate subcommand: ${sub ?? "(none)"}\n${usage()}`);
+    }
+    const root = resolveWorkspace(flags);
+    const report = migrateBodyFiles(root);
+    if (json) {
+      process.stdout.write(JSON.stringify(report, null, 2) + "\n");
+      return;
+    }
+    for (const rel of report.renamed) {
+      process.stdout.write(`renamed  ${rel}/README.md → ${rel}/body.md\n`);
+    }
+    for (const rel of report.conflicts) {
+      process.stdout.write(`kept     ${rel}: both README.md and body.md exist; merge by hand\n`);
+    }
+    if (report.renamed.length === 0 && report.conflicts.length === 0) {
+      process.stdout.write("Nothing to migrate — every node body is already body.md.\n");
+    }
     return;
   }
   if (cmd === "issue") {

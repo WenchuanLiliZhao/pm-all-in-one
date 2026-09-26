@@ -162,7 +162,7 @@ export interface PmApi {
   /** Desktop-only: open a file/dir with the OS default app. Web stub → false. */
   openPath: (targetPath: string) => Promise<boolean>;
   /**
-   * VS Code / Cursor host only: open a node README in a new PM Node webview.
+   * VS Code / Cursor host only: open a node body in a new PM Node webview.
    * Electron and web omit this.
    */
   openPmNode?: (ref: NodeRef) => Promise<void>;

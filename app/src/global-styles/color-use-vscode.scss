@@ -9,6 +9,26 @@
  * write `--vscode-*` in component SCSS. Do **not** remap `--color--*`
  * primitives (VS Code has chrome colors, not this app’s gray ramp).
  *
+ * Design of this table — seeds, then a derived ramp:
+ *
+ * 1. Two neutral seeds: `editor.foreground` (fg) and `editor.background`
+ *    (bg). Every neutral surface / border / hover / grid token is
+ *    `color-mix(fg N%, bg)` (opaque, `-hex`) or `color-mix(fg N%, transparent)`
+ *    (overlay). The N values mirror `color-use.scss` (gray-2 / 4 / 6 / 12 /
+ *    16 …), so the hierarchy is monotone and identical to Electron — only
+ *    tinted by the IDE theme. Do **not** pull `sideBar.*`, `input.*`,
+ *    `list.*`, `widget.border` etc. into neutrals: they come from unrelated
+ *    IDE regions and break the ramp (input.background is lighter than the
+ *    canvas in light themes, panel.border ≈ widget.border, …).
+ * 2. Inverse surfaces (toast, dropdown selected row, fill-inverse button,
+ *    switch rail) stay **monochrome** like the product — never
+ *    `button.background`. Blue is reserved for links / in-progress
+ *    (`textLink.foreground`) so accent has one meaning.
+ * 3. Status hues: one IDE seed per family (`errorForeground`,
+ *    `editorWarning.foreground`, `charts.green`); washes and edges are
+ *    `color-mix(seed N%, transparent)` so each family is one hue at three
+ *    strengths, not three unrelated IDE tokens.
+ *
  * Electron never sets `data-pm-host`, so this file is a no-op there.
  * Light / dark / high-contrast already live inside `--vscode-*`; this is
  * one table, not four theme copies.
@@ -29,235 +49,127 @@
 html[data-pm-host="vscode"]:not([data-theme]),
 html[data-pm-host="vscode"][data-theme="light"],
 html[data-pm-host="vscode"][data-theme="dark"] {
+  // --- seeds (private to this file) ---
+  --_pm-fg: var(--vscode-editor-foreground, var(--vscode-foreground));
+  --_pm-bg: var(--vscode-editor-background);
+  --_pm-accent: var(--vscode-textLink-foreground);
+  --_pm-danger: var(--vscode-errorForeground);
+  --_pm-warn: var(--vscode-editorWarning-foreground);
+  --_pm-success: var(--vscode-charts-green, var(--vscode-testing-iconPassed));
+
   // --- chrome: text ---
-  // body text / caret — editor.foreground → --vscode-editor-foreground
-  --color-use--text-prime: var(
-    --vscode-editor-foreground,
-    var(--vscode-foreground)
-  );
-  --color-use--text-prime-hex: var(
-    --vscode-editor-foreground,
-    var(--vscode-foreground)
-  );
-  // muted labels — descriptionForeground → --vscode-descriptionForeground
-  --color-use--text-secondary: var(--vscode-descriptionForeground);
-  --color-use--text-secondary-hex: var(--vscode-descriptionForeground);
-  // placeholder / de-emphasized — disabledForeground → --vscode-disabledForeground
-  --color-use--text-negative: var(--vscode-disabledForeground);
-  --color-use--text-negative-hex: var(--vscode-disabledForeground);
-  // text on inverted surfaces (fill-inverse) — button.foreground
-  --color-use--text-prime-inverse: var(--vscode-button-foreground);
+  // body text / caret — editor.foreground
+  --color-use--text-prime: var(--_pm-fg);
+  --color-use--text-prime-hex: var(--_pm-fg);
+  // muted labels — derived (gray-48 tier). Not descriptionForeground: in
+  // Light Modern it equals editor.foreground, which collapses the tier.
+  --color-use--text-secondary: color-mix(in srgb, var(--_pm-fg) 60%, transparent);
+  --color-use--text-secondary-hex: color-mix(in srgb, var(--_pm-fg) 60%, var(--_pm-bg));
+  // placeholder / de-emphasized — third tier (gray-24), always below secondary
+  --color-use--text-negative: color-mix(in srgb, var(--_pm-fg) 36%, transparent);
+  --color-use--text-negative-hex: color-mix(in srgb, var(--_pm-fg) 36%, var(--_pm-bg));
+  // text on inverted surfaces (toast / fill-inverse) — the canvas color
+  --color-use--text-prime-inverse: color-mix(in srgb, var(--_pm-bg) 92%, var(--_pm-fg));
 
-  // --- chrome: background ---
+  // --- chrome: background (ramp: prime < secondary < darken) ---
   // page / editor canvas — editor.background
-  --color-use--bg-prime-hex: var(--vscode-editor-background);
-  --color-use--bg-prime: var(--vscode-editor-background);
-  // recessed rail / secondary pane — sideBar.background
-  --color-use--bg-secondary: var(
-    --vscode-sideBar-background,
-    var(--vscode-editorWidget-background)
-  );
-  --color-use--bg-secondary-hex: var(
-    --vscode-sideBar-background,
-    var(--vscode-editorWidget-background)
-  );
-  // inset / code well — input.background
-  --color-use--bg-darken: var(
-    --vscode-input-background,
-    var(--vscode-editor-inactiveSelectionBackground)
-  );
-  // inverted fill (fill-inverse button) — button.background
-  --color-use--bg-prime-hex-inverse: var(--vscode-button-background);
-  --color-use--bg-prime-inverse: var(--vscode-button-background);
-  // inverted hover — button.hoverBackground
-  --color-use--bg-secondary-inverse: var(
-    --vscode-button-hoverBackground,
-    var(--vscode-button-secondaryBackground)
-  );
-  --color-use--bg-secondary-hex-inverse: var(
-    --vscode-button-hoverBackground,
-    var(--vscode-button-secondaryBackground)
-  );
+  --color-use--bg-prime-hex: var(--_pm-bg);
+  --color-use--bg-prime: var(--_pm-bg);
+  // recessed rail / secondary pane — one hairline step (gray-2)
+  --color-use--bg-secondary: color-mix(in srgb, var(--_pm-fg) 3%, transparent);
+  --color-use--bg-secondary-hex: color-mix(in srgb, var(--_pm-fg) 3%, var(--_pm-bg));
+  // inset / code well — two steps (gray-6)
+  --color-use--bg-darken: color-mix(in srgb, var(--_pm-fg) 7%, var(--_pm-bg));
+  // inverted fill (toast, fill-inverse button, selected menu row) — monochrome
+  --color-use--bg-prime-hex-inverse: color-mix(in srgb, var(--_pm-fg) 92%, var(--_pm-bg));
+  --color-use--bg-prime-inverse: color-mix(in srgb, var(--_pm-fg) 92%, var(--_pm-bg));
+  // inverted hover — one step back toward the canvas
+  --color-use--bg-secondary-inverse: color-mix(in srgb, var(--_pm-fg) 82%, var(--_pm-bg));
+  --color-use--bg-secondary-hex-inverse: color-mix(in srgb, var(--_pm-fg) 82%, var(--_pm-bg));
 
-  // --- chrome: border ---
-  // hairline — panel.border
-  --color-use--border-prime-hex: var(
-    --vscode-panel-border,
-    var(--vscode-widget-border)
-  );
-  --color-use--border-prime: var(
-    --vscode-panel-border,
-    var(--vscode-widget-border)
-  );
-  // stronger edge — widget.border
-  --color-use--border-emphasis: var(
-    --vscode-widget-border,
-    var(--vscode-input-border)
-  );
-  --color-use--border-emphasis-hex: var(
-    --vscode-widget-border,
-    var(--vscode-input-border)
-  );
-  // keyboard focus — focusBorder
-  --color-use--border-focus: var(--vscode-focusBorder);
-  --color-use--border-focus-hex: var(--vscode-focusBorder);
+  // --- chrome: border (ramp: prime < emphasis < focus) ---
+  // hairline (gray-6)
+  --color-use--border-prime: color-mix(in srgb, var(--_pm-fg) 8%, transparent);
+  --color-use--border-prime-hex: color-mix(in srgb, var(--_pm-fg) 8%, var(--_pm-bg));
+  // stronger edge (gray-12)
+  --color-use--border-emphasis: color-mix(in srgb, var(--_pm-fg) 14%, transparent);
+  --color-use--border-emphasis-hex: color-mix(in srgb, var(--_pm-fg) 14%, var(--_pm-bg));
+  // focused input edge / focused selection (gray-16) — neutral like the
+  // product; `focusBorder` blue would collide with accent and inverse
+  --color-use--border-focus: color-mix(in srgb, var(--_pm-fg) 22%, transparent);
+  --color-use--border-focus-hex: color-mix(in srgb, var(--_pm-fg) 22%, var(--_pm-bg));
 
-  // --- chrome: hover ---
-  // row / list hover — list.hoverBackground
-  --color-use--hover-overlay-hover: var(--vscode-list-hoverBackground);
-  // pressed / selected idle — list.inactiveSelectionBackground
-  --color-use--hover-overlay-mouse-down: var(
-    --vscode-list-inactiveSelectionBackground
-  );
+  // --- chrome: hover (translucent overlays — layer on any surface) ---
+  // row / list hover (gray-4)
+  --color-use--hover-overlay-hover: color-mix(in srgb, var(--_pm-fg) 5%, transparent);
+  // pressed / idle selection (gray-6)
+  --color-use--hover-overlay-mouse-down: color-mix(in srgb, var(--_pm-fg) 8%, transparent);
 
-  // --- controls: switch ---
-  // thumb (off) — checkbox.foreground
-  --color-use--in-components-switch-thumb-bg: var(
-    --vscode-checkbox-foreground,
-    var(--vscode-editor-background)
-  );
-  // rail (off) — checkbox.background
-  --color-use--in-components-switch-rail-bg-normal: var(
-    --vscode-checkbox-background,
-    var(--vscode-input-background)
-  );
-  // thumb (on) — checkbox.foreground
-  --color-use--in-components-switch-thumb-bg-active: var(
-    --vscode-checkbox-foreground,
-    var(--vscode-button-foreground)
-  );
-  // rail (on) — button.background
-  --color-use--in-components-switch-rail-bg-normal-active: var(
-    --vscode-button-background,
-    var(--vscode-checkbox-background)
-  );
+  // --- controls: switch (monochrome; thumb = canvas, rail = fg tint) ---
+  --color-use--in-components-switch-thumb-bg: var(--_pm-bg);
+  --color-use--in-components-switch-rail-bg-normal: color-mix(in srgb, var(--_pm-fg) 24%, var(--_pm-bg));
+  --color-use--in-components-switch-thumb-bg-active: var(--_pm-bg);
+  --color-use--in-components-switch-rail-bg-normal-active: color-mix(in srgb, var(--_pm-fg) 88%, var(--_pm-bg));
 
-  // --- controls: solid fill button ---
-  // fill-mode label — button.foreground
-  --color-use--in-components-button-text-color-in-fill-mode: var(
-    --vscode-button-foreground
-  );
-  // fill-mode surface — button.background
-  --color-use--in-components-button-bg-color-in-fill-mode: var(
-    --vscode-button-background
-  );
+  // --- controls: solid fill button (monochrome, same as inverse surface) ---
+  --color-use--in-components-button-text-color-in-fill-mode: var(--color-use--text-prime-inverse);
+  --color-use--in-components-button-bg-color-in-fill-mode: var(--color-use--bg-prime-hex-inverse);
 
-  // --- status: danger ---
-  // destructive / error — errorForeground
-  --color-use--danger: var(--vscode-errorForeground);
-  --color-use--danger-fg: var(--vscode-errorForeground);
-  // error wash — inputValidation.errorBackground
-  --color-use--danger-soft: var(--vscode-inputValidation-errorBackground);
-  --color-use--danger-bg: var(--vscode-inputValidation-errorBackground);
-  // error edge — inputValidation.errorBorder
-  --color-use--danger-border: var(--vscode-inputValidation-errorBorder);
+  // --- status: danger (one hue: errorForeground) ---
+  --color-use--danger: var(--_pm-danger);
+  --color-use--danger-fg: var(--_pm-danger);
+  --color-use--danger-soft: color-mix(in srgb, var(--_pm-danger) 10%, transparent);
+  --color-use--danger-bg: color-mix(in srgb, var(--_pm-danger) 16%, transparent);
+  --color-use--danger-border: color-mix(in srgb, var(--_pm-danger) 45%, transparent);
 
-  // --- status: warn ---
-  // warning label — editorWarning.foreground
-  --color-use--warn-fg: var(--vscode-editorWarning-foreground);
-  // warning wash — inputValidation.warningBackground
-  --color-use--warn-bg: var(--vscode-inputValidation-warningBackground);
-  // warning edge — inputValidation.warningBorder
-  --color-use--warn-border: var(--vscode-inputValidation-warningBorder);
-  // stronger warning (cancel / high priority) — charts.orange
-  --color-use--warn-strong: var(
-    --vscode-charts-orange,
-    var(--vscode-editorWarning-foreground)
-  );
+  // --- status: warn (one hue: editorWarning.foreground) ---
+  --color-use--warn-fg: var(--_pm-warn);
+  --color-use--warn-strong: var(--_pm-warn);
+  --color-use--warn-bg: color-mix(in srgb, var(--_pm-warn) 14%, transparent);
+  --color-use--warn-border: color-mix(in srgb, var(--_pm-warn) 40%, transparent);
 
-  // --- status: success ---
-  // positive / done — charts.green
-  --color-use--success: var(
-    --vscode-charts-green,
-    var(--vscode-testing-iconPassed)
-  );
-  --color-use--success-strong: var(
-    --vscode-charts-green,
-    var(--vscode-testing-iconPassed)
-  );
-  --color-use--success-fg: var(
-    --vscode-charts-green,
-    var(--vscode-testing-iconPassed)
-  );
-  // success wash — diffEditor.insertedTextBackground
-  --color-use--success-soft: var(
-    --vscode-diffEditor-insertedTextBackground,
-    color-mix(
-      in srgb,
-      var(--vscode-charts-green, var(--vscode-testing-iconPassed)) 12%,
-      transparent
-    )
-  );
-  // success edge — gitDecoration.addedResourceForeground
-  --color-use--success-border: var(
-    --vscode-gitDecoration-addedResourceForeground,
-    var(--vscode-charts-green, var(--vscode-testing-iconPassed))
-  );
+  // --- status: success (one hue: charts.green) ---
+  --color-use--success: var(--_pm-success);
+  --color-use--success-strong: var(--_pm-success);
+  --color-use--success-fg: var(--_pm-success);
+  --color-use--success-soft: color-mix(in srgb, var(--_pm-success) 12%, transparent);
+  --color-use--success-border: color-mix(in srgb, var(--_pm-success) 45%, transparent);
 
-  // --- accent / links ---
-  // links / in-progress / guides — textLink.foreground
-  --color-use--accent: var(--vscode-textLink-foreground);
-  --color-use--accent-text: var(--vscode-textLink-foreground);
-  // mention / chip wash — no link-bg token; mix textLink.foreground
-  --color-use--accent-bg: color-mix(
-    in srgb,
-    var(--vscode-textLink-foreground) 18%,
-    transparent
-  );
-  // action on inverse surface — textLink.foreground
-  --color-use--on-inverse-action: var(--vscode-textLink-foreground);
-  --color-use--on-inverse-action-hover: var(
-    --vscode-textLink-activeForeground,
-    var(--vscode-textLink-foreground)
-  );
+  // --- accent / links (the only blue: textLink.foreground) ---
+  --color-use--accent: var(--_pm-accent);
+  --color-use--accent-text: var(--_pm-accent);
+  --color-use--accent-bg: color-mix(in srgb, var(--_pm-accent) 16%, transparent);
+  // action on inverse surface — pull the link toward the canvas color so it
+  // stays legible on the fg-tinted inverse (light: lighter; dark: darker)
+  --color-use--on-inverse-action: color-mix(in srgb, var(--_pm-accent) 65%, var(--_pm-bg));
+  --color-use--on-inverse-action-hover: color-mix(in srgb, var(--_pm-accent) 50%, var(--_pm-bg));
 
-  // --- roadmap grid ---
-  // unit edge — editorLineNumber.foreground
-  --color-use--grid-line: var(
-    --vscode-editorLineNumber-foreground,
-    var(--vscode-panel-border)
-  );
-  // day tick — widget.border
-  --color-use--grid-line-soft: var(--vscode-widget-border);
-  // weekend wash — editor.inactiveSelectionBackground
-  --color-use--grid-weekend: var(--vscode-editor-inactiveSelectionBackground);
+  // --- roadmap grid (weekend < day tick < unit edge; all below borders) ---
+  --color-use--grid-line: color-mix(in srgb, var(--_pm-fg) 12%, transparent);
+  --color-use--grid-line-soft: color-mix(in srgb, var(--_pm-fg) 6%, transparent);
+  --color-use--grid-weekend: color-mix(in srgb, var(--_pm-fg) 2%, transparent);
 
   // --- terminal (not aliases of bg-prime; match IDE terminal chrome) ---
   // terminal canvas — terminal.background
-  --color-use--terminal-bg: var(
-    --vscode-terminal-background,
-    var(--vscode-editor-background)
-  );
+  --color-use--terminal-bg: var(--vscode-terminal-background, var(--_pm-bg));
   // terminal text — terminal.foreground
-  --color-use--terminal-fg: var(
-    --vscode-terminal-foreground,
-    var(--vscode-editor-foreground)
-  );
+  --color-use--terminal-fg: var(--vscode-terminal-foreground, var(--_pm-fg));
   // terminal toolbar — panel.background
   --color-use--terminal-toolbar: var(
     --vscode-panel-background,
-    var(--vscode-sideBar-background)
+    var(--color-use--bg-secondary-hex)
   );
   // terminal edge — panel.border
   --color-use--terminal-border: var(
     --vscode-panel-border,
-    var(--vscode-widget-border)
+    var(--color-use--border-emphasis-hex)
   );
   // idle tab — tab.inactiveBackground
-  --color-use--terminal-tab: var(
-    --vscode-tab-inactiveBackground,
-    var(--vscode-editor-background)
-  );
+  --color-use--terminal-tab: var(--vscode-tab-inactiveBackground, var(--_pm-bg));
   // active tab — tab.activeBackground
-  --color-use--terminal-tab-active: var(
-    --vscode-tab-activeBackground,
-    var(--vscode-editor-background)
-  );
+  --color-use--terminal-tab-active: var(--vscode-tab-activeBackground, var(--_pm-bg));
   // active tab underline — tab.activeBorder
-  --color-use--terminal-tab-active-border: var(
-    --vscode-tab-activeBorder,
-    var(--vscode-focusBorder)
-  );
+  --color-use--terminal-tab-active-border: var(--vscode-tab-activeBorder, var(--_pm-accent));
   // muted terminal chrome — descriptionForeground
   --color-use--terminal-muted: var(
     --vscode-descriptionForeground,

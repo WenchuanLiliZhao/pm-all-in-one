@@ -233,7 +233,7 @@ try {
       "issue-hierarchy",
       sharedProjectId,
       aliceIssueId,
-      "README.md",
+      "body.md",
     );
     fs.writeFileSync(
       body,

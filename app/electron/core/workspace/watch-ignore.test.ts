@@ -12,7 +12,7 @@ function under(...parts: string[]): string {
 
 test("isIgnoredWatchPath: PM source files stay watched", () => {
   assert.equal(isIgnoredWatchPath(root, under("workspace.ts")), false);
-  assert.equal(isIgnoredWatchPath(root, under("README.md")), false);
+  assert.equal(isIgnoredWatchPath(root, under("body.md")), false);
   assert.equal(
     isIgnoredWatchPath(root, under("issue-hierarchy", "projId21charsXXXXXXX", "project.ts")),
     false,
@@ -25,7 +25,7 @@ test("isIgnoredWatchPath: PM source files stay watched", () => {
     false,
   );
   assert.equal(
-    isIgnoredWatchPath(root, under("wiki", "wikiId21charsZZZZZZZZ", "README.md")),
+    isIgnoredWatchPath(root, under("wiki", "wikiId21charsZZZZZZZZ", "body.md")),
     false,
   );
 });

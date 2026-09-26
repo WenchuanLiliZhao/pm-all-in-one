@@ -116,7 +116,7 @@ test("scanFenceValidators: trusted bad fence reports file-relative line", async 
     );
     writeLocalConfig(root, { trustFenceValidators: true });
     fs.writeFileSync(
-      path.join(root, "README.md"),
+      path.join(root, "body.md"),
       `# Home
 
 A figure:
@@ -133,7 +133,7 @@ rule: not-a-rule
     assert.ok(invalid.length >= 2, JSON.stringify(invalid));
     const missing = invalid.find((w) => w.message === "missing expression");
     const rule = invalid.find((w) => w.message === "rule name not allowed");
-    assert.equal(missing?.relPath, "README.md");
+    assert.equal(missing?.relPath, "body.md");
     assert.equal(missing?.line, 6);
     assert.equal(rule?.line, 7);
   } finally {
@@ -155,7 +155,7 @@ test("scanFenceValidators: undeclared langs are ignored (CLI has no fence DSL)",
     );
     writeLocalConfig(root, { trustFenceValidators: true });
     fs.writeFileSync(
-      path.join(root, "README.md"),
+      path.join(root, "body.md"),
       "```plot riemann\nexpression: x\n```\n",
       "utf8",
     );
@@ -203,7 +203,7 @@ test("scanWorkspace merges fence warnings; soft kinds stay warnings", async () =
       "utf8",
     );
     fs.writeFileSync(
-      path.join(root, "README.md"),
+      path.join(root, "body.md"),
       "```demo\nsteps: 1\n```\n",
       "utf8",
     );
@@ -219,12 +219,12 @@ test("scanWorkspace merges fence warnings; soft kinds stay warnings", async () =
   }
 });
 
-test("listMarkdownBodies includes Home README", () => {
+test("listMarkdownBodies includes Home body.md", () => {
   const root = tmpRoot();
   try {
     scaffoldWorkspace(root, { seedProject: { title: "T" } });
     const files = listMarkdownBodies(root);
-    assert.ok(files.some((f) => path.basename(f) === "README.md"));
+    assert.ok(files.some((f) => path.basename(f) === "body.md"));
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

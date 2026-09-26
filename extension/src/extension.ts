@@ -12,7 +12,7 @@ import {
 } from "./pick-pm-workspace";
 import {
   labelForNodeRef,
-  resolvePmNodeReadme,
+  resolvePmNodeBody,
   type NodeRef,
 } from "./resolve-pm-node";
 
@@ -381,7 +381,7 @@ class PmNodeEditorProvider
     document: PmDocument,
     webviewPanel: vscode.WebviewPanel,
   ): Promise<void> {
-    const resolved = resolvePmNodeReadme(document.uri);
+    const resolved = resolvePmNodeBody(document.uri);
     if (!resolved.ok) {
       void vscode.window.showErrorMessage(resolved.error);
       return;
@@ -424,7 +424,7 @@ export function activate(context: vscode.ExtensionContext): void {
             return;
           }
           if (kind === "node") {
-            const resolved = resolvePmNodeReadme(explicit);
+            const resolved = resolvePmNodeBody(explicit);
             if (resolved.ok) {
               await nodes.open(resolved.value.root, resolved.value.ref);
             }
@@ -446,7 +446,7 @@ export function activate(context: vscode.ExtensionContext): void {
             return;
           }
           if (kind === "node") {
-            const resolved = resolvePmNodeReadme(active);
+            const resolved = resolvePmNodeBody(active);
             if (resolved.ok) {
               await nodes.open(resolved.value.root, resolved.value.ref);
             }
@@ -457,7 +457,7 @@ export function activate(context: vscode.ExtensionContext): void {
         const folders = vscode.workspace.workspaceFolders;
         if (!folders?.length) {
           void vscode.window.showErrorMessage(
-            "Open a folder, or select a .pmws file or a PM node README.md.",
+            "Open a folder, or select a .pmws file or a PM node body.md.",
           );
           return;
         }
@@ -533,7 +533,7 @@ async function classifyOpenTarget(target: vscode.Uri): Promise<OpenTargetKind> {
   if (path.basename(target.fsPath) === ".pmws") {
     return "marker";
   }
-  const resolved = resolvePmNodeReadme(target);
+  const resolved = resolvePmNodeBody(target);
   return resolved.ok ? "node" : "other";
 }
 

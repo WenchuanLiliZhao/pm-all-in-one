@@ -87,9 +87,9 @@ function assertWikiCustomKey(key: string): void {
   if (WIKI_SYSTEM_PROP_KEYS.has(key)) {
     throw new Error(`wiki custom props must not use reserved key ${key}`);
   }
-  if (keyToKebab(key).toLowerCase() === "readme") {
+  if (keyToKebab(key).toLowerCase() === "body") {
     throw new Error(
-      `wiki markdown custom prop key ${key} collides with README.md`,
+      `wiki markdown custom prop key ${key} collides with body.md`,
     );
   }
 }

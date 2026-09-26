@@ -1,5 +1,5 @@
 /**
- * Workspace members: `members/<id>/{props.ts,README.md,avatar.<ext>}`.
+ * Workspace members: `members/<id>/{props.ts,body.md,avatar.<ext>}`.
  * Ids are opaque nanoid(21). No roster index. No delete — only membership.
  *
  * ↔ electron/core/sync/detail-diff.ts — OCC expected / StaleWriteError on updateMember
@@ -9,6 +9,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { BODY_FILE } from "../identity/body-file.js";
 
 import { parseId, type EntityId } from "../identity/dir-id.js";
 import {
@@ -53,8 +54,8 @@ export function memberPropsPath(workspaceRoot: string, id: EntityId): string {
   return path.join(memberDirPath(workspaceRoot, id), "props.ts");
 }
 
-export function memberReadmePath(workspaceRoot: string, id: EntityId): string {
-  return path.join(memberDirPath(workspaceRoot, id), "README.md");
+export function memberBodyPath(workspaceRoot: string, id: EntityId): string {
+  return path.join(memberDirPath(workspaceRoot, id), BODY_FILE);
 }
 
 function assertValidMemberId(id: string): asserts id is EntityId {
@@ -230,8 +231,8 @@ export async function getMember(
   if (!meta) {
     throw new Error(`Member not found: ${id}`);
   }
-  const body = fs.existsSync(memberReadmePath(workspaceRoot, id))
-    ? fs.readFileSync(memberReadmePath(workspaceRoot, id), "utf8")
+  const body = fs.existsSync(memberBodyPath(workspaceRoot, id))
+    ? fs.readFileSync(memberBodyPath(workspaceRoot, id), "utf8")
     : "";
   return { ...meta, body };
 }
@@ -278,7 +279,7 @@ export async function createMember(
     writePropsTs({ title, membership, created: now, updated: now }),
     "utf8",
   );
-  fs.writeFileSync(memberReadmePath(workspaceRoot, id), body, "utf8");
+  fs.writeFileSync(memberBodyPath(workspaceRoot, id), body, "utf8");
   return getMember(workspaceRoot, id);
 }
 
@@ -323,7 +324,7 @@ export async function updateMember(
     }
   }
   const propsFile = memberPropsPath(workspaceRoot, id);
-  const readmeFile = memberReadmePath(workspaceRoot, id);
+  const readmeFile = memberBodyPath(workspaceRoot, id);
   let props: Record<string, unknown> = {
     title: meta.title,
     membership: meta.membership,

@@ -1090,7 +1090,7 @@ export function SettingsGeneralView() {
           ) : null}
         </div>
         <p className={styles.settingsHint}>
-          Workspace body (README.md) is edited on Overview.
+          Workspace body (body.md) is edited on Overview.
         </p>
       </div>
     </WikiShell>
@@ -1146,7 +1146,7 @@ export function ProjectSettingsView() {
           </Button>
         </header>
         <p className={styles.settingsHint}>
-          Field schema for this project. Title, README, and assets stay on the
+          Field schema for this project. Title, body, and assets stay on the
           project detail panel.
         </p>
         <CustomPropsEditor

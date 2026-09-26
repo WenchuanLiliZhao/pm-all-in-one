@@ -93,7 +93,7 @@ export type MarkdownEditorProps = {
    */
   defaultMode?: MarkdownEditorMode;
   /**
-   * Left sticky-nav label (disk basename). Defaults to `"README.md"`.
+   * Left sticky-nav label (disk basename). Defaults to `"body.md"`.
    */
   filename?: string;
   /** Imperative focus (e.g. after Title Enter). */

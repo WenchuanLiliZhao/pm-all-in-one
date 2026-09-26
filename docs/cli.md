@@ -1,6 +1,6 @@
 # CLI manual (`pm-all-in-one`)
 
-The public npm package **`pm-all-in-one`** allocates and inspects workspace nodes without the desktop app: projects, issues, members, handoffs, wiki-nodes, `doctor`, and `adopt`.
+The public npm package **`pm-all-in-one`** allocates and inspects workspace nodes without the desktop app: projects, issues, members, handoffs, wiki-nodes, `doctor`, `adopt`, and `migrate body`.
 
 It does **not** host data. Collaboration remains git. The app’s **Install Command Line Tool…** and the in-app terminal shim install the **same** command name on `PATH`.
 
@@ -71,11 +71,14 @@ pm-all-in-one wiki list   [--column standing|record|--all]
 
 pm-all-in-one doctor
 pm-all-in-one adopt path/to/stray-dir
+pm-all-in-one migrate body
 ```
+
+`migrate body` renames legacy `README.md` node bodies to `body.md` (Home, projects, issues, wiki-nodes, members, handoffs). The app does the same on open. A node that has both files is left alone and reported by `doctor` as `body-legacy-readme`. `README.md` under `assets/` is ordinary Markdown and is not touched.
 
 Add `--json` for machine-readable output.
 
-Handoff README body: prefer `--body-file` for anything longer than a line (quotes and newlines in `--body` are shell-hostile). Do not invent a handoff directory by hand — create, then the CLI writes `README.md`.
+Handoff body: prefer `--body-file` for anything longer than a line (quotes and newlines in `--body` are shell-hostile). Do not invent a handoff directory by hand — create, then the CLI writes `body.md`.
 
 **Never invent nanoid directory ids by hand** — create through this CLI or the app. Directory name = id and is never renamed.
 

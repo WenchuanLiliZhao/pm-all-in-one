@@ -10,7 +10,7 @@ import {
   readWorkspaceMeta,
   updateWorkspaceMeta,
   workspacePropsPath,
-  workspaceReadmePath,
+  workspaceBodyPath,
 } from "./workspace-meta.js";
 
 async function withTempRoot(
@@ -24,12 +24,12 @@ async function withTempRoot(
   }
 }
 
-test("scaffold seeds workspace.ts + README.md", async () => {
+test("scaffold seeds workspace.ts + body.md", async () => {
   await withTempRoot(async (parent) => {
     const root = path.join(parent, "my-ws");
     scaffoldWorkspace(root);
     assert.equal(fs.existsSync(workspacePropsPath(root)), true);
-    assert.equal(fs.existsSync(workspaceReadmePath(root)), true);
+    assert.equal(fs.existsSync(workspaceBodyPath(root)), true);
     assert.equal(fs.existsSync(path.join(root, "AGENTS.md")), true);
     const meta = await readWorkspaceMeta(root);
     assert.equal(meta.title, "my-ws");
@@ -55,11 +55,11 @@ test("ensureWorkspaceMeta seeds missing files on an existing workspace", async (
     const meta = await ensureWorkspaceMeta(root);
     assert.equal(meta.title, "legacy");
     assert.equal(fs.existsSync(workspacePropsPath(root)), true);
-    assert.equal(fs.existsSync(workspaceReadmePath(root)), true);
+    assert.equal(fs.existsSync(workspaceBodyPath(root)), true);
   });
 });
 
-test("updateWorkspaceMeta rewrites props and README", async () => {
+test("updateWorkspaceMeta rewrites props and body.md", async () => {
   await withTempRoot(async (parent) => {
     const root = path.join(parent, "edit-me");
     scaffoldWorkspace(root);
@@ -72,7 +72,7 @@ test("updateWorkspaceMeta rewrites props and README", async () => {
     assert.equal(next.createdDate, before.createdDate);
     assert.equal(next.description, "# Hello\n");
     assert.equal(
-      fs.readFileSync(workspaceReadmePath(root), "utf8"),
+      fs.readFileSync(workspaceBodyPath(root), "utf8"),
       "# Hello\n",
     );
   });

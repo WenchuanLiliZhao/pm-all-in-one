@@ -7,6 +7,7 @@
  */
 import { execFile } from "node:child_process";
 import path from "node:path";
+import { BODY_FILE } from "../identity/body-file.js";
 import { promisify } from "node:util";
 
 import { parseId } from "../identity/dir-id.js";
@@ -98,7 +99,7 @@ export function nodeRefFromRelPath(relPath: string): NodeRef | null {
   // Workspace root files
   if (parts.length === 1) {
     const name = parts[0]!;
-    if (name === "workspace.ts" || name === "README.md") {
+    if (name === "workspace.ts" || name === BODY_FILE) {
       return { kind: "workspace" };
     }
     return null;
@@ -120,7 +121,7 @@ export function nodeRefFromRelPath(relPath: string): NodeRef | null {
     // Project-level files (not an issue id)
     if (
       third === "project.ts" ||
-      third === "README.md" ||
+      third === BODY_FILE ||
       third === "custom-props.ts" ||
       third === "schema.d.ts" ||
       third === "assets"
@@ -188,7 +189,7 @@ function classifyPathUnderNode(
     if (base === "workspace.ts") {
       return "props";
     }
-    if (base === "README.md") {
+    if (base === BODY_FILE) {
       return "body";
     }
     return "other";
@@ -198,7 +199,7 @@ function classifyPathUnderNode(
     if (base === "project.ts") {
       return "props";
     }
-    if (base === "README.md") {
+    if (base === BODY_FILE) {
       return "body";
     }
     return "other";
@@ -208,7 +209,7 @@ function classifyPathUnderNode(
   if (base === "props.ts") {
     return "props";
   }
-  if (base === "README.md") {
+  if (base === BODY_FILE) {
     return "body";
   }
   if (base.endsWith(".md")) {

@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { BODY_FILE } from "../identity/body-file.js";
 
 import { defsForLevel, loadCustomProps, writeCustomProps, emptyCustomProps } from "./custom-props.js";
 import {
@@ -273,7 +274,7 @@ export async function listProjects(workspaceRoot: string): Promise<Project[]> {
       path: dir,
       relPath: path.join("issue-hierarchy", name),
       title: props.title,
-      description: readText(path.join(dir, "README.md")),
+      description: readText(path.join(dir, BODY_FILE)),
       created: ts.created,
       updated: ts.updated,
       createdBy: optionalMemberId(record.createdBy),
@@ -454,7 +455,7 @@ function toIssue(
         return [];
       }
     })(),
-    description: readText(path.join(raw.dir, "README.md")),
+    description: readText(path.join(raw.dir, BODY_FILE)),
     created: ts.created,
     updated: ts.updated,
     assignee: optionalMemberId((props as Record<string, unknown>).assignee),
@@ -596,7 +597,7 @@ export async function createProject(
     }),
     "utf8",
   );
-  fs.writeFileSync(path.join(dir, "README.md"), "", "utf8");
+  fs.writeFileSync(path.join(dir, BODY_FILE), "", "utf8");
   writeCustomProps(dir, emptyCustomProps());
   return getProject(workspaceRoot, id);
 }
@@ -758,7 +759,7 @@ export async function updateProject(
     "utf8",
   );
   if (patch.description !== undefined) {
-    fs.writeFileSync(path.join(project.path, "README.md"), patch.description, "utf8");
+    fs.writeFileSync(path.join(project.path, BODY_FILE), patch.description, "utf8");
   }
   // Renaming a title never renames the directory: the directory name is the id.
   return getProject(workspaceRoot, projectId);
@@ -833,7 +834,7 @@ export async function createIssue(
     ),
     "utf8",
   );
-  fs.writeFileSync(path.join(issueDir, "README.md"), "", "utf8");
+  fs.writeFileSync(path.join(issueDir, BODY_FILE), "", "utf8");
   return getIssue(workspaceRoot, input.projectId, id);
 }
 
@@ -982,7 +983,7 @@ export async function updateIssue(
   );
 
   if (patch.description !== undefined) {
-    fs.writeFileSync(path.join(issue.path, "README.md"), patch.description, "utf8");
+    fs.writeFileSync(path.join(issue.path, BODY_FILE), patch.description, "utf8");
   }
 
   if (patch.markdownFields) {

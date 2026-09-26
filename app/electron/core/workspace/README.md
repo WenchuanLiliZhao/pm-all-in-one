@@ -17,6 +17,7 @@ Workspace lifecycle: create from shipped templates, open-time health (doctor), c
 | `doctor.ts` | Filesystem-shape stray scan + `scanWorkspace` (fence validators) |
 | `fence-validators.ts` | Workspace-declared Markdown fence lint (opt-in module import) |
 | `agent-md.ts` | `.pm/agent.md` rev stamp + drift vs factory |
+| `migrate-body.ts` | One-shot `README.md` → `body.md` for every node body; doctor's `body-legacy-readme` |
 | `scaffold-workspace.ts` | Create workspace from templates |
 | `workspace-template.ts` | Resolve/copy `workspace-template/` + `project-template/` |
 | `workspace-gitkeep.ts` | Keep `.gitkeep` in required empty dirs |

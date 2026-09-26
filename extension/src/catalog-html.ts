@@ -24,13 +24,18 @@ export function buildCatalogHtml(
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="${csp}">
   <style>
+    /* Same seed-and-derive scheme as app/src/global-styles/color-use-vscode.scss:
+       editor fg/bg seeds, neutrals via color-mix so the ramp matches the map. */
     html, body {
+      --fg: var(--vscode-editor-foreground, var(--vscode-foreground));
+      --bg: var(--vscode-editor-background);
+      --fg-secondary: color-mix(in srgb, var(--fg) 60%, var(--bg));
       margin: 0;
       height: 100%;
       font-family: var(--vscode-font-family);
       font-size: var(--vscode-font-size);
-      color: var(--vscode-foreground);
-      background: var(--vscode-editor-background);
+      color: var(--fg);
+      background: var(--bg);
     }
     main {
       box-sizing: border-box;
@@ -45,7 +50,7 @@ export function buildCatalogHtml(
     }
     .lead {
       margin: 0 0 1rem;
-      color: var(--vscode-descriptionForeground);
+      color: var(--fg-secondary);
     }
     #list {
       display: flex;
@@ -60,30 +65,34 @@ export function buildCatalogHtml(
       width: 100%;
       margin: 0;
       padding: 0.65rem 0.75rem;
-      border: 1px solid var(--vscode-widget-border, transparent);
+      border: 1px solid color-mix(in srgb, var(--fg) 8%, var(--bg));
       border-radius: 4px;
-      background: var(--vscode-list-inactiveSelectionBackground, transparent);
+      background: transparent;
       color: inherit;
       font: inherit;
       text-align: left;
       cursor: pointer;
     }
     .row:hover {
-      background: var(--vscode-list-hoverBackground);
+      background: color-mix(in srgb, var(--fg) 5%, transparent);
+      border-color: color-mix(in srgb, var(--fg) 14%, var(--bg));
     }
-    .row:focus {
-      outline: 1px solid var(--vscode-focusBorder);
+    .row:active {
+      background: color-mix(in srgb, var(--fg) 8%, transparent);
+    }
+    .row:focus-visible {
+      outline: 1px solid color-mix(in srgb, var(--fg) 22%, var(--bg));
       outline-offset: 1px;
     }
     .title {
       font-weight: 600;
     }
     .path {
-      color: var(--vscode-descriptionForeground);
+      color: var(--fg-secondary);
       font-size: 0.9em;
     }
     .empty {
-      color: var(--vscode-descriptionForeground);
+      color: var(--fg-secondary);
     }
   </style>
 </head>

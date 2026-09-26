@@ -2,7 +2,7 @@
   "name": "pm-all-in-one",
   "displayName": "pm-all-in-one",
   "description": "Open a local-first PM workspace (.pmws) in Cursor: issues, wiki, members, and handoffs as editor tabs.",
-  "version": "0.2.16",
+  "version": "0.2.17",
   "publisher": "wenchuanlilizhao",
   "license": "MIT",
   "author": "WenchuanLiliZhao",
@@ -89,21 +89,21 @@
         },
         {
           "command": "pm-all-in-one.open",
-          "when": "resourceScheme == 'file' && resourceFilename == 'README.md' && resourcePath =~ /wiki|members|handoffs|issue-hierarchy/",
+          "when": "resourceScheme == 'file' && resourceFilename == 'body.md' && resourcePath =~ /wiki|members|handoffs|issue-hierarchy/",
           "group": "1_pmAllInOne@1"
         }
       ],
       "editor/title/context": [
         {
           "command": "pm-all-in-one.open",
-          "when": "resourceScheme == 'file' && (resourceFilename == '.pmws' || resourceExtname == '.pmws' || resourceFilename == 'README.md')",
+          "when": "resourceScheme == 'file' && (resourceFilename == '.pmws' || resourceExtname == '.pmws' || resourceFilename == 'body.md')",
           "group": "navigation@1"
         }
       ],
       "editor/context": [
         {
           "command": "pm-all-in-one.open",
-          "when": "resourceScheme == 'file' && (resourceFilename == '.pmws' || resourceExtname == '.pmws' || resourceFilename == 'README.md')",
+          "when": "resourceScheme == 'file' && (resourceFilename == '.pmws' || resourceExtname == '.pmws' || resourceFilename == 'body.md')",
           "group": "navigation@1"
         }
       ]
@@ -146,10 +146,10 @@
         "displayName": "PM Node",
         "selector": [
           {
-            "filenamePattern": "**/README.md"
+            "filenamePattern": "**/body.md"
           },
           {
-            "filenamePattern": "README.md"
+            "filenamePattern": "body.md"
           }
         ],
         "priority": "option"

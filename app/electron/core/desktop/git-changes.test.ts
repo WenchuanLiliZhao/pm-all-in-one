@@ -40,7 +40,7 @@ test("nodeRefFromRelPath maps known layouts", () => {
   assert.deepEqual(nodeRefFromRelPath("workspace.ts"), {
     kind: "workspace",
   });
-  assert.deepEqual(nodeRefFromRelPath("README.md"), { kind: "workspace" });
+  assert.deepEqual(nodeRefFromRelPath("body.md"), { kind: "workspace" });
   assert.deepEqual(
     nodeRefFromRelPath(`issue-hierarchy/${PROJECT_ID}/project.ts`),
     { kind: "project", projectId: PROJECT_ID },
@@ -51,7 +51,7 @@ test("nodeRefFromRelPath maps known layouts", () => {
     ),
     { kind: "issue", projectId: PROJECT_ID, issueId: ISSUE_ID },
   );
-  assert.deepEqual(nodeRefFromRelPath(`wiki/${WIKI_ID}/README.md`), {
+  assert.deepEqual(nodeRefFromRelPath(`wiki/${WIKI_ID}/body.md`), {
     kind: "wiki",
     wikiNodeId: WIKI_ID,
   });
@@ -65,12 +65,12 @@ test("nodeRefFromRelPath maps known layouts", () => {
 
 test("parseNullSeparatedPaths status and name-status", () => {
   const status = parseNullSeparatedPaths(
-    ` M issue-hierarchy/${PROJECT_ID}/${ISSUE_ID}/props.ts\0?? wiki/${WIKI_ID}/README.md\0`,
+    ` M issue-hierarchy/${PROJECT_ID}/${ISSUE_ID}/props.ts\0?? wiki/${WIKI_ID}/body.md\0`,
     "status",
   );
   assert.deepEqual(status, [
     `issue-hierarchy/${PROJECT_ID}/${ISSUE_ID}/props.ts`,
-    `wiki/${WIKI_ID}/README.md`,
+    `wiki/${WIKI_ID}/body.md`,
   ]);
 
   const renamed = parseNullSeparatedPaths(
@@ -110,8 +110,8 @@ test("getUnsyncedChanges reports untracked new issue as uncommitted", async () =
   const root = mkTmp("local-pm-changes-newissue-");
   try {
     initRepo(root);
-    writeFile(root, "README.md", "ws\n");
-    git(root, ["add", "README.md"]);
+    writeFile(root, "body.md", "ws\n");
+    git(root, ["add", "body.md"]);
     git(root, ["commit", "-m", "init"]);
 
     writeFile(
@@ -121,7 +121,7 @@ test("getUnsyncedChanges reports untracked new issue as uncommitted", async () =
     );
     writeFile(
       root,
-      `issue-hierarchy/${PROJECT_ID}/${ISSUE_ID}/README.md`,
+      `issue-hierarchy/${PROJECT_ID}/${ISSUE_ID}/body.md`,
       "body\n",
     );
 
@@ -157,7 +157,7 @@ function setupRemotePair(): { bare: string; a: string; b: string } {
   git(bare, ["init", "--bare"]);
 
   initRepo(a);
-  writeFile(a, "README.md", "one\n");
+  writeFile(a, "body.md", "one\n");
   writeFile(
     a,
     `issue-hierarchy/${PROJECT_ID}/${ISSUE_ID}/props.ts`,
@@ -165,11 +165,11 @@ function setupRemotePair(): { bare: string; a: string; b: string } {
   );
   writeFile(
     a,
-    `issue-hierarchy/${PROJECT_ID}/${ISSUE_ID}/README.md`,
+    `issue-hierarchy/${PROJECT_ID}/${ISSUE_ID}/body.md`,
     "body\n",
   );
   writeFile(a, `wiki/${WIKI_ID}/props.ts`, 'export const props = {}\n');
-  writeFile(a, `wiki/${WIKI_ID}/README.md`, "wiki\n");
+  writeFile(a, `wiki/${WIKI_ID}/body.md`, "wiki\n");
   git(a, ["add", "."]);
   git(a, ["commit", "-m", "init"]);
   git(a, ["branch", "-M", "main"]);
@@ -338,10 +338,10 @@ test("getUnsyncedChanges: committed but unpushed is unpushed", async () => {
   }
 });
 
-test("getUnsyncedChanges: wiki README body only", async () => {
+test("getUnsyncedChanges: wiki body.md only", async () => {
   const pair = setupRemotePair();
   try {
-    writeFile(pair.b, `wiki/${WIKI_ID}/README.md`, "wiki edited\n");
+    writeFile(pair.b, `wiki/${WIKI_ID}/body.md`, "wiki edited\n");
     const result = await getUnsyncedChanges(pair.b);
     assert.equal(result.kind, "ok");
     assert.equal(result.nodes.length, 1);

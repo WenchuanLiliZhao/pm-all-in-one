@@ -7,12 +7,14 @@
  * level, dangling parent, cycles — are not shape problems and live in
  * `ladder.ts`, reported per issue.
  * ↔ agent-md.ts — scanStrays appends agent-md-modified / agent-md-outdated
+ * ↔ migrate-body.ts — scanStrays appends body-legacy-readme
  * ↔ fence-validators.ts — scanWorkspace appends declared-fence findings
  * ↔ ../domain/node-assets.ts — skip reserved `assets/` under projects
  * ↔ src/lib/types.ts — renderer hand-duplicated DoctorReport / AdoptResult (do not collapse)
  */
 import fs from "node:fs";
 import path from "node:path";
+import { BODY_FILE, LEGACY_BODY_FILE } from "../identity/body-file.js";
 
 import { isBareNumericDir, isValidEntityId, parseId, type EntityId } from "../identity/dir-id.js";
 import { NODE_ASSETS_DIRNAME } from "../domain/node-assets.js";
@@ -48,6 +50,7 @@ import { DEFAULT_ISSUE_STATUS } from "../identity/issue-status.js";
 import { LEVEL_TYPE_NAME } from "../infra/schema-dts.js";
 import { isIsoDateTimeZ, nowIsoUtcZ } from "../infra/timestamps.js";
 import { agentMdPath, checkAgentMd } from "./agent-md.js";
+import { listLegacyBodyFiles } from "./migrate-body.js";
 import {
   FENCE_SOFT_WARNING_KINDS,
   isFenceSoftWarning,
@@ -85,6 +88,7 @@ export type DoctorWarningKind =
   | "props-timestamp-malformed"
   | "agent-md-modified"
   | "agent-md-outdated"
+  | "body-legacy-readme"
   | FenceDoctorWarningKind;
 
 export interface DoctorWarning {
@@ -236,7 +240,25 @@ export function scanStrays(workspaceRoot: string): DoctorReport {
   appendMemberWarnings(workspaceRoot, warnings);
   appendHandoffWarnings(workspaceRoot, warnings);
   appendAgentMdWarnings(workspaceRoot, warnings);
+  appendLegacyBodyWarnings(workspaceRoot, warnings);
   return { strays, warnings };
+}
+
+function appendLegacyBodyWarnings(
+  workspaceRoot: string,
+  warnings: DoctorWarning[],
+): void {
+  for (const { dir, hasBody } of listLegacyBodyFiles(workspaceRoot)) {
+    const file = path.join(dir, LEGACY_BODY_FILE);
+    warnings.push({
+      kind: "body-legacy-readme",
+      message: hasBody
+        ? `Node has both ${LEGACY_BODY_FILE} and ${BODY_FILE}. The body is ${BODY_FILE}; merge or delete ${LEGACY_BODY_FILE} by hand.`
+        : `Node body is still ${LEGACY_BODY_FILE}. Run \`pm-all-in-one migrate body\` (or open the workspace in the app) to rename it to ${BODY_FILE}.`,
+      path: file,
+      relPath: path.relative(workspaceRoot, file),
+    });
+  }
 }
 
 function appendAgentMdWarnings(
@@ -723,7 +745,7 @@ function appendTimestampWarnings(
 
 /**
  * Adopt a stray directory: allocate a fresh issue id, rename to that id, fill
- * props.ts + README.md. Adopted issues land as epics at the project root;
+ * props.ts + body.md. Adopted issues land as epics at the project root;
  * reparent afterwards with `issue move`.
  */
 export function adoptStray(workspaceRoot: string, strayPath: string): AdoptResult {
@@ -795,9 +817,9 @@ export function adoptStray(workspaceRoot: string, strayPath: string): AdoptResul
     );
   }
 
-  const readmePath = path.join(dest, "README.md");
-  if (!fs.existsSync(readmePath)) {
-    fs.writeFileSync(readmePath, "", "utf8");
+  const bodyFile = path.join(dest, BODY_FILE);
+  if (!fs.existsSync(bodyFile)) {
+    fs.writeFileSync(bodyFile, "", "utf8");
   }
 
   return {
