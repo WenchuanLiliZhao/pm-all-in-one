@@ -552,6 +552,20 @@
   touch-action: none;
 }
 
+/* Derived project span: same bar shape as issues, but a pale hatched fill
+   instead of a solid status color, so it reads as computed, not scheduled. */
+.projectBar {
+  cursor: pointer;
+  background-color: color-mix(in srgb, var(--color-use--text-prime) 7%, transparent);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    color-mix(in srgb, var(--color-use--text-prime) 14%, transparent) 0 1px,
+    transparent 1px 6px
+  );
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--color-use--text-prime) 22%, transparent);
+}
+
 .barDragging {
   cursor: grabbing;
   z-index: 2;

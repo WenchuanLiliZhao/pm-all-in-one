@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.2.18
+
+- Roadmap draws a project time span from the issues inside it. The start is the earliest issue start, and the end is the latest issue end. A missing start is shown as one week before that issue's end; a missing end is shown as one week after that issue's start. The span is rendered only and is not stored on the project. The project bar is a pale hatched bar, distinct from the solid status-colored issue bars
+
 ## 0.2.17
 
 - Node body file is `body.md`, not `README.md`: Open in pm-all-in-one and the PM Node editor bind to `body.md`; opening a workspace renames legacy `README.md` bodies. `README.md` is now always an ordinary Markdown document. Requires app / CLI 0.1.12 or later on the same tree

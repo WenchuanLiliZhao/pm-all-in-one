@@ -88,6 +88,10 @@ import {
   PARENT_PROJECTION_INSET_Y,
 } from "./projection-bands";
 import {
+  projectSchedulesFromIssues,
+  type ProjectSchedule,
+} from "./project-schedule";
+import {
   collectBlockedByEdges,
   DEP_EDGE_TOKENS,
   findLinkDropTarget,
@@ -434,6 +438,7 @@ export function RoadmapBoard({
   /** Blocks infinite-pan extend while Today/jump reseeds + eases (incl. pre-rAF gap). */
   const suppressPanExtendRef = useRef(false);
   const rowsRef = useRef<FlatRow[]>([]);
+  const projectSchedulesRef = useRef<Map<string, ProjectSchedule>>(new Map());
   const timelineRef = useRef<TimelineWindow | null>(null);
   const viewportPxRef = useRef(DEFAULT_VIEWPORT);
   const syncOverlayYRef = useRef<(scrollTop: number) => void>(() => {});
@@ -546,6 +551,24 @@ export function RoadmapBoard({
     }
     return map;
   }, [issues]);
+
+  // ↔ project-schedule.ts — derived project bars, not a stored project field.
+  const projectSchedules = useMemo(() => {
+    const preview =
+      barDrag === null
+        ? null
+        : {
+            projectId: barDrag.projectId,
+            issueId: barDrag.issueId,
+            ...applyBarDateDrag(
+              barDrag.mode,
+              barDrag.originStart,
+              barDrag.originEnd,
+              barDrag.dayDelta,
+            ),
+          };
+    return projectSchedulesFromIssues(issues, preview);
+  }, [issues, barDrag]);
 
   const rows = useMemo(
     () => flattenVisible(tree, issuesByKey, collapsed),
@@ -785,6 +808,7 @@ export function RoadmapBoard({
   );
 
   rowsRef.current = rows;
+  projectSchedulesRef.current = projectSchedules;
   timelineRef.current = timeline;
   viewportPxRef.current = viewportPx;
 
@@ -797,6 +821,26 @@ export function RoadmapBoard({
     const V = viewportPxRef.current;
     const next: Record<string, OffViewportSide> = {};
     for (const row of rowsRef.current) {
+      const projectSchedule =
+        row.entry.kind === "project"
+          ? projectSchedulesRef.current.get(row.entry.projectId)
+          : undefined;
+      if (row.entry.kind === "project") {
+        if (!projectSchedule) {
+          continue;
+        }
+        const side = offViewportSide(
+          projectSchedule.startDate,
+          projectSchedule.endDate,
+          tl,
+          left,
+          V,
+        );
+        if (side) {
+          next[row.nodeKey] = side;
+        }
+        continue;
+      }
       if (row.entry.kind !== "issue" || !row.issue) {
         continue;
       }
@@ -976,10 +1020,11 @@ export function RoadmapBoard({
     });
   }, [timeline, syncOverlayY, recomputeJumpSides, animateScrollLeft]);
 
-  // Recompute arrows when rows / viewport / timeline change (not every scroll)
+  // Recompute arrows when rows / viewport / timeline / derived project spans change
+  // (not every scroll). Project spans follow bar drag via `projectSchedules`.
   useEffect(() => {
     recomputeJumpSides();
-  }, [rows, timeline, viewportPx, recomputeJumpSides]);
+  }, [rows, timeline, viewportPx, recomputeJumpSides, projectSchedules]);
 
   useEffect(() => {
     return () => cancelScrollAnim();
@@ -1204,6 +1249,18 @@ export function RoadmapBoard({
         projectId: issue.projectId,
         issueId: issue.id,
       });
+    },
+    [scrollToMs, onSelect],
+  );
+
+  const jumpToProject = useCallback(
+    (projectId: string, startDate: string) => {
+      const target = parseIsoDate(startDate);
+      if (target === null) {
+        return;
+      }
+      scrollToMs(target);
+      onSelect({ kind: "project", projectId });
     },
     [scrollToMs, onSelect],
   );
@@ -2194,8 +2251,15 @@ export function RoadmapBoard({
                       : ` ${styles.dropGroup}`
                   : "";
 
-                let displayStart = issue?.startDate ?? null;
-                let displayEnd = issue?.endDate ?? null;
+                const projectSchedule =
+                  entry.kind === "project"
+                    ? (projectSchedules.get(entry.projectId) ?? null)
+                    : null;
+
+                let displayStart =
+                  issue?.startDate ?? projectSchedule?.startDate ?? null;
+                let displayEnd =
+                  issue?.endDate ?? projectSchedule?.endDate ?? null;
                 const draggingThis =
                   barDrag !== null &&
                   entry.kind === "issue" &&
@@ -2214,7 +2278,7 @@ export function RoadmapBoard({
                 }
 
                 const geo =
-                  entry.kind === "issue" && issue
+                  (entry.kind === "issue" && issue) || projectSchedule
                     ? barGeometry(displayStart, displayEnd, timeline)
                     : null;
                 const rowHovered = !barDrag && hoverRowKey === nodeKey;
@@ -2267,11 +2331,13 @@ export function RoadmapBoard({
                   >
                     {showBar ? (
                       <div
-                        className={`${styles.bar}${draggingThis ? ` ${styles.barDragging}` : ""}${canDragBar ? ` ${styles.barDraggable}` : ""}`}
+                        className={`${styles.bar}${entry.kind === "project" ? ` ${styles.projectBar}` : ""}${draggingThis ? ` ${styles.barDragging}` : ""}${canDragBar ? ` ${styles.barDraggable}` : ""}`}
                         style={{
                           left: showBar.leftPx,
                           width: showBar.widthPx,
-                          ...barFillStyle(showBar.kind, issue?.status),
+                          ...(entry.kind === "project"
+                            ? null
+                            : barFillStyle(showBar.kind, issue?.status)),
                         }}
                         title={
                           showBar.kind === "open-start"
@@ -2380,9 +2446,13 @@ export function RoadmapBoard({
           aria-hidden={Object.keys(jumpSides).length === 0}
         >
           <div ref={overlayInnerRef} className={styles.jumpOverlayInner}>
-            {rows.map(({ nodeKey, issue }) => {
+            {rows.map(({ nodeKey, entry, issue }) => {
               const side = jumpSides[nodeKey];
-              if (!side || !issue) {
+              const projectSchedule =
+                entry.kind === "project"
+                  ? projectSchedules.get(entry.projectId)
+                  : undefined;
+              if (!side || (!issue && !projectSchedule)) {
                 return (
                   <div
                     key={`jump-${nodeKey}`}
@@ -2402,8 +2472,18 @@ export function RoadmapBoard({
                     className={
                       side === "left" ? styles.jumpLeft : styles.jumpRight
                     }
-                    aria-label="Scroll to issue start"
-                    onClick={() => jumpToIssue(issue, side)}
+                    aria-label={
+                      projectSchedule
+                        ? "Scroll to project start"
+                        : "Scroll to issue start"
+                    }
+                    onClick={() => {
+                      if (issue) {
+                        jumpToIssue(issue, side);
+                      } else if (projectSchedule) {
+                        jumpToProject(entry.projectId, projectSchedule.startDate);
+                      }
+                    }}
                   >
                     {side === "left" ? "←" : "→"}
                   </button>
