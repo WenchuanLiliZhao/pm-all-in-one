@@ -197,11 +197,19 @@
     --button-active-overlay-opacity: 0.2;
   }
 
-  /* After variants so selected wins; inline `colors.fg` still overrides. */
+  /* After variants so selected / open wins; inline `colors.fg` still overrides.
+     Open comes from DropdownMenu.Trigger `data-state`. End icon is the chevron. */
   &[data-selected="true"]:not([data-variant="fill-inverse"]):not(
+      [data-variant="fill-danger"]
+    ),
+  &[data-state="open"]:not([data-variant="fill-inverse"]):not(
       [data-variant="fill-danger"]
     ) {
     --button-fg: var(--color-use--text-prime-hex);
+  }
+
+  &[data-state="open"] &__icon-container[data-slot="end"] svg {
+    transform: rotate(180deg);
   }
 
   &[data-loading="true"] {

@@ -4,13 +4,19 @@
  * `selected` raises label/icon to text-prime (orthogonal to variant; not CSS :active).
  * Icon glyphs in `startIcon` / `endIcon` inherit `--button-icon-size` — omit `size` on Lucide icons.
  *
+ * ↔ components/ui/dropdown-menu — Trigger asChild passes `ref` and `data-state`
  * ↔ components/member-person — card chrome imports button styles.module.scss directly
  * ↔ components/ui/input — size=small twin for detail props
  * ↔ src/global-styles/seams.md — `detail-prop-controls`
  * ↔ lab/pages/button — variant × size × selected × group matrix
  * ↔ group.tsx — joined outlined cluster (UI-304)
  */
-import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from "react";
+import {
+  forwardRef,
+  type ButtonHTMLAttributes,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { Lucide } from "@/components/ui/lucide";
 import styles from "./styles.module.scss";
 
@@ -59,21 +65,24 @@ function colorStyle(colors?: ButtonColorOverrides): CSSProperties | undefined {
   } as CSSProperties;
 }
 
-export function Button({
-  variant = "outlined",
-  size = "medium",
-  selected = false,
-  loading = false,
-  disabled,
-  className,
-  colors,
-  style,
-  startIcon,
-  endIcon,
-  children,
-  type = "button",
-  ...props
-}: ButtonProps) {
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  {
+    variant = "outlined",
+    size = "medium",
+    selected = false,
+    loading = false,
+    disabled,
+    className,
+    colors,
+    style,
+    startIcon,
+    endIcon,
+    children,
+    type = "button",
+    ...props
+  },
+  ref,
+) {
   const isDisabled = disabled || loading;
   const showOutline = variant === "outlined";
 
@@ -96,6 +105,7 @@ export function Button({
       data-selected={selected ? "true" : "false"}
       data-loading={loading ? "true" : "false"}
       {...props}
+      ref={ref}
     >
       {!isDisabled ? (
         <span className={styles["button__hover-overlay"]} aria-hidden />
@@ -109,11 +119,15 @@ export function Button({
         </span>
       ) : null}
       {endIcon && !loading ? (
-        <span className={styles["button__icon-container"]}>{endIcon}</span>
+        <span className={styles["button__icon-container"]} data-slot="end">
+          {endIcon}
+        </span>
       ) : null}
       {showOutline ? (
         <span className={styles["button__outline-border"]} aria-hidden />
       ) : null}
     </button>
   );
-}
+});
+
+Button.displayName = "Button";

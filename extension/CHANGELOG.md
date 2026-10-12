@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.2.19
+
+- Roadmap filters issues and can focus one project; a project row stays when none of its issues match, and its bar remains the span of the whole line. Choice menus use the outlined button. New project sits inside Changes when git sync is available
+
 ## 0.2.18
 
 - Roadmap draws a project time span from the issues inside it. The start is the earliest issue start, and the end is the latest issue end. A missing start is shown as one week before that issue's end; a missing end is shown as one week after that issue's start. The span is rendered only and is not stored on the project. The project bar is a pale hatched bar, distinct from the solid status-colored issue bars

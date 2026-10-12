@@ -133,7 +133,8 @@ export function GitSyncPanel({
     syncing,
     sync,
   } = useGitSync();
-  const { meta, projects, issues, select, setTerminalOpen } = useWorkspace();
+  const { meta, projects, issues, select, setTerminalOpen, createProject } =
+    useWorkspace();
   const handoffs = useHandoffMetas();
 
   const status = statusOverride !== undefined ? statusOverride : liveStatus;
@@ -364,8 +365,19 @@ export function GitSyncPanel({
           Scroll body + pinned action: DropdownMenu Content scrolls as a whole
           (overflow-y: auto). We override that on `.panel` and scroll only here —
           do not teach the menu primitive about sticky footers.
-          ↔ styles.module.scss — .panel / .scroll / .stickyAction
+          ↔ styles.module.scss — .panel / .createAction / .scroll / .stickyAction
         */}
+        <div className={styles.createAction}>
+          <DropdownMenu.ItemButton
+            label="New project"
+            icon={<Lucide.Plus size={16} aria-hidden />}
+            onSelect={() => {
+              if (!demo) {
+                void createProject();
+              }
+            }}
+          />
+        </div>
         <div className={styles.scroll}>
           <div className={styles.section}>
             <div className={styles.sectionHead}>Incoming</div>

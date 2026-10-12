@@ -82,6 +82,18 @@
   gap: var(--space--16);
 }
 
+.choice.choice {
+  width: 100%;
+  justify-content: space-between;
+}
+
+.choiceLabel {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .input {
   font: inherit;
   color: var(--color-use--text-prime);

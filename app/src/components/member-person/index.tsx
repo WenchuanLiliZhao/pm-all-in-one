@@ -297,7 +297,10 @@ const MemberPersonCardChrome = forwardRef<HTMLButtonElement, CardChromeProps>(
           </span>
         </span>
         {endIcon ? (
-          <span className={buttonStyles["button__icon-container"]}>
+          <span
+            className={buttonStyles["button__icon-container"]}
+            data-slot="end"
+          >
             {endIcon}
           </span>
         ) : null}
@@ -506,7 +509,6 @@ export function MemberPersonSelect({
   "aria-label": ariaLabel = "Select member",
 }: MemberPersonSelectProps) {
   const { members } = useMember();
-  const [open, setOpen] = useState(false);
 
   const selectedMeta = value
     ? members?.nodes.find((m) => m.id === value) ??
@@ -542,7 +544,7 @@ export function MemberPersonSelect({
 
   return (
     <div className={`${styles.selectWrap} ${className ?? ""}`.trim()}>
-      <DropdownMenu open={open} onOpenChange={setOpen} disabled={disabled}>
+      <DropdownMenu disabled={disabled}>
         <DropdownMenu.Trigger asChild>
           <MemberPersonCardChrome
             fullWidth
@@ -550,12 +552,7 @@ export function MemberPersonSelect({
             muted={muted}
             buttonSize={controlSize}
             aria-label={ariaLabel}
-            endIcon={
-              <Lucide.ChevronDown
-                className={open ? styles.chevronOpen : undefined}
-                aria-hidden
-              />
-            }
+            endIcon={<Lucide.ChevronDown aria-hidden />}
           >
             {value ? (
               <PersonLabel

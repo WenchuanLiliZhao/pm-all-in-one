@@ -16,6 +16,7 @@ import {
 import { MarkdownEditor } from "@/components/markdown-editor";
 import { MemberPerson, MemberPersonSelect } from "@/components/member-person";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu } from "@/components/ui/dropdown-menu";
 import { Lucide } from "@/components/ui/lucide";
 import { getPm } from "@/lib/bridge";
 import { openHandoffNode } from "@/lib/bridge/open-pm-document";
@@ -53,6 +54,56 @@ function formatSentAt(iso: string): string {
   } catch {
     return iso;
   }
+}
+
+function ChoiceMenu({
+  ariaLabel,
+  disabled,
+  value,
+  placeholder,
+  options,
+  onChange,
+  searchable,
+}: {
+  ariaLabel: string;
+  disabled?: boolean;
+  value: string;
+  placeholder: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+  searchable?: boolean;
+}) {
+  const current = options.find((option) => option.value === value)?.label;
+  return (
+    <DropdownMenu
+      disabled={disabled}
+      filter={searchable ? { placeholder: "Filter…" } : undefined}
+    >
+      <DropdownMenu.Trigger asChild>
+        <Button
+          type="button"
+          variant="outlined"
+          size="small"
+          className={styles.choice}
+          disabled={disabled}
+          endIcon={<Lucide.ChevronDown aria-hidden />}
+          aria-label={ariaLabel}
+        >
+          <span className={styles.choiceLabel}>{current || placeholder}</span>
+        </Button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content align="start" side="bottom">
+        {options.map((option) => (
+          <DropdownMenu.ItemButton
+            key={option.value || option.label}
+            label={option.label}
+            active={option.value === value}
+            onSelect={() => onChange(option.value)}
+          />
+        ))}
+      </DropdownMenu.Content>
+    </DropdownMenu>
+  );
 }
 
 export function CollaborationCards() {
@@ -231,32 +282,30 @@ export function CollaborationCards() {
               <div className={styles.peopleRow}>
                 <label className={styles.field}>
                   <span>Related project</span>
-                  <select
-                    className={styles.input}
+                  <ChoiceMenu
+                    ariaLabel="Related project"
                     value={draftRelatedProject ?? ""}
-                    onChange={(e) =>
-                      setDraftRelatedProject(e.target.value || null)
-                    }
-                    aria-label="Related project"
-                  >
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.title}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="Project"
+                    searchable
+                    options={projects.map((project) => ({
+                      value: project.id,
+                      label: project.title,
+                    }))}
+                    onChange={(id) => setDraftRelatedProject(id || null)}
+                  />
                 </label>
                 <label className={styles.field}>
                   <span>Status</span>
-                  <select
-                    className={styles.input}
+                  <ChoiceMenu
+                    ariaLabel="Handoff open or closed"
                     value={draftOpen ? "open" : "closed"}
-                    onChange={(e) => setDraftOpen(e.target.value === "open")}
-                    aria-label="Handoff open or closed"
-                  >
-                    <option value="open">Open</option>
-                    <option value="closed">Closed</option>
-                  </select>
+                    placeholder="Status"
+                    options={[
+                      { value: "open", label: "Open" },
+                      { value: "closed", label: "Closed" },
+                    ]}
+                    onChange={(next) => setDraftOpen(next === "open")}
+                  />
                 </label>
               </div>
               <div className={styles.peopleRow}>

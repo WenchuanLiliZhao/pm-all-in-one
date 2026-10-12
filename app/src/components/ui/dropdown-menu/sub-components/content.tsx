@@ -1,13 +1,12 @@
 /**
  * DropdownMenu Content — portal panel with positioning + optional filter field.
  */
-import React, { useRef, useEffect, useMemo, useCallback } from "react";
+import React, { useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useDropdownMenuContext } from "./context";
 import { DropdownMenuFilterField } from "./filter-field";
 import {
   usePosition,
-  useClickOutside,
   useEscapeKey,
   usePreventScroll,
 } from "./hooks";
@@ -37,6 +36,7 @@ export const DropdownMenuContent: React.FC<DropdownMenuContentProps> = ({
     filterEnabled,
     filterQuery,
     setFilterQuery,
+    menuId,
   } = context;
 
   const contentRef = useRef<HTMLDivElement>(null);
@@ -56,14 +56,48 @@ export const DropdownMenuContent: React.FC<DropdownMenuContentProps> = ({
 
   const anchorOnly = anchorPoint != null;
 
-  const clickOutsideRefs = useMemo(
-    () => (anchorOnly ? [contentRef] : [contentRef, triggerRef]),
-    [contentRef, triggerRef, anchorOnly],
-  );
+  useEffect(() => {
+    if (!isOpen) return;
 
-  useClickOutside(clickOutsideRefs, closeMenu, isOpen);
+    const listener = (event: MouseEvent | TouchEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (contentRef.current?.contains(target)) return;
+      if (!anchorOnly && triggerRef?.current?.contains(target)) return;
+
+      const host =
+        target instanceof Element
+          ? target.closest("[data-dropdown-menu-content]")
+          : null;
+      if (host && contentRef.current) {
+        const id = host.getAttribute("data-dropdown-menu-id");
+        const nestedTrigger = id
+          ? document.querySelector(
+              `[data-dropdown-menu-trigger="${CSS.escape(id)}"]`,
+            )
+          : null;
+        if (nestedTrigger && contentRef.current.contains(nestedTrigger)) {
+          return;
+        }
+      }
+
+      closeMenu();
+    };
+
+    document.addEventListener("mousedown", listener);
+    document.addEventListener("touchstart", listener);
+    return () => {
+      document.removeEventListener("mousedown", listener);
+      document.removeEventListener("touchstart", listener);
+    };
+  }, [isOpen, closeMenu, anchorOnly, triggerRef]);
 
   const handleEscape = useCallback(() => {
+    const panels = document.querySelectorAll("[data-dropdown-menu-content]");
+    const top = panels.item(panels.length - 1);
+    if (contentRef.current && top && top !== contentRef.current) {
+      return;
+    }
     if (filterEnabled && filterQuery.trim()) {
       setFilterQuery("");
       return;
@@ -156,6 +190,8 @@ export const DropdownMenuContent: React.FC<DropdownMenuContentProps> = ({
       ref={contentRef}
       className={contentClassName}
       data-state="open"
+      data-dropdown-menu-content=""
+      data-dropdown-menu-id={menuId}
       data-side={side}
       data-align={align}
       data-level={level}

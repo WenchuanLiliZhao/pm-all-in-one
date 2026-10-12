@@ -8,6 +8,7 @@ import {
   type CSSProperties,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
+  type ReactNode,
 } from "react";
 import {
   DndContext,
@@ -31,7 +32,7 @@ import {
   reorderSiblingInOrder,
   reparentInOrder,
 } from "@pm-core/views/view-order-apply";
-import type { Issue, IssueTree, TreeNode } from "@/lib/types";
+import type { CustomPropsSchema, Issue, IssueTree, TreeNode } from "@/lib/types";
 import { issueRefKey } from "@/lib/types";
 import { getPm } from "@/lib/bridge";
 import { treeNodeToNodeRef } from "@/lib/bridge/open-pm-document";
@@ -40,7 +41,9 @@ import {
   useWorkspace,
   type Selection,
 } from "@/lib/workspace/workspace-context";
+import { useMember } from "@/lib/workspace/member-context";
 import { useViewOrderedTree } from "@/lib/workspace/use-view-ordered-tree";
+import { useWiki } from "@/lib/workspace/wiki-context";
 import {
   applyCollapseRestore,
   applyForcedCollapseDiff,
@@ -101,7 +104,17 @@ import {
   type DepBarAnchor,
 } from "./dep-edges";
 import styles from "./styles.module.scss";
+import { Button } from "@/components/ui/button";
+import { RoadmapFilterBar, RoadmapProjectFocus } from "./filter-panel";
+import { applyFilter, emptyFilter, visibleRowKeys } from "./filter-model";
+import {
+  readRoadmapFilter,
+  readRoadmapFocus,
+  writeRoadmapFilter,
+  writeRoadmapFocus,
+} from "./filter-session";
 import { DropdownMenu } from "@/components/ui/dropdown-menu"; // ↔ Content `anchorPoint` date menu
+import { Lucide } from "@/components/ui/lucide";
 import { TreeRow, treeRowStyles } from "@/components/ui/tree-row";
 import {
   issueKindIcon,
@@ -116,7 +129,11 @@ import {
   issuePriorityIcon,
   issuePriorityLabel,
 } from "@/components/ui/issue-priority";
-import { TreeCollapseControls } from "@/components/tree-collapse-controls";
+import {
+  applyCollapseLevel,
+  expandAllCollapsed,
+  type CollapseLevel,
+} from "@/lib/tree-collapse";
 import type { IssuePriorityId } from "@/lib/issue-priority";
 import type { IssueStatusId } from "@/lib/issue-status";
 
@@ -259,30 +276,28 @@ function flattenVisible(
   tree: IssueTree,
   issuesByKey: Map<string, Issue>,
   collapsed: Set<string>,
+  keptKeys: Set<string> | null,
+  focusProjectId: string | null,
 ): FlatRow[] {
+  const listed = visibleRowKeys({
+    tree,
+    isProject: (key) => tree.byId[key]?.kind === "project",
+    projectIdOf: (key) => tree.byId[key]?.projectId ?? "",
+    kept: keptKeys,
+    focusProjectId,
+    collapsed,
+  });
   const rows: FlatRow[] = [];
-
-  const walk = (nodeKey: string, depth: number) => {
-    const entry = tree.byId[nodeKey];
+  for (const { key, depth } of listed) {
+    const entry = tree.byId[key];
     if (!entry) {
-      return;
+      continue;
     }
     const issue =
       entry.kind === "issue" && entry.issueId !== undefined
         ? (issuesByKey.get(issueRefKey(entry.projectId, entry.issueId)) ?? null)
         : null;
-    rows.push({ nodeKey, depth, entry, issue });
-    const kids = tree.children[nodeKey] ?? [];
-    if (kids.length === 0 || collapsed.has(nodeKey)) {
-      return;
-    }
-    for (const cid of kids) {
-      walk(cid, depth + 1);
-    }
-  };
-
-  for (const root of tree.roots) {
-    walk(root, 0);
+    rows.push({ nodeKey: key, depth, entry, issue });
   }
   return rows;
 }
@@ -295,6 +310,45 @@ function zoomLabel(z: ZoomLevel): string {
     return "Month";
   }
   return "Quarter";
+}
+
+type ZoomBarItem = {
+  key: string;
+  label: string;
+  active?: boolean;
+  onClick: () => void;
+};
+
+type ZoomBarGroup = {
+  key: string;
+  label: string;
+  items: ZoomBarItem[];
+};
+
+function RoadmapZoomBar({ groups }: { groups: ZoomBarGroup[] }) {
+  return (
+    <div className={styles.zoomBar} role="toolbar" aria-label="Timeline">
+      {groups.map((group) => (
+        <div
+          key={group.key}
+          className={styles.zoomGroup}
+          role="group"
+          aria-label={group.label}
+        >
+          {group.items.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className={`${styles.zoomBtn}${item.active ? ` ${styles.zoomBtnActive}` : ""}`}
+              onClick={item.onClick}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 type PendingScroll =
@@ -408,6 +462,136 @@ function withOrderedDates(
   return { startDate, endDate: dateIso };
 }
 
+const FOLD_LEVELS: { value: CollapseLevel; label: string }[] = [
+  { value: "task", label: "Collapse tasks" },
+  { value: "epic", label: "Collapse epics" },
+  { value: "project", label: "Collapse projects" },
+];
+
+function RoadmapFoldMenuItems({
+  tree,
+  collapsed,
+  onCollapsedChange,
+}: {
+  tree: IssueTree;
+  collapsed: ReadonlySet<string>;
+  onCollapsedChange: (next: Set<string>) => void;
+}) {
+  return (
+    <>
+      {FOLD_LEVELS.map((opt) => (
+        <DropdownMenu.ItemButton
+          key={opt.value}
+          label={opt.label}
+          icon={<Lucide.ChevronsDown size={16} aria-hidden />}
+          onSelect={() =>
+            onCollapsedChange(applyCollapseLevel(collapsed, tree, opt.value))
+          }
+        />
+      ))}
+      <DropdownMenu.Separator />
+      <DropdownMenu.ItemButton
+        label="Expand all"
+        icon={<Lucide.ChevronsUp size={16} aria-hidden />}
+        disabled={collapsed.size === 0}
+        onSelect={() => onCollapsedChange(expandAllCollapsed())}
+      />
+    </>
+  );
+}
+
+function RoadmapCorner({
+  tree,
+  collapsed,
+  disabled,
+  onCollapsedChange,
+  filter,
+}: {
+  tree: IssueTree;
+  collapsed: ReadonlySet<string>;
+  disabled: boolean;
+  onCollapsedChange: (next: Set<string>) => void;
+  filter: ReactNode;
+}) {
+  const [buttonOpen, setButtonOpen] = useState(false);
+  const [contextPoint, setContextPoint] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!disabled) return;
+    setButtonOpen(false);
+    setContextPoint(null);
+  }, [disabled]);
+
+  return (
+    <div
+      className={styles.corner}
+      onContextMenu={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (disabled) return;
+        setButtonOpen(false);
+        setContextPoint({ x: event.clientX, y: event.clientY });
+      }}
+    >
+      <span className={styles.cornerLabel}>Issue</span>
+      <div className={styles.cornerActions}>
+        {filter}
+      <DropdownMenu
+        open={buttonOpen}
+        disabled={disabled}
+        onOpenChange={(open) => {
+          setButtonOpen(open);
+          if (open) setContextPoint(null);
+        }}
+      >
+        <DropdownMenu.Trigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="small"
+            className={styles.cornerMenu}
+            disabled={disabled}
+            startIcon={<Lucide.Ellipsis aria-hidden />}
+            aria-label="Fold the issue tree"
+            title="Fold"
+          />
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content align="end" side="bottom">
+          <RoadmapFoldMenuItems
+            tree={tree}
+            collapsed={collapsed}
+            onCollapsedChange={onCollapsedChange}
+          />
+        </DropdownMenu.Content>
+      </DropdownMenu>
+      <DropdownMenu
+        open={contextPoint != null}
+        onOpenChange={(open) => {
+          if (!open) setContextPoint(null);
+        }}
+      >
+        {contextPoint ? (
+          <DropdownMenu.Content
+            anchorPoint={contextPoint}
+            side="bottom"
+            align="start"
+          >
+            <RoadmapFoldMenuItems
+              tree={tree}
+              collapsed={collapsed}
+              onCollapsedChange={onCollapsedChange}
+            />
+          </DropdownMenu.Content>
+        ) : null}
+      </DropdownMenu>
+      </div>
+    </div>
+  );
+}
+
 export function RoadmapBoard({
   viewKey,
   tree: rawTree,
@@ -417,7 +601,10 @@ export function RoadmapBoard({
   onPersistIssueDates,
   onPersistIssueBlockedBy,
 }: RoadmapBoardProps) {
-  const { moveIssueTo, setError } = useWorkspace();
+  const { moveIssueTo, setError, projects, refreshCustomProps, root } =
+    useWorkspace();
+  const { members: memberSnap } = useMember();
+  const { wiki } = useWiki();
   const { orderedTree, order, persistOrder } = useViewOrderedTree(
     viewKey,
     rawTree,
@@ -552,7 +739,91 @@ export function RoadmapBoard({
     return map;
   }, [issues]);
 
-  // ↔ project-schedule.ts — derived project bars, not a stored project field.
+  const [filter, setFilterState] = useState(() => readRoadmapFilter(root));
+  const [focusProjectId, setFocusState] = useState(() => readRoadmapFocus(root));
+  const filterRootRef = useRef(root);
+  if (filterRootRef.current !== root) {
+    filterRootRef.current = root;
+    setFilterState(readRoadmapFilter(root));
+    setFocusState(readRoadmapFocus(root));
+  }
+  const setFilter = useCallback(
+    (next: ReturnType<typeof emptyFilter>) => {
+      writeRoadmapFilter(root, next);
+      setFilterState(next);
+    },
+    [root],
+  );
+  const setFocusProjectId = useCallback(
+    (next: string | null) => {
+      writeRoadmapFocus(root, next);
+      setFocusState(next);
+    },
+    [root],
+  );
+  const [schemas, setSchemas] = useState(
+    () => new Map<string, CustomPropsSchema>(),
+  );
+  const projectIdsKey = projects.map((project) => project.id).join("|");
+  useEffect(() => {
+    let cancelled = false;
+    const ids = projectIdsKey.length === 0 ? [] : projectIdsKey.split("|");
+    void (async () => {
+      const next = new Map<string, CustomPropsSchema>();
+      await Promise.all(
+        ids.map(async (id) => {
+          try {
+            next.set(id, await refreshCustomProps(id));
+          } catch {
+            // A project without a schema simply offers no custom fields.
+          }
+        }),
+      );
+      if (!cancelled) {
+        setSchemas(next);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [projectIdsKey, refreshCustomProps]);
+
+  const filterView = useMemo(
+    () =>
+      applyFilter(
+        tree,
+        (key) => issuesByKey.get(key) ?? null,
+        (projectId) => schemas.get(projectId),
+        filter,
+      ),
+    [tree, issuesByKey, schemas, filter],
+  );
+  const focusActive = useMemo(() => {
+    if (!focusProjectId) {
+      return null;
+    }
+    const onSheet = tree.roots.some((key) => {
+      const entry = tree.byId[key];
+      return entry?.kind === "project" && entry.projectId === focusProjectId;
+    });
+    return onSheet ? focusProjectId : null;
+  }, [focusProjectId, tree]);
+  const sheetProjects = useMemo(() => {
+    const listed: { id: string; title: string }[] = [];
+    for (const key of tree.roots) {
+      const entry = tree.byId[key];
+      if (entry?.kind !== "project") {
+        continue;
+      }
+      const title =
+        projects.find((project) => project.id === entry.projectId)?.title ??
+        entry.title;
+      listed.push({ id: entry.projectId, title });
+    }
+    return listed;
+  }, [tree, projects]);
+
+  // Project bars are the line's own span, from every issue, including ones the filter hides.
   const projectSchedules = useMemo(() => {
     const preview =
       barDrag === null
@@ -571,8 +842,15 @@ export function RoadmapBoard({
   }, [issues, barDrag]);
 
   const rows = useMemo(
-    () => flattenVisible(tree, issuesByKey, collapsed),
-    [tree, issuesByKey, collapsed],
+    () =>
+      flattenVisible(
+        tree,
+        issuesByKey,
+        collapsed,
+        filterView.kept,
+        focusActive,
+      ),
+    [tree, issuesByKey, collapsed, filterView.kept, focusActive],
   );
   const rowIds = useMemo(() => rows.map((r) => r.nodeKey), [rows]);
 
@@ -1944,20 +2222,11 @@ export function RoadmapBoard({
     return bands;
   }, [timeline]);
 
+  const memberOptions = memberSnap?.nodes ?? [];
+  const wikiOptions = wiki?.nodes ?? [];
+
   return (
     <div className={styles.board}>
-      <div className={styles.topChrome}>
-        <TreeCollapseControls
-          tree={tree}
-          collapsed={collapsed}
-          onCollapsedChange={setCollapsed}
-          disabled={dragActiveId !== null}
-        />
-        <button type="button" className={styles.todayBtn} onClick={goToday}>
-          Today
-        </button>
-      </div>
-
       <div className={styles.scrollShell}>
         <div
           ref={scrollRef}
@@ -1975,7 +2244,29 @@ export function RoadmapBoard({
           }
         >
           <div className={styles.header}>
-            <div className={styles.corner}>Issue</div>
+            <RoadmapCorner
+              tree={tree}
+              collapsed={collapsed}
+              disabled={dragActiveId !== null}
+              onCollapsedChange={setCollapsed}
+              filter={
+                <>
+                  <RoadmapProjectFocus
+                    projectId={focusActive}
+                    projects={sheetProjects}
+                    onChange={setFocusProjectId}
+                  />
+                  <RoadmapFilterBar
+                    filter={filter}
+                    onChange={setFilter}
+                    projects={projects}
+                    schemas={schemas}
+                    members={memberOptions}
+                    wikiNodes={wikiOptions}
+                  />
+                </>
+              }
+            />
             <div className={styles.rulerStack}>
               <div
                 className={styles.coarseRow}
@@ -2058,7 +2349,7 @@ export function RoadmapBoard({
               }}
             >
               <DndContext
-                sensors={sensors}
+                sensors={filterView.active ? [] : sensors}
                 collisionDetection={closestCenter}
                 autoScroll={false}
                 onDragStart={(e: DragStartEvent) => {
@@ -2492,20 +2783,40 @@ export function RoadmapBoard({
             })}
           </div>
         </div>
+        {filterView.active && filterView.matchCount === 0 ? (
+          <div className={styles.filterEmpty} style={{ left: LABEL_W + 12 }}>
+            <p>No issues match these conditions</p>
+            <Button
+              type="button"
+              size="medium"
+              variant="outlined"
+              onClick={() => setFilter(emptyFilter())}
+            >
+              Clear filter
+            </Button>
+          </div>
+        ) : null}
       </div>
 
-      <div className={styles.zoomBar} role="group" aria-label="Timeline zoom">
-        {ZOOM_LEVELS.map((z) => (
-          <button
-            key={z}
-            type="button"
-            className={`${styles.zoomBtn}${zoom === z ? ` ${styles.zoomBtnActive}` : ""}`}
-            onClick={() => changeZoom(z)}
-          >
-            {zoomLabel(z)}
-          </button>
-        ))}
-      </div>
+      <RoadmapZoomBar
+        groups={[
+          {
+            key: "today",
+            label: "Jump to today",
+            items: [{ key: "today", label: "Today", onClick: goToday }],
+          },
+          {
+            key: "zoom",
+            label: "Timeline zoom",
+            items: ZOOM_LEVELS.map((z) => ({
+              key: z,
+              label: zoomLabel(z),
+              active: zoom === z,
+              onClick: () => changeZoom(z),
+            })),
+          },
+        ]}
+      />
 
       <DropdownMenu
         open={!!dateMenu}

@@ -2,7 +2,7 @@
   "name": "pm-all-in-one",
   "displayName": "pm-all-in-one",
   "description": "Open a local-first PM workspace (.pmws) in Cursor: issues, wiki, members, and handoffs as editor tabs.",
-  "version": "0.2.18",
+  "version": "0.2.19",
   "publisher": "wenchuanlilizhao",
   "license": "MIT",
   "author": "WenchuanLiliZhao",

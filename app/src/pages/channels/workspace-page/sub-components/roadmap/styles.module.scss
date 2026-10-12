@@ -13,31 +13,127 @@
   overflow: hidden;
 }
 
-.topChrome {
+.filterHost {
   flex-shrink: 0;
-  display: flex;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.focusHost {
+  flex: 0 1 auto;
+  min-width: 0;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.focusTrigger.focusTrigger {
+  min-width: 0;
+  max-width: 9rem;
   justify-content: space-between;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 500;
+}
+
+.focusTriggerLabel {
+  display: block;
+  max-width: 7rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filterTrigger {
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 500;
+}
+
+.filterMenu[data-state="open"] {
+  min-width: min(36rem, calc(100vw - 32px));
+  max-width: min(48rem, calc(100vw - 32px));
+  max-height: min(70vh, calc(100vh - 32px));
+  overflow: auto;
+  padding: var(--space--12);
+}
+
+.filterPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space--8);
+}
+
+.filterLead {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--color-use--text-secondary);
+}
+
+.filterList,
+.filterGroup,
+.filterBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space--8);
+}
+
+.filterGroup {
+  padding: var(--space--8);
+  border: 1px solid var(--color-use--border-prime-hex);
+  border-radius: 8px;
+}
+
+.filterRow {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space--8);
-  /* Was 0.35rem 0.75rem (5.6/12) → 4/12 */
-  padding: var(--space--4) var(--space--12);
-  border-bottom: 1px solid var(--color-use--border-prime-hex);
-  background: var(--color-use--bg-prime-hex);
 }
 
-.todayBtn {
-  font-size: 0.8rem;
-  /* Was 0.25rem 0.65rem (4/10.4) → 4/12 */
-  padding: var(--space--4) var(--space--12);
+.filterChoice.filterChoice {
+  min-width: 8rem;
+  max-width: 18rem;
+  justify-content: space-between;
+}
+
+.filterChoiceLabel {
+  display: block;
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.filterValue.filterValue {
+  width: 11rem;
+  max-width: 18rem;
+}
+
+.filterPending {
+  font-size: 11px;
+  line-height: 18px;
+  color: var(--color-use--text-secondary);
+}
+
+.filterEmpty {
+  position: absolute;
+  bottom: var(--space--12);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: var(--space--12);
+  max-width: min(28rem, calc(100% - 18rem));
+  padding: var(--space--8) var(--space--12);
   border: 1px solid var(--color-use--border-emphasis-hex);
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--color-use--bg-prime-hex);
-  color: var(--color-use--text-prime);
-  cursor: pointer;
+  box-shadow: var(--shadow-sm);
 }
 
-.todayBtn:hover {
-  background: var(--color-use--bg-darken);
+.filterEmpty p {
+  margin: 0;
+  color: var(--color-use--text-prime);
+  font-size: 0.75rem;
 }
 
 .scrollShell {
@@ -139,7 +235,9 @@
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  padding: 0 var(--space--12);
+  justify-content: space-between;
+  gap: var(--space--8);
+  padding: 0 var(--space--8) 0 var(--space--12);
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -149,6 +247,26 @@
   border-right: 1px solid var(--color-use--border-prime-hex);
   box-sizing: border-box;
   align-self: stretch;
+}
+
+.cornerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space--4);
+  flex-shrink: 0;
+}
+
+.cornerLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cornerMenu {
+  flex-shrink: 0;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .rulerStack {
@@ -697,6 +815,12 @@
   right: var(--space--12);
   bottom: var(--space--12);
   z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space--8);
+}
+
+.zoomGroup {
   display: inline-flex;
   border: 1px solid var(--color-use--border-emphasis-hex);
   border-radius: 8px;

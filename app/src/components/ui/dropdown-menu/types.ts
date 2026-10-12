@@ -20,6 +20,11 @@ export type DropdownMenuProps = {
    * Narrows rows that expose filter text (prebuilt `label`, or optional `filterText` on Item).
    */
   filter?: boolean | DropdownMenuFilterOptions;
+  /**
+   * A picker rendered inside another menu. Click toggles it (not hover),
+   * and a press on its panel does not dismiss the menu outside.
+   */
+  independent?: boolean;
 };
 
 export type DropdownMenuTriggerProps = {
@@ -120,4 +125,5 @@ export type DropdownMenuContextValue = {
   setFilterQuery: (query: string) => void;
   filterPlaceholder: string;
   isItemVisible: (filterText?: string) => boolean;
+  menuId: string;
 };

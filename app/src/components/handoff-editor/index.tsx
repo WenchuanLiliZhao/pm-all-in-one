@@ -21,6 +21,7 @@ import {
 } from "@/components/doc-edit-shell";
 import { DetailConflictBanner } from "@/components/detail-conflict-banner";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu } from "@/components/ui/dropdown-menu";
 import { Lucide } from "@/components/ui/lucide";
 import { MemberPerson, MemberPersonSelect } from "@/components/member-person";
 import { getPm } from "@/lib/bridge";
@@ -62,6 +63,58 @@ type Draft = {
   from: string;
   to: string;
 };
+
+function FieldMenu({
+  ariaLabel,
+  disabled,
+  value,
+  placeholder,
+  options,
+  onChange,
+  searchable,
+}: {
+  ariaLabel: string;
+  disabled?: boolean;
+  value: string;
+  placeholder: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+  searchable?: boolean;
+}) {
+  const current = options.find((option) => option.value === value)?.label;
+  return (
+    <DropdownMenu
+      disabled={disabled}
+      filter={searchable ? { placeholder: "Filter…" } : undefined}
+    >
+      <DropdownMenu.Trigger asChild>
+        <Button
+          type="button"
+          variant="outlined"
+          size="small"
+          className={styles.fieldTrigger}
+          disabled={disabled}
+          endIcon={<Lucide.ChevronDown aria-hidden />}
+          aria-label={ariaLabel}
+        >
+          <span className={styles.fieldTriggerLabel}>
+            {current || placeholder}
+          </span>
+        </Button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content align="start" side="bottom">
+        {options.map((option) => (
+          <DropdownMenu.ItemButton
+            key={option.value || option.label}
+            label={option.label}
+            active={option.value === value}
+            onSelect={() => onChange(option.value)}
+          />
+        ))}
+      </DropdownMenu.Content>
+    </DropdownMenu>
+  );
+}
 
 function titleDirty(draft: string, baseline: string): boolean {
   return draft.trim() !== baseline.trim();
@@ -489,53 +542,54 @@ export function HandoffEditor({ handoffId }: Props) {
           <div className={styles.fields}>
             <label className={styles.field}>
               <span>Related project</span>
-              <select
-                aria-label="Related project"
-                value={relatedProjectDraft}
+              <FieldMenu
+                ariaLabel="Related project"
                 disabled={status === "saving" || projects.length === 0}
-                onChange={(e) => {
-                  const id = e.target.value;
+                value={relatedProjectDraft}
+                placeholder={relatedProjectDraft || "No projects"}
+                searchable
+                options={[
+                  ...projects.map((project) => ({
+                    value: project.id,
+                    label: project.title,
+                  })),
+                  ...(relatedProjectDraft &&
+                  !projects.some((project) => project.id === relatedProjectDraft)
+                    ? [
+                        {
+                          value: relatedProjectDraft,
+                          label: `${relatedProjectDraft} (missing)`,
+                        },
+                      ]
+                    : []),
+                ]}
+                onChange={(id) => {
                   setRelatedProjectDraft(id);
                   const draft = { ...draftRef.current, relatedProject: id };
                   draftRef.current = draft;
                   markDirty(draft);
                 }}
-              >
-                {projects.length === 0 ? (
-                  <option value={relatedProjectDraft}>
-                    {relatedProjectDraft || "No projects"}
-                  </option>
-                ) : null}
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.title}
-                  </option>
-                ))}
-                {relatedProjectDraft &&
-                !projects.some((p) => p.id === relatedProjectDraft) ? (
-                  <option value={relatedProjectDraft}>
-                    {relatedProjectDraft} (missing)
-                  </option>
-                ) : null}
-              </select>
+              />
             </label>
             <label className={styles.field}>
               <span>Status</span>
-              <select
-                aria-label="Handoff open or closed"
-                value={openDraft ? "open" : "closed"}
+              <FieldMenu
+                ariaLabel="Handoff open or closed"
                 disabled={status === "saving"}
-                onChange={(e) => {
-                  const open = e.target.value === "open";
+                value={openDraft ? "open" : "closed"}
+                placeholder="Status"
+                options={[
+                  { value: "open", label: "Open" },
+                  { value: "closed", label: "Closed" },
+                ]}
+                onChange={(next) => {
+                  const open = next === "open";
                   setOpenDraft(open);
                   const draft = { ...draftRef.current, open };
                   draftRef.current = draft;
                   markDirty(draft);
                 }}
-              >
-                <option value="open">Open</option>
-                <option value="closed">Closed</option>
-              </select>
+              />
             </label>
             <label className={styles.field}>
               <span>From</span>

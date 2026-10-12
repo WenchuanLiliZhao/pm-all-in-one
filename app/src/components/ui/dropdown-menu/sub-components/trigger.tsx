@@ -21,6 +21,7 @@ export const DropdownMenuTrigger: React.FC<DropdownMenuTriggerProps> = ({
     disabled,
     level,
     setTriggerRef,
+    menuId,
   } = context;
 
   const triggerRef = useRef<HTMLElement>(null);
@@ -98,9 +99,11 @@ export const DropdownMenuTrigger: React.FC<DropdownMenuTriggerProps> = ({
     onMouseEnter: handleMouseEnter,
     onMouseLeave: handleMouseLeave,
     "aria-haspopup": "true" as const,
+    "aria-expanded": isOpen ? "true" : "false",
     "data-state": isOpen ? "open" : "closed",
     "data-disabled": disabled,
     "data-level": level,
+    "data-dropdown-menu-trigger": menuId,
     disabled,
     children,
   };
@@ -129,6 +132,7 @@ export const DropdownMenuTrigger: React.FC<DropdownMenuTriggerProps> = ({
       "data-state": isOpen ? "open" : "closed",
       "data-disabled": disabled,
       "data-level": level,
+      "data-dropdown-menu-trigger": menuId,
     });
   }
 

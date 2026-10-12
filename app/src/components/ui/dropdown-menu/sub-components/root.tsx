@@ -31,6 +31,7 @@ export const DropdownMenuRoot: FC<DropdownMenuProps> = ({
   disabled = false,
   modal: _modal = false,
   filter,
+  independent = false,
 }) => {
   const [isOpen, setIsOpen] = useControllableState(
     controlledOpen,
@@ -49,6 +50,7 @@ export const DropdownMenuRoot: FC<DropdownMenuProps> = ({
     RefObject<HTMLElement | null> | null
   >(null);
   const closeTimerRef = useRef<number | null>(null);
+  const menuId = useRef(crypto.randomUUID()).current;
 
   useEffect(() => {
     return () => {
@@ -61,7 +63,8 @@ export const DropdownMenuRoot: FC<DropdownMenuProps> = ({
   }, [isOpen]);
 
   const parentContext = useOptionalDropdownMenuContext();
-  const level = parentContext ? parentContext.level + 1 : 0;
+  const level =
+    independent || !parentContext ? 0 : parentContext.level + 1;
 
   const closeMenu = useCallback(() => {
     if (!disabled) setIsOpen(false);
@@ -113,6 +116,7 @@ export const DropdownMenuRoot: FC<DropdownMenuProps> = ({
       setFilterQuery,
       filterPlaceholder,
       isItemVisible,
+      menuId,
     }),
     [
       isOpen,
@@ -128,6 +132,7 @@ export const DropdownMenuRoot: FC<DropdownMenuProps> = ({
       filterQuery,
       filterPlaceholder,
       isItemVisible,
+      menuId,
     ],
   );
 

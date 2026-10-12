@@ -470,12 +470,20 @@ export function WorkspaceLayout() {
           </nav>
 
           <div className={styles.topbarActions}>
-            {!identityInTitlebar && gitAvailable ? (
-              <GitSyncPanel variant="topbar" />
-            ) : null}
-            <Button type="button" size="medium" variant="outlined" onClick={() => void createProject()}>
-              New project
-            </Button>
+            {gitAvailable ? (
+              identityInTitlebar ? null : (
+                <GitSyncPanel variant="topbar" />
+              )
+            ) : (
+              <Button
+                type="button"
+                size="medium"
+                variant="outlined"
+                onClick={() => void createProject()}
+              >
+                New project
+              </Button>
+            )}
             <TopbarLocalMe />
           </div>
         </div>
