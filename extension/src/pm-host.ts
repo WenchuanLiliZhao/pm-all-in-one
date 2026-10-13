@@ -223,6 +223,19 @@ export class PmSession {
     const issues = await listIssues(resolved);
     const strays = await scanWorkspace(resolved);
     this.watcher.start(resolved, (payload) => {
+      // A later node tab calls restoreWorkspace and must see issues created
+      // after this session opened. The map stays current via "changed"; the
+      // cached snap did not.
+      if (this.lastSnap && this.root === resolved) {
+        this.lastSnap = {
+          root: this.lastSnap.root,
+          meta: payload.meta,
+          projects: payload.projects,
+          tree: payload.tree,
+          issues: payload.issues,
+          strays: payload.strays,
+        };
+      }
       this.emit("changed", payload);
     });
     const snap = { root: resolved, meta, projects, tree, issues, strays };

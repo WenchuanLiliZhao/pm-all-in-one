@@ -10,10 +10,15 @@
   --layout--titlebar-traffic-inset: 78px;
   /* Electron main `MAC_TRAFFIC_LIGHT_POSITION.y` — keep in sync (not used in CSS). */
   --layout--titlebar-traffic-y: 18px;
+  /* Detail / terminal resting widths match the old minmax() minimum
+   * (the 1fr column took the free space). Drag may grow them up to max.
+   * ↔ components/ui/pane-resize/pane-width.ts */
   --layout--detail-min: 320px;
-  --layout--detail-max: 420px;
+  --layout--detail-max: 640px;
+  --layout--detail-width: 320px;
   --layout--terminal-min: 280px;
-  --layout--terminal-max: 400px;
+  --layout--terminal-max: 640px;
+  --layout--terminal-width: 280px;
   --layout--page-pad-x: var(--space--28);
   --layout--page-pad-y: var(--space--24);
   --layout--content-max: 52rem;
@@ -23,9 +28,17 @@
   --layout--topbar-pad-y: var(--space--12);
   /* Wiki Contents rail — matches cndt-wiki Layout sidebar default (was 240). */
   --layout--wiki-rail-width: 280px;
+  --layout--wiki-rail-min: 200px;
+  --layout--wiki-rail-max: 480px;
   /* TreeRow lead / overflow icon button — snapped 22→20 (≤2px). */
   --layout--tree-lead-size: 20px;
   /* Roadmap sheet label rail + row track — tokenize existing 280/36 (0 delta). */
   --layout--roadmap-label-width: 280px;
+  --layout--roadmap-label-min: 180px;
+  --layout--roadmap-label-max: 480px;
   --layout--roadmap-row-height: 36px;
+  /* Issue table sticky title column — 16 / 22 / 28rem at the default root. */
+  --layout--table-title-width: 22rem;
+  --layout--table-title-min: 16rem;
+  --layout--table-title-max: 28rem;
 }

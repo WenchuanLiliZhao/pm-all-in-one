@@ -1,6 +1,6 @@
 # pm-all-in-one (Cursor)
 
-Open a **pm-all-in-one** project library inside Cursor. The workspace is a directory of files (issues, wiki, members, handoffs) next to your code. This extension is a Cursor host for that directory — not a clone of the macOS app.
+Open a **pm-all-in-one** project library inside Cursor. pm-all-in-one is a local Jira replacement for small teams: projects, issues, wiki, members, and handoffs are files in a git repository next to your code, so a clone is the full state and collaboration is a pull request. This extension is a Cursor host for that directory — not a clone of the macOS app.
 
 Extension id: `wenchuanlilizhao.pm-all-in-one`  
 Registry: Open VSX — https://open-vsx.org/extension/wenchuanlilizhao/pm-all-in-one (Cursor’s extension panel reads this registry, not the Visual Studio Marketplace)

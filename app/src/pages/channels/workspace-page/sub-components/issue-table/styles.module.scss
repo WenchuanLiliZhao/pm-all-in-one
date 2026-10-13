@@ -53,6 +53,7 @@
 }
 
 .table {
+  --issue-table-title-w: var(--layout--table-title-width);
   width: max-content;
   min-width: 100%;
   border-collapse: separate;
@@ -83,9 +84,9 @@
   position: sticky;
   left: 0;
   z-index: 1;
-  min-width: 16rem;
-  max-width: 28rem;
-  width: 22rem;
+  width: var(--issue-table-title-w);
+  min-width: var(--issue-table-title-w);
+  max-width: var(--issue-table-title-w);
   overflow: hidden;
   /* Opaque base — `--bg-darken` is rgba; a lone translucent fill lets
      scrolled columns show through the sticky title rail. */

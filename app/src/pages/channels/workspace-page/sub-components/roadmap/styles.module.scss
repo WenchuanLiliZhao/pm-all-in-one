@@ -206,7 +206,7 @@
 }
 
 .sheet {
-  /* Defaults from layout tokens; JS may override `--label-w` inline (same 280). */
+  /* Defaults from layout tokens; JS sets `--label-w` from the drag width. */
   --label-w: var(--layout--roadmap-label-width);
   --row-h: var(--layout--roadmap-row-height);
   min-height: 100%;

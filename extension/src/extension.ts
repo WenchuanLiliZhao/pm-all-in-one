@@ -272,14 +272,8 @@ async function bindPmWebview(opts: {
     surface === "map"
       ? workspaceTabTitle(snap?.meta, title)
       : title;
-  webviewPanel.webview.html = buildWebviewHtml({
-    webview: webviewPanel.webview,
-    extensionUri: context.extensionUri,
-    workspaceRoot: acquired.root,
-    surface,
-    nodeRef,
-  });
-
+  // Listen before html. A webview that posts during load otherwise drops
+  // restoreWorkspace, and the page stays on its loading state.
   const disposable = webviewPanel.webview.onDidReceiveMessage(
     async (msg: unknown) => {
       if (!msg || typeof msg !== "object" || (msg as { type?: string }).type !== "call") {
@@ -326,6 +320,14 @@ async function bindPmWebview(opts: {
       }
     },
   );
+
+  webviewPanel.webview.html = buildWebviewHtml({
+    webview: webviewPanel.webview,
+    extensionUri: context.extensionUri,
+    workspaceRoot: acquired.root,
+    surface,
+    nodeRef,
+  });
 
   webviewPanel.onDidDispose(() => {
     disposable.dispose();

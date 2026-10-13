@@ -1,12 +1,12 @@
 # pm-all-in-one
 
-Project management for small teams where **humans and AI agents share one workspace**.
+A local Jira replacement for small teams: projects, issues, wiki, and handoffs live as **files in a git repository**, so a clone is the full state and collaboration is a pull request.
 
-Jira, chat threads, and tool-only PM stacks split context across systems agents cannot reliably read or continue. This product keeps the project library as **files next to your code**: a clone is the full state; collaboration is git.
+It is built for teams where work state is produced on disk — written by people and by AI agents, reviewed by people in git. Jira, chat threads, and tool-only PM stacks split that state across systems agents cannot reliably read or continue; here the project library sits **next to your code**.
 
 This repository is the product home — macOS app, [`pm-all-in-one`](https://www.npmjs.com/package/pm-all-in-one) CLI, and the Cursor extension (`wenchuanlilizhao.pm-all-in-one` on Open VSX).
 
-We run the product on itself: development of **pm-all-in-one** is planned and tracked in a separate local-pm library, not this product repo. The README, releases, and disk contract below are what that dogfood has to survive, not a slide deck.
+We run the product on itself: development of **pm-all-in-one** is planned and tracked in a separate pm-all-in-one library, not this product repo. The README, releases, and disk contract below are what that dogfood has to survive, not a slide deck.
 
 ## What matters
 
@@ -14,7 +14,7 @@ We run the product on itself: development of **pm-all-in-one** is planned and tr
 2. **Wiki and issues fully exposed to AI** — Markdown bodies, `props.ts`, and live `@issue-…` / `@wiki-…` / `@member-…` / `@handoff-…` locators resolve by path. No running server required to find a node.
 3. **Handoff as a first-class node** — a sent “who → whom, about which work” record on disk (`handoffs/`), not chat residue or a buried comment.
 
-The desktop UI is the **easy way in** — an intuitive path so people can accept this model. It is not the definition of the product. The workspace on disk is; the CLI and agent rules (`AGENTS.md` / `.pm/agent.md` / skills) are peers to the UI.
+The desktop UI is the **easy way in** — the Jira-shaped surface so people do not have to relearn where to click. It is not the definition of the product. The workspace on disk is; the CLI and agent rules (`AGENTS.md` / `.pm/agent.md` / skills) are peers to the UI.
 
 ## Who this is for / not for
 
@@ -22,7 +22,7 @@ The dividing line is how work is produced, not company headcount: **is company s
 
 **Likely a fit**
 
-- Solo developers or AI-native small teams who already share one workspace with agents
+- Solo developers or small teams who already share one workspace with agents
 - Agent fleets / automation studios that need a durable, diffable ledger of intent (not chat residue)
 - Knowledge or delivery work where the deliverable is already a repo of documents + code
 - A pod inside a larger org that keeps agent-driven work on disk, while enterprise tickets stay elsewhere
@@ -33,13 +33,11 @@ The dividing line is how work is produced, not company headcount: **is company s
 - Orgs whose primary users only use web forms — login, roles, SLA reports, and workflow engines as first-class
 - Anyone who wants hosted sync, in-app ACL, or a board that hides the files
 
-**Validation (honest):** There is **no large-team experiment** yet. Dogfood and active testing stay in the **3–5 person** range. Larger headcount may still adopt the model for an AI-native layer, but that scale is unproven here.
+**Validated range (honest):** dogfood and active testing cover **1–5 people** on one library. That is the range where git can still absorb concurrent edits by hand, and it is the only range we can vouch for. There is **no large-team experiment** yet; larger headcount may still adopt the model for an on-disk layer, but that scale is unproven here.
 
-## Not Jira (even when it looks like Jira + Confluence)
+## Same shape as Jira, different source of truth
 
-The desktop shell borrows the familiar shape of **Jira + Confluence** — projects, issue trees, wiki, status and priority — **only so people do not have to relearn where to click**. Familiar chrome is onboarding, not identity.
-
-There is one structural difference, and the rest follows from it:
+The desktop shell keeps the familiar shape of **Jira + Confluence** — projects, issue trees, wiki, status and priority — so a team that already knows Jira can switch without relearning the screen. What changes is underneath:
 
 > Jira's source of truth is a remote database reached through an API. Here it is a directory of text files you already have checked out.
 
@@ -60,14 +58,27 @@ rg -l 'blockedBy' issue-hierarchy                 # every declared dependency
 
 **Where the files live is your call.** A workspace is just a directory, so it can sit inside your code repo — intent and implementation in one PR — or be a repo beside it. pm-all-in-one takes the second path: the live dogfood library is a separate repo because it tracks more than this codebase. Same-repo co-review is available to you; it is not what we run daily.
 
-**What it costs.** The ladder is fixed at epic → task → subtask — no configurable workflows, schemes, or issue types. That is a real capability loss against Jira, taken deliberately: a structure every workspace can redefine is a structure no agent learns once. Per-project custom fields exist (`custom-props.ts`), but the three ranks do not move. And Jira still wins at cross-org ticket flow, audit reports, SLA, and ACL — that is its home field, **walking onto it is losing**, and this product stays off it on purpose.
+## What you get, and what is deliberately missing
+
+"Replacement" invites a feature-by-feature comparison, so here is the honest one.
+
+| In the box | Not in the box (on purpose) |
+| --- | --- |
+| Projects with an epic → task → subtask tree | Configurable workflows, schemes, or issue types — the three ranks are fixed |
+| Status, priority, assignee, dates, dependencies (`blockedBy`) | Accounts, roles, in-app ACL, hosted sync |
+| Table, roadmap, home, and saved filter views; per-project custom fields (`custom-props.ts`) | SLA and audit reports, approval matrices |
+| Wiki with cross-links to issues, members, handoffs | A board that hides the files |
+| Members and handoffs as on-disk nodes | Comments as a separate chat stream — the body file and git history carry discussion |
+| `doctor` that rejects a malformed write instead of reinterpreting it | A sandbox between agents and the source of truth — guardrails are workspace rules, skills, and `doctor` |
+
+The fixed ladder is a real capability loss against Jira, taken deliberately: a structure every workspace can redefine is a structure no agent learns once. Cross-org ticket flow, audit reports, SLA, and ACL remain Jira's home field; this product stays off it.
 
 ## Tradeoffs (read before you adopt)
 
-- **Git is the multiplayer layer.** There is no account, hosted sync, or in-app permission matrix. That is intentional for developer-shaped small teams; it is the wrong product if you need SaaS ACL.
+- **Git is the multiplayer layer.** There is no account, hosted sync, or in-app permission matrix. That is what makes a 1–5 person team work without a server; it is the wrong product if you need SaaS ACL.
 - **Agents can write as well as read.** Exposure is the point. Mistakes land in the same SoT — guardrails are workspace rules, skills, and `doctor`, not a sandbox ACL.
 - **UX is still rough for non-technical teammates.** The desktop path works for dogfooding developers; several flows are still awkward enough that non-technical colleagues will feel the friction. We expect that gap to close with the trusted `1.0.0` surface (end of epic v1) — not with the current unsigned `0.x` preview.
-- **Parallel edits on the same workspace remain a hard problem.** Two people (or a person and an agent) changing overlapping files still collide the usual git way. Git worktrees absorb some of that pain; they do not make concurrent project-library work feel solved. We have not found a better answer we are willing to pretend is finished.
+- **Parallel edits on the same workspace remain a hard problem.** Two people (or a person and an agent) changing overlapping files still collide the usual git way. Git worktrees absorb some of that pain; they do not make concurrent project-library work feel solved. This is also why the validated range stops at five.
 - **Not a chat substitute for a project library**, and not an enterprise workflow suite. If you want a board that hides the files, look elsewhere.
 
 ## Status: v0 (open-source, unsigned)

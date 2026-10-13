@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import {
   Navigate,
   Outlet,
@@ -51,6 +59,9 @@ import {
 import { CopyDoctorPromptButton } from "./copy-doctor-prompt-button";
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
+import { PaneResizeHandle } from "@/components/ui/pane-resize";
+import { PANE_WIDTH } from "@/components/ui/pane-resize/pane-width";
+import { usePaneWidth } from "@/components/ui/pane-resize/use-pane-width";
 import { Input } from "@/components/ui/input";
 import {
   readWikiContentsDefaultExpandDepth,
@@ -181,6 +192,8 @@ export function WorkspaceLayout() {
     feedback,
     clearFeedback,
   } = useGitSync();
+  const detailPane = usePaneWidth(PANE_WIDTH.detail);
+  const terminalPane = usePaneWidth(PANE_WIDTH.terminal);
 
   const refreshViews = useCallback(async () => {
     try {
@@ -586,9 +599,25 @@ export function WorkspaceLayout() {
         </Banner>
       ) : null}
 
-      <div className={layoutClass}>
+      <div
+        className={layoutClass}
+        style={
+          {
+            "--pane-terminal-width": `${terminalPane.width}px`,
+          } as CSSProperties
+        }
+      >
         <div className={styles.pageScroll}>
-          <div className={pageRowClass}>
+          <div
+            className={pageRowClass}
+            style={
+              detailOpen
+                ? ({
+                    "--pane-detail-width": `${detailPane.width}px`,
+                  } as CSSProperties)
+                : undefined
+            }
+          >
             <main className={styles.center}>
               <Outlet
                 context={{ openSelection, views, viewsReady, refreshViews, wikiNodes }}
@@ -596,6 +625,7 @@ export function WorkspaceLayout() {
             </main>
 
             {detailOpen ? (
+              <>
               <aside className={styles.detail}>
                 {selectedIssue ? (
                   <IssueDetail
@@ -644,6 +674,13 @@ export function WorkspaceLayout() {
                   />
                 ) : null}
               </aside>
+              <PaneResizeHandle
+                pane={detailPane}
+                edge="start"
+                offset={detailPane.width}
+                label="Resize detail"
+              />
+              </>
             ) : null}
           </div>
         </div>
@@ -652,6 +689,14 @@ export function WorkspaceLayout() {
           <aside className={styles.terminal}>
             <TerminalPanel ref={terminalRef} />
           </aside>
+        ) : null}
+        {terminalOpen && !isVsCodePm() ? (
+          <PaneResizeHandle
+            pane={terminalPane}
+            edge="start"
+            offset={terminalPane.width}
+            label="Resize terminal"
+          />
         ) : null}
       </div>
     </div>

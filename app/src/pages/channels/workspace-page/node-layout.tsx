@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Navigate,
   Outlet,
@@ -15,6 +15,7 @@ import {
   WorkspaceHomeDetail,
 } from "@/components";
 import { PageWidth } from "@/components/ui/page-width";
+import { getPm } from "@/lib/bridge";
 import { closePmPanelIfNodeSurface } from "@/lib/bridge/open-pm-document";
 import { issueRefKey } from "@/lib/types";
 import { getActiveSaveHost } from "@/lib/workspace/active-save-host";
@@ -76,11 +77,9 @@ export function NodeLayout() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [saveDetail]);
 
-  if (booting) {
-    return null;
-  }
-
-  if (!hasWorkspace || !tree || !root) {
+  // Keep the outlet mounted while the full snapshot is in flight. The issue
+  // page loads that one record itself; waiting here left the tab blank.
+  if (!booting && (!hasWorkspace || !tree || !root)) {
     return <Navigate to="/" replace />;
   }
 
@@ -205,6 +204,7 @@ export function NodeIssueView() {
   const {
     issues,
     selectedIssue,
+    selection,
     saveStatus,
     conflictPaths,
     updateIssueDraft,
@@ -215,14 +215,56 @@ export function NodeIssueView() {
     createChild,
     moveIssueTo,
     select,
+    cacheIssue,
   } = useWorkspace();
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const fromList = useMemo(() => {
+    if (!projectId || !issueId) {
+      return null;
+    }
+    return (
+      issues.find((i) => i.projectId === projectId && i.id === issueId) ??
+      null
+    );
+  }, [issues, projectId, issueId]);
 
   useEffect(() => {
     if (!projectId || !issueId) {
       return;
     }
+    if (
+      selection?.kind === "issue" &&
+      selection.projectId === projectId &&
+      selection.issueId === issueId
+    ) {
+      return;
+    }
     void select({ kind: "issue", projectId, issueId });
-  }, [projectId, issueId, select]);
+  }, [projectId, issueId, select, selection]);
+
+  useEffect(() => {
+    if (!projectId || !issueId || fromList) {
+      return;
+    }
+    let cancelled = false;
+    setLoadError(null);
+    void getPm()
+      .getIssue(projectId, issueId)
+      .then((issue) => {
+        if (!cancelled) {
+          cacheIssue(issue);
+        }
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) {
+          setLoadError(e instanceof Error ? e.message : String(e));
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, issueId, fromList, cacheIssue]);
 
   const knownKeys = useMemo(
     () => new Set(issues.map((i) => issueRefKey(i.projectId, i.id))),
@@ -244,21 +286,24 @@ export function NodeIssueView() {
     return <Navigate to="/w/table" replace />;
   }
 
-  if (
-    !selectedIssue ||
-    selectedIssue.projectId !== projectId ||
-    selectedIssue.id !== issueId
-  ) {
+  const issue =
+    selectedIssue &&
+    selectedIssue.projectId === projectId &&
+    selectedIssue.id === issueId
+      ? selectedIssue
+      : fromList;
+
+  if (!issue) {
     return (
       <div className={styles.placeholder}>
-        <p>Loading issue…</p>
+        <p>{loadError ?? "Loading issue…"}</p>
       </div>
     );
   }
 
   return (
     <IssueDetail
-      issue={selectedIssue}
+      issue={issue}
       saveStatus={saveStatus}
       conflictPaths={conflictPaths}
       onChange={updateIssueDraft}
@@ -272,11 +317,11 @@ export function NodeIssueView() {
         })();
       }}
       onAddChild={
-        selectedIssue.level === "subtask" ? undefined : () => void addChild()
+        issue.level === "subtask" ? undefined : () => void addChild()
       }
       onClose={() => void closePmPanelIfNodeSurface()}
       onRepairPlacement={(newParentIssueId) =>
-        void moveIssueTo(selectedIssue.projectId, selectedIssue.id, newParentIssueId)
+        void moveIssueTo(issue.projectId, issue.id, newParentIssueId)
       }
       onNavigateIssue={openSelection}
       knownKeys={knownKeys}
@@ -292,7 +337,10 @@ export function NodeProjectView() {
     useOutletContext<WorkspaceOutletContext>();
   const {
     issues,
+    projects,
     selectedProject,
+    selection,
+    booting,
     saveStatus,
     conflictPaths,
     updateProjectDraft,
@@ -308,8 +356,11 @@ export function NodeProjectView() {
     if (!projectId) {
       return;
     }
+    if (selection?.kind === "project" && selection.projectId === projectId) {
+      return;
+    }
     void select({ kind: "project", projectId });
-  }, [projectId, select]);
+  }, [projectId, select, selection]);
 
   const knownKeys = useMemo(
     () => new Set(issues.map((i) => issueRefKey(i.projectId, i.id))),
@@ -320,17 +371,21 @@ export function NodeProjectView() {
     return <Navigate to="/w/roadmap" replace />;
   }
 
-  if (!selectedProject || selectedProject.id !== projectId) {
+  const fromList = projects.find((p) => p.id === projectId) ?? null;
+  const project =
+    selectedProject?.id === projectId ? selectedProject : fromList;
+
+  if (!project) {
     return (
       <div className={styles.placeholder}>
-        <p>Loading project…</p>
+        <p>{booting ? "Loading project…" : "Project not found."}</p>
       </div>
     );
   }
 
   return (
     <ProjectDetail
-      project={selectedProject}
+      project={project}
       saveStatus={saveStatus}
       conflictPaths={conflictPaths}
       onChange={updateProjectDraft}

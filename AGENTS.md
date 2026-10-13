@@ -17,7 +17,7 @@ members: []
 
 # `pm-all-in-one/`
 
-Local-first project manager for personal (and later small-team) developers who find Jira / MCP-backed PM too rigid and context-lossy.
+A local Jira replacement for small teams whose work state lives on disk: projects, issues, wiki, and handoffs are files in a git repository, written by people and agents and reviewed in git. The fit criterion is how work is produced, not headcount; the validated range is 1–5 people.
 
 | Path | Role |
 | --- | --- |

@@ -5,7 +5,14 @@
  * ↔ ../../styles.module.scss — `.tablePage` / `.layoutFillViewport`
  * ↔ ../../is-fill-viewport-path.ts — `/w/table` membership
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import {
   DndContext,
   DragOverlay,
@@ -37,6 +44,9 @@ import type {
 import { issueRefKey } from "@/lib/types";
 import { treeNodeToNodeRef } from "@/lib/bridge/open-pm-document";
 import { useOpenInNewWebview } from "@/components/open-in-new-webview-menu";
+import { PaneResizeHandle } from "@/components/ui/pane-resize";
+import { PANE_WIDTH } from "@/components/ui/pane-resize/pane-width";
+import { usePaneWidth } from "@/components/ui/pane-resize/use-pane-width";
 import { useViewOrderedTree } from "@/lib/workspace/use-view-ordered-tree";
 import {
   useWorkspace,
@@ -113,6 +123,7 @@ export function IssueTable({
     tree,
   );
 
+  const titlePane = usePaneWidth(PANE_WIDTH.tableTitle);
   const [query, setQuery] = useState("");
   const [schemasByProject, setSchemasByProject] = useState(
     () => new Map<string, CustomPropsSchema>(),
@@ -461,10 +472,26 @@ export function IssueTable({
             items={ids}
             strategy={verticalListSortingStrategy}
           >
-            <table className={styles.table}>
+            <table
+              className={styles.table}
+              style={
+                {
+                  "--issue-table-title-w": `${titlePane.width}px`,
+                } as CSSProperties
+              }
+            >
               <thead>
                 <tr>
-                  <th className={styles.titleCol}>Title</th>
+                  <th className={styles.titleCol}>
+                    Title
+                    <PaneResizeHandle
+                      pane={titlePane}
+                      edge="end"
+                      contain="inside-end"
+                      limitToParent={false}
+                      label="Resize title column"
+                    />
+                  </th>
                   <th>Level</th>
                   <th>Status</th>
                   <th>Priority</th>

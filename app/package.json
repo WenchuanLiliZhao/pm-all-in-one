@@ -2,7 +2,7 @@
   "name": "local-pm",
   "private": true,
   "version": "0.1.12",
-  "description": "Local-first project manager (Vite + React + Electron)",
+  "description": "A local Jira replacement for small teams: projects, issues, wiki, and handoffs as files in a git repository.",
   "author": "local-pm contributors",
   "license": "MIT",
   "type": "module",

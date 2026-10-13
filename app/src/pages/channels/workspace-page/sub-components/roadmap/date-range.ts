@@ -687,7 +687,7 @@ export function pxToMs(px: number, window: TimelineWindow): number {
 /**
  * scrollLeft so timeline-local `ms` sits at the timeline viewport center (clamped).
  * Contract: `scrollLeft` is on the sheet that includes the sticky label column;
- * `viewportTimelinePx` is `clientWidth - LABEL_W` (↔ index.tsx measure / scrollToMs).
+ * `viewportTimelinePx` is `clientWidth - label column width` (↔ index.tsx measure / scrollToMs).
  * Invariant: `centerMsFromScroll(w, scrollLeftForCenterMs(w, ms, V), V)` ≈ `ms`
  * when `ms` is interior and unclamped.
  */

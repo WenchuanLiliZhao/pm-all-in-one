@@ -105,6 +105,9 @@ import {
 } from "./dep-edges";
 import styles from "./styles.module.scss";
 import { Button } from "@/components/ui/button";
+import { PaneResizeHandle } from "@/components/ui/pane-resize";
+import { PANE_WIDTH } from "@/components/ui/pane-resize/pane-width";
+import { usePaneWidth } from "@/components/ui/pane-resize/use-pane-width";
 import { RoadmapFilterBar, RoadmapProjectFocus } from "./filter-panel";
 import { applyFilter, emptyFilter, visibleRowKeys } from "./filter-model";
 import {
@@ -137,7 +140,6 @@ import {
 import type { IssuePriorityId } from "@/lib/issue-priority";
 import type { IssueStatusId } from "@/lib/issue-status";
 
-const LABEL_W = 280;
 const DEFAULT_VIEWPORT = 800;
 /** Coarse 22 + fine 28 (month/quarter). Week fine is taller — see headerHeight(). */
 const HEADER_H_DEFAULT = 50;
@@ -610,6 +612,10 @@ export function RoadmapBoard({
     rawTree,
   );
   const tree = orderedTree ?? rawTree;
+  const labelPane = usePaneWidth(PANE_WIDTH.roadmapLabel);
+  const labelWRef = useRef(labelPane.width);
+  labelWRef.current = labelPane.width;
+  const measureViewportRef = useRef<() => void>(() => {});
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const timelineRailRef = useRef<HTMLDivElement>(null);
@@ -1226,7 +1232,7 @@ export function RoadmapBoard({
       return;
     }
     const measure = () => {
-      const next = Math.max(200, el.clientWidth - LABEL_W);
+      const next = Math.max(200, el.clientWidth - labelWRef.current);
       const prev = viewportPxRef.current;
       didMeasureViewport.current = true;
 
@@ -1259,11 +1265,17 @@ export function RoadmapBoard({
       viewportPxRef.current = next;
       setViewportPx(next);
     };
+    measureViewportRef.current = measure;
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+
+  // Label-rail drags do not change the scrollport's clientWidth.
+  useLayoutEffect(() => {
+    measureViewportRef.current();
+  }, [labelPane.width]);
 
   // Apply pending scroll after window mutation (pan extend / zoom / jump)
   useLayoutEffect(() => {
@@ -1390,7 +1402,7 @@ export function RoadmapBoard({
       return;
     }
 
-    const V = Math.max(200, el.clientWidth - LABEL_W);
+    const V = Math.max(200, el.clientWidth - labelWRef.current);
     const leftPx = el.scrollLeft;
     const rightPx = leftPx + V;
     const sheetW = timeline.totalWidthPx;
@@ -1432,7 +1444,7 @@ export function RoadmapBoard({
   const scrollToMs = useCallback(
     (ms: number, opts?: { instant?: boolean }) => {
       const el = scrollRef.current;
-      const V = el ? Math.max(200, el.clientWidth - LABEL_W) : viewportPx;
+      const V = el ? Math.max(200, el.clientWidth - labelWRef.current) : viewportPx;
       const instant = opts?.instant === true;
       const inWindow = ms >= timeline.startMs && ms < timeline.endMs;
 
@@ -1498,7 +1510,7 @@ export function RoadmapBoard({
     }
     didInitScroll.current = true;
     const ms = todayAnchorMs();
-    const V = Math.max(200, el.clientWidth - LABEL_W);
+    const V = Math.max(200, el.clientWidth - labelWRef.current);
     const next = seedWindow(zoom, V, ms);
     pendingScroll.current = {
       kind: "snap",
@@ -1549,7 +1561,7 @@ export function RoadmapBoard({
         return;
       }
       const el = scrollRef.current;
-      const V = el ? Math.max(200, el.clientWidth - LABEL_W) : viewportPx;
+      const V = el ? Math.max(200, el.clientWidth - labelWRef.current) : viewportPx;
       const currentScroll = el?.scrollLeft ?? scrollLeftRef.current;
       const anchor = centerMsFromScroll(timeline, currentScroll, V);
       const next = reanchorWindow(nextZoom, V, anchor);
@@ -2237,7 +2249,7 @@ export function RoadmapBoard({
           className={styles.sheet}
           style={
             {
-              "--label-w": `${LABEL_W}px`,
+              "--label-w": `${labelWRef.current}px`,
               "--unit-w": `${timeline.unitPx}px`,
               "--timeline-w": `${timeline.totalWidthPx}px`,
             } as CSSProperties
@@ -2731,9 +2743,16 @@ export function RoadmapBoard({
         </div>
         </div>
 
+        <PaneResizeHandle
+          pane={labelPane}
+          edge="end"
+          offset={labelPane.width}
+          label="Resize roadmap labels"
+          style={{ zIndex: 6 }}
+        />
         <div
           className={styles.jumpOverlay}
-          style={{ left: LABEL_W, top: headerHeight(zoom) }}
+          style={{ left: labelWRef.current, top: headerHeight(zoom) }}
           aria-hidden={Object.keys(jumpSides).length === 0}
         >
           <div ref={overlayInnerRef} className={styles.jumpOverlayInner}>
@@ -2784,7 +2803,7 @@ export function RoadmapBoard({
           </div>
         </div>
         {filterView.active && filterView.matchCount === 0 ? (
-          <div className={styles.filterEmpty} style={{ left: LABEL_W + 12 }}>
+          <div className={styles.filterEmpty} style={{ left: labelWRef.current + 12 }}>
             <p>No issues match these conditions</p>
             <Button
               type="button"

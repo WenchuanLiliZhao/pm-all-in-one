@@ -106,8 +106,10 @@
 }
 
 .layout {
+  position: relative;
   flex: 1;
   min-height: 0;
+  min-width: 0;
   display: grid;
   grid-template-columns: 1fr;
   grid-template-rows: 1fr;
@@ -115,7 +117,7 @@
 }
 
 .layoutTerminalOpen {
-  grid-template-columns: 1fr minmax(var(--layout--terminal-min), var(--layout--terminal-max));
+  grid-template-columns: minmax(0, 1fr) var(--pane-terminal-width, var(--layout--terminal-width));
   grid-template-areas: "page terminal";
 }
 
@@ -128,6 +130,7 @@
 }
 
 .pageRow {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr;
   align-items: stretch;
@@ -135,7 +138,7 @@
 }
 
 .pageRowDetailOpen {
-  grid-template-columns: 1fr minmax(var(--layout--detail-min), var(--layout--detail-max));
+  grid-template-columns: minmax(0, 1fr) var(--pane-detail-width, var(--layout--detail-width));
 }
 
 .center {

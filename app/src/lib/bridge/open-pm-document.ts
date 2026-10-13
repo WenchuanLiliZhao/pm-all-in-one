@@ -8,6 +8,30 @@ export function isPmNodeSurface(): boolean {
   return window.__pmSurface === "node";
 }
 
+/** Route for a Cursor node tab. Home when the boot ref is missing. */
+export function pathForPmNodeSurface(ref: NodeRef | null | undefined): string {
+  if (!ref || ref.kind === "workspace") {
+    return "/n/home";
+  }
+  switch (ref.kind) {
+    case "wiki":
+      return `/n/wiki/${ref.wikiNodeId}`;
+    case "project":
+      return `/n/projects/${ref.projectId}`;
+    case "issue":
+      return `/n/issues/${ref.projectId}/${ref.issueId}`;
+    case "member":
+      return `/n/members/${ref.memberId}`;
+    case "handoff":
+      return `/n/handoffs/${ref.handoffId}`;
+    default: {
+      const _exhaustive: never = ref;
+      void _exhaustive;
+      return "/n/home";
+    }
+  }
+}
+
 /** Host-only. Used by the vscode right-click menu, not left-click. */
 export async function openPmDocument(ref: NodeRef): Promise<boolean> {
   if (!isVsCodePm()) {

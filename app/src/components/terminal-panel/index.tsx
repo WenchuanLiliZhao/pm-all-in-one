@@ -216,10 +216,29 @@ export const TerminalPanel = forwardRef<TerminalPanelHandle>(
       window.addEventListener("resize", onResize);
       document.addEventListener("visibilitychange", onVis);
       window.addEventListener("focus", onWinFocus);
+      const host = hostRef.current;
+      let frame = 0;
+      const ro = host
+        ? new ResizeObserver(() => {
+            cancelAnimationFrame(frame);
+            frame = requestAnimationFrame(() => {
+              const id = activeIdRef.current;
+              if (!id) {
+                return;
+              }
+              fitAndResize(id);
+            });
+          })
+        : null;
+      if (host && ro) {
+        ro.observe(host);
+      }
       return () => {
         window.removeEventListener("resize", onResize);
         document.removeEventListener("visibilitychange", onVis);
         window.removeEventListener("focus", onWinFocus);
+        cancelAnimationFrame(frame);
+        ro?.disconnect();
       };
     }, [web]);
 

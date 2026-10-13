@@ -12,6 +12,7 @@
  *   `rail-section-chrome-height`, `rail-section-stack`
  */
 .shell {
+  position: relative;
   display: flex;
   align-items: stretch;
   width: 100%;

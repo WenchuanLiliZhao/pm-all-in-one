@@ -12,6 +12,7 @@
  * ↔ components/wiki-all-pages — `contentWidth="full"` consumer
  * ↔ components/ui/page-width — reading / full column SoT
  * ↔ components/ui/dropdown-menu — Contents row / Add menus
+ * ↔ components/ui/pane-resize — Contents rail width
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type SyntheticEvent } from "react";
 import { useMatch, useNavigate, useParams } from "react-router-dom";
@@ -38,6 +39,9 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { TypeConfirmDialog } from "@/components/type-confirm-dialog";
 import { Button } from "@/components/ui/button";
+import { PaneResizeHandle } from "@/components/ui/pane-resize";
+import { PANE_WIDTH } from "@/components/ui/pane-resize/pane-width";
+import { usePaneWidth } from "@/components/ui/pane-resize/use-pane-width";
 import { Lucide } from "@/components/ui/lucide";
 import { MaterialIcon } from "@/components/ui/material-icon";
 import { DropdownMenu } from "@/components/ui/dropdown-menu";
@@ -752,6 +756,7 @@ export function WikiShell({
   contentWidth?: WikiShellContentWidth;
 }) {
   const navigate = useNavigate();
+  const wikiRail = usePaneWidth(PANE_WIDTH.wikiRail);
   const { createWikiNode } = useWorkspace();
   const { wiki, error: wikiError, setWiki } = useWiki();
   const { wikiNodeId: routeId } = useParams<{ wikiNodeId?: string }>();
@@ -1154,7 +1159,7 @@ export function WikiShell({
 
   return (
     <div className={styles.shell}>
-      <aside className={styles.rail}>
+      <aside className={styles.rail} style={{ width: wikiRail.width }}>
         {/* Rail section order: Workspace → Contents.
          * Stack gap is `.rail` gap only (seams `rail-section-stack`). */}
         <div className={styles.section}>
@@ -1256,6 +1261,12 @@ export function WikiShell({
           <p className={styles.railError}>{error ?? wikiError}</p>
         ) : null}
       </aside>
+      <PaneResizeHandle
+        pane={wikiRail}
+        edge="end"
+        offset={wikiRail.width}
+        label="Resize contents rail"
+      />
       <div
         className={[
           styles.main,

@@ -120,7 +120,7 @@ const pkg = {
   name: PACKAGE_NAME,
   version: appPkg.version,
   description:
-    "Command line interface for pm-all-in-one workspaces — allocate ids, create and move issues, run doctor.",
+    "CLI for pm-all-in-one, a local Jira replacement for small teams whose project library is files in a git repository — allocate ids, create and move issues, run doctor.",
   license: appPkg.license ?? "UNLICENSED",
   type: "module",
   bin: { [PACKAGE_NAME]: "cli.js" },

@@ -80,9 +80,11 @@ Uploading both app artifacts takes on the order of 15 minutes on a home connecti
 
 Copy into every unsigned GitHub Release body. Mark the Release **prerelease**. Do not teach the right-click Gatekeeper bypass — it is not reliable on current macOS.
 
-**Release title:** `vX.Y.Z (unsigned — …)`
+**Release title:** `vX.Y.Z (unsigned — …)` — the parenthetical names a change the user can see (e.g. `roadmap filters`), not an internal reason.
 
 ~~~~markdown
+**pm-all-in-one** is a local Jira replacement for small teams: projects, issues, wiki, and handoffs live as files in a git repository, so a clone is the full state and collaboration is a pull request. This is an unsigned `0.x` developer preview of that product.
+
 ## Unsigned developer preview — not a trusted download
 
 Tag, `package.json`, and the in-app version all read **`X.Y.Z`**. Bundle name is **`pm-all-in-one.app`**.

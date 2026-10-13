@@ -1,8 +1,15 @@
-import { useEffect } from "react";
-import { createHashRouter, Navigate, Outlet } from "react-router-dom";
+import { useEffect, useLayoutEffect, useRef } from "react";
+import {
+  createHashRouter,
+  Navigate,
+  Outlet,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { ElectronShell } from "@/layout/electron-shell";
 import { OpenInNewWebviewProvider } from "@/components/open-in-new-webview-menu";
 import { getPm, isWebPm } from "@/lib/bridge";
+import { pathForPmNodeSurface } from "@/lib/bridge/open-pm-document";
 import { ToastProvider } from "@/lib/toast";
 import { WorkspaceProvider } from "@/lib/workspace/workspace-context";
 import { GitSyncProvider } from "@/lib/workspace/git-sync-context";
@@ -65,6 +72,24 @@ function useWebUiLabHotkey(): void {
   }, []);
 }
 
+/** One shot: if the boot hash did not stick, land on the node this tab opened. */
+function VsCodeNodeSurfaceRoute() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const routed = useRef(false);
+  useLayoutEffect(() => {
+    if (routed.current || window.__pmSurface !== "node") {
+      return;
+    }
+    routed.current = true;
+    const target = pathForPmNodeSurface(window.__pmNodeRef);
+    if (location.pathname !== target) {
+      navigate(target, { replace: true });
+    }
+  }, [location.pathname, navigate]);
+  return null;
+}
+
 function AppChrome() {
   useWebUiLabHotkey();
   return (
@@ -72,6 +97,7 @@ function AppChrome() {
       <WorkspaceProvider>
         <GitSyncProvider>
           <ElectronShell>
+            <VsCodeNodeSurfaceRoute />
             <OpenInNewWebviewProvider>
               <Outlet />
             </OpenInNewWebviewProvider>

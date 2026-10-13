@@ -60,8 +60,10 @@ const LAYOUT_TOKENS = [
   "--layout--titlebar-traffic-y",
   "--layout--detail-min",
   "--layout--detail-max",
+  "--layout--detail-width",
   "--layout--terminal-min",
   "--layout--terminal-max",
+  "--layout--terminal-width",
   "--layout--page-pad-x",
   "--layout--page-pad-y",
   "--layout--content-max",
@@ -69,9 +71,16 @@ const LAYOUT_TOKENS = [
   "--layout--topbar-pad-x",
   "--layout--topbar-pad-y",
   "--layout--wiki-rail-width",
+  "--layout--wiki-rail-min",
+  "--layout--wiki-rail-max",
   "--layout--tree-lead-size",
   "--layout--roadmap-label-width",
+  "--layout--roadmap-label-min",
+  "--layout--roadmap-label-max",
   "--layout--roadmap-row-height",
+  "--layout--table-title-width",
+  "--layout--table-title-min",
+  "--layout--table-title-max",
 ] as const;
 
 type ThemeMode = "auto" | "light" | "dark";

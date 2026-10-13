@@ -1,0 +1,53 @@
+/**
+ * Vertical seam. Callers place it with inline `left` / `right`.
+ * ↔ index.tsx
+ */
+.handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 5;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: col-resize;
+  touch-action: none;
+  min-width: 0;
+  min-height: 0;
+}
+
+.handle::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  border-radius: 1px;
+  background: transparent;
+}
+
+.handle:hover::after,
+.handleActive::after,
+.handle:focus-visible::after {
+  background: var(--color-use--accent);
+}
+
+.handle:focus-visible {
+  outline: none;
+}
+
+/* Clipped parents (table title): pin the line to the pane's end edge. */
+.containEnd::after {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+:global(html[data-pane-resizing]),
+:global(html[data-pane-resizing] *) {
+  cursor: col-resize !important;
+  user-select: none !important;
+}

@@ -75,6 +75,24 @@ function isDifferentWorkspaceRoot(
   return current.replace(/[/\\]+$/, "") !== next.replace(/[/\\]+$/, "");
 }
 
+/** Issue/project the Cursor node tab was opened on. Map surface returns null. */
+function bootNodeSelection(): Selection | null {
+  if (typeof window === "undefined" || window.__pmSurface !== "node") {
+    return null;
+  }
+  const ref = window.__pmNodeRef;
+  if (!ref) {
+    return null;
+  }
+  if (ref.kind === "issue") {
+    return { kind: "issue", projectId: ref.projectId, issueId: ref.issueId };
+  }
+  if (ref.kind === "project") {
+    return { kind: "project", projectId: ref.projectId };
+  }
+  return null;
+}
+
 export type Selection =
   | { kind: "project"; projectId: string }
   | { kind: "issue"; projectId: string; issueId: string }
@@ -160,6 +178,8 @@ interface WorkspaceContextValue {
   /** Conflict banner: keep draft; baseline := disk so Save overwrites. */
   resolveConflictKeep: () => void;
   select: (sel: Selection) => Promise<boolean>;
+  /** Keep a disk issue in the list when the open snapshot does not have it yet. */
+  cacheIssue: (issue: Issue) => void;
   handleDelete: () => Promise<void>;
   applySnapshot: (snap: WorkspaceSnapshot) => void;
   refreshCustomProps: (projectId: string) => Promise<CustomPropsSchema>;
@@ -401,9 +421,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setWarnings(snap.strays?.warnings ?? []);
     setError(null);
     if (switched) {
+      selectionRef.current = null;
       setSelection(null);
       return;
     }
+    const boot = bootNodeSelection();
     setSelection((cur) => {
       if (cur?.kind === "project" && snap.projects.some((p) => p.id === cur.projectId)) {
         const p = snap.projects.find((x) => x.id === cur.projectId);
@@ -425,6 +447,24 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           issueBaselineRef.current = pickIssueEditable(issue);
         }
         return cur;
+      }
+      if (boot?.kind === "project") {
+        const project = snap.projects.find((p) => p.id === boot.projectId);
+        if (project) {
+          projectBaselineRef.current = pickProjectEditable(project);
+          selectionRef.current = boot;
+          return boot;
+        }
+      }
+      if (boot?.kind === "issue") {
+        const issue = snap.issues.find(
+          (i) => i.projectId === boot.projectId && i.id === boot.issueId,
+        );
+        if (issue) {
+          issueBaselineRef.current = pickIssueEditable(issue);
+          selectionRef.current = boot;
+          return boot;
+        }
       }
       return null;
     });
@@ -640,6 +680,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
     // Lab is a DEV design-system surface and must not depend on workspace data.
     if (location.pathname.startsWith("/lab")) {
+      return;
+    }
+    // Node tabs own `#/n/*`. Sending them to `/w/home` shows the map and
+    // never the issue this panel was opened for.
+    if (window.__pmSurface === "node") {
       return;
     }
     if (!hasWorkspace) {
@@ -1251,6 +1296,28 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [flushBeforeLeave],
   );
 
+  const cacheIssue = useCallback((issue: Issue) => {
+    setIssues((prev) => {
+      if (
+        prev.some((i) => i.projectId === issue.projectId && i.id === issue.id)
+      ) {
+        return prev;
+      }
+      const next = [...prev, issue];
+      issuesRef.current = next;
+      return next;
+    });
+    const sel = selectionRef.current;
+    if (
+      sel?.kind === "issue" &&
+      sel.projectId === issue.projectId &&
+      sel.issueId === issue.id &&
+      !issueBaselineRef.current
+    ) {
+      issueBaselineRef.current = pickIssueEditable(issue);
+    }
+  }, []);
+
   const createProjectFn = useCallback(async () => {
     const ok = await flushBeforeLeave();
     if (!ok) {
@@ -1528,6 +1595,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       resolveConflictReload,
       resolveConflictKeep,
       select,
+      cacheIssue,
       handleDelete,
       applySnapshot,
       refreshCustomProps,
@@ -1573,6 +1641,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       resolveConflictReload,
       resolveConflictKeep,
       select,
+      cacheIssue,
       handleDelete,
       applySnapshot,
       refreshCustomProps,

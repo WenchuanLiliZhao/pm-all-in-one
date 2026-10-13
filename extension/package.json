@@ -1,7 +1,7 @@
 {
   "name": "pm-all-in-one",
   "displayName": "pm-all-in-one",
-  "description": "Open a local-first PM workspace (.pmws) in Cursor: issues, wiki, members, and handoffs as editor tabs.",
+  "description": "A local Jira replacement for small teams, hosted in Cursor: open a .pmws workspace (files in your git repo) as issue, wiki, member, and handoff editor tabs.",
   "version": "0.2.19",
   "publisher": "wenchuanlilizhao",
   "license": "MIT",
